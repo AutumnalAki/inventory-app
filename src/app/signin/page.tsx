@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { usePopup } from "@/context/PopupContext";
 import { Loader2, Mail, Lock, ArrowLeft } from "lucide-react";
+import DynamicBackground from "@/components/DynamicBackground";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -30,6 +31,7 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 relative overflow-hidden">
+      <DynamicBackground />
       <div className="w-full max-w-md z-10">
         <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors group">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
