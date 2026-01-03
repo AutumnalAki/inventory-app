@@ -83,26 +83,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-
-        {!isCollapsed && (
-          <div className="mx-4 mb-4 p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-500/20 rounded-xl">
-             <div className="flex items-center gap-2 mb-2 text-red-600 dark:text-red-400">
-                <ShieldAlert size={14} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Debug Role</span>
-             </div>
-             <select 
-               value={role} 
-               onChange={(e: any) => setRole(e.target.value)}
-               className="w-full bg-white dark:bg-black/40 text-xs text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-lg p-2 focus:outline-none focus:border-red-500 cursor-pointer"
-             >
-               <option value="Administrator">Administrator</option>
-               <option value="Program Chair">Program Chair</option>
-               <option value="Faculty">Faculty</option>
-               <option value="Student">Student</option>
-             </select>
-          </div>
-        )}
-
+        
         <div className="p-4 border-t border-gray-200 dark:border-white/10">
           <button 
             onClick={handleSignOut} 

@@ -27,54 +27,122 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   
+  // Theme Context
   const { accent, setAccent } = useTheme();
 
   // User Data State
+  const [userId, setUserId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({ firstName: "", lastName: "", email: "", bio: "" });
   const [passwordData, setPasswordData] = useState({ new: "", confirm: "" });
 
-  // Load User Data
+  // --- 1. Fix: Fetch Data using Supabase Auth (Not LocalStorage) ---
   useEffect(() => {
     const fetchUserData = async () => {
-        const userId = localStorage.getItem("labTrack_userid");
-        if (!userId) { setInitialLoading(false); return; }
+        try {
+            // A. Get Authenticated User directly from Supabase
+            const { data: { user } } = await supabase.auth.getUser();
 
-        const { data } = await supabase.from('users').select('*').eq('id', userId).single();
-        if (data) {
-            const nameParts = data.username.split(" ");
-            setProfileData({
-                firstName: nameParts[0] || "",
-                lastName: nameParts.slice(1).join(" ") || "",
-                email: data.email,
-                bio: data.role
-            });
+            if (!user) {
+                // Not logged in
+                setInitialLoading(false); 
+                return; 
+            }
+
+            setUserId(user.id);
+
+            // B. Get Profile Data from 'users' table
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            
+            if (error) throw error;
+
+            if (data) {
+                // Safe parsing of username to first/last
+                const fullUsername = data.username || "";
+                const nameParts = fullUsername.split(" ");
+                
+                setProfileData({
+                    firstName: nameParts[0] || "",
+                    lastName: nameParts.slice(1).join(" ") || "",
+                    email: data.email || user.email || "", // Fallback to Auth email
+                    bio: data.role || "" 
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        } finally {
+            setInitialLoading(false);
         }
-        setInitialLoading(false);
     };
+
     fetchUserData();
   }, []);
 
+  // Determine if the current accent is one of the presets or a custom hex
   const isCustomColor = !PRESET_THEMES.some(t => t.id === accent);
 
+  // --- Handle Updates ---
+
   const handleSaveProfile = async () => {
+    if (!userId) return;
     setLoading(true);
-    const userId = localStorage.getItem("labTrack_userid");
-    const fullName = `${profileData.firstName} ${profileData.lastName}`.trim();
-    await supabase.from('users').update({ username: fullName, email: profileData.email }).eq('id', userId);
-    setLoading(false);
-    alert("Profile updated!");
+    
+    try {
+        const fullName = `${profileData.firstName} ${profileData.lastName}`.trim();
+        
+        const { error } = await supabase
+            .from('users')
+            .update({ 
+                username: fullName, 
+                // We typically don't update email here without re-verification, 
+                // but keeping it as per your request:
+                email: profileData.email 
+            })
+            .eq('id', userId);
+
+        if (error) throw error;
+        alert("Profile updated successfully!");
+
+    } catch (err) {
+        console.error("Error updating profile:", err);
+        alert("Failed to update profile.");
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleSavePassword = async () => {
+    if (!userId) return;
     if (passwordData.new !== passwordData.confirm) return alert("Passwords do not match");
+    
     setLoading(true);
-    const userId = localStorage.getItem("labTrack_userid");
-    await supabase.from('users').update({ password: passwordData.new }).eq('id', userId);
-    setLoading(false);
-    alert("Password updated!");
+    try {
+        const { error } = await supabase.auth.updateUser({ 
+            password: passwordData.new 
+        });
+
+        if (error) throw error;
+        alert("Password updated successfully!");
+        setPasswordData({ new: "", confirm: "" });
+
+    } catch (err: any) {
+        console.error("Error updating password:", err);
+        alert(`Failed: ${err.message}`);
+    } finally {
+        setLoading(false);
+    }
   };
 
-  if (initialLoading) return <div className="h-full flex justify-center items-center"><Loader2 className="animate-spin text-gray-500"/></div>;
+  if (initialLoading) {
+    return (
+        <div className="h-full flex justify-center items-center">
+            <Loader2 className="animate-spin text-gray-500"/>
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-6 h-full flex flex-col max-h-[calc(100vh-100px)]">
@@ -83,6 +151,7 @@ export default function SettingsPage() {
         <p className="text-gray-400 mt-1">Manage your account and workspace preferences.</p>
       </div>
 
+      {/* --- TAB NAVIGATION --- */}
       <div className="bg-white/5 border border-white/10 p-1.5 rounded-2xl backdrop-blur-xl flex flex-wrap gap-1 w-full shrink-0">
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -102,6 +171,7 @@ export default function SettingsPage() {
         })}
       </div>
 
+      {/* --- CONTENT AREA --- */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 flex-1 overflow-y-auto relative shadow-xl backdrop-blur-sm">
         <AnimatePresence mode="wait">
           <motion.div
@@ -112,19 +182,28 @@ export default function SettingsPage() {
             transition={{ duration: 0.2 }}
             className="h-full flex flex-col"
           >
-            {/* PROFILE TAB */}
+            {/* 1. PROFILE TAB */}
             {activeTab === "profile" && (
               <div className="space-y-8 max-w-4xl">
                  <h3 className="text-xl font-bold text-white mb-1">Personal Information</h3>
                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1"><label className="text-xs font-bold text-gray-500 uppercase">First Name</label><input type="text" value={profileData.firstName} onChange={(e)=>setProfileData({...profileData, firstName: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white"/></div>
-                    <div className="space-y-1"><label className="text-xs font-bold text-gray-500 uppercase">Last Name</label><input type="text" value={profileData.lastName} onChange={(e)=>setProfileData({...profileData, lastName: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white"/></div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase">First Name</label>
+                        <input type="text" value={profileData.firstName} onChange={(e)=>setProfileData({...profileData, firstName: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition-colors"/>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Last Name</label>
+                        <input type="text" value={profileData.lastName} onChange={(e)=>setProfileData({...profileData, lastName: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition-colors"/>
+                    </div>
                  </div>
-                 <div className="space-y-1"><label className="text-xs font-bold text-gray-500 uppercase">Email</label><input type="email" value={profileData.email} onChange={(e)=>setProfileData({...profileData, email: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white"/></div>
+                 <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
+                    <input type="email" value={profileData.email} onChange={(e)=>setProfileData({...profileData, email: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition-colors"/>
+                 </div>
               </div>
             )}
 
-            {/* --- APPEARANCE TAB (NEW) --- */}
+            {/* 2. APPEARANCE TAB */}
             {activeTab === "appearance" && (
               <div className="space-y-8 max-w-4xl">
                 <div>
@@ -158,10 +237,10 @@ export default function SettingsPage() {
                     <div className="relative w-12 h-12 rounded-full overflow-hidden shadow-lg shadow-black/50 border border-white/20">
                          {/* Native Color Input - Invisible but clickable */}
                          <input 
-                            type="color" 
-                            value={isCustomColor ? accent : "#ffffff"}
-                            onChange={(e) => setAccent(e.target.value)}
-                            className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer p-0 border-0"
+                           type="color" 
+                           value={isCustomColor ? accent : "#ffffff"}
+                           onChange={(e) => setAccent(e.target.value)}
+                           className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer p-0 border-0"
                          />
                     </div>
                     <div className="text-left flex-1">
@@ -174,23 +253,27 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* SECURITY TAB */}
+            {/* 3. SECURITY TAB */}
             {activeTab === "security" && (
                <div className="space-y-8 max-w-4xl">
                  <h3 className="text-xl font-bold text-white mb-1">Security</h3>
                  <div className="space-y-4">
-                    <input type="password" placeholder="New Password" value={passwordData.new} onChange={(e)=>setPasswordData({...passwordData, new: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white"/>
-                    <input type="password" placeholder="Confirm Password" value={passwordData.confirm} onChange={(e)=>setPasswordData({...passwordData, confirm: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white"/>
+                    <input type="password" placeholder="New Password" value={passwordData.new} onChange={(e)=>setPasswordData({...passwordData, new: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition-colors"/>
+                    <input type="password" placeholder="Confirm Password" value={passwordData.confirm} onChange={(e)=>setPasswordData({...passwordData, confirm: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition-colors"/>
                  </div>
                </div>
             )}
           </motion.div>
         </AnimatePresence>
 
-        {/* Save Button for Profile/Security */}
+        {/* Save Button for Profile/Security only */}
         {(activeTab === 'profile' || activeTab === 'security') && (
             <div className="absolute bottom-8 right-8">
-            <button onClick={activeTab === 'security' ? handleSavePassword : handleSaveProfile} disabled={loading} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50">
+            <button 
+                onClick={activeTab === 'security' ? handleSavePassword : handleSaveProfile} 
+                disabled={loading} 
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
+            >
                 {loading ? "Saving..." : <><Save size={18} /> Save Changes</>}
             </button>
             </div>

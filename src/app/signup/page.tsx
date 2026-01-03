@@ -4,71 +4,61 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { UserPlus, Loader2, AlertCircle, Lock } from "lucide-react";
+import { UserPlus, Loader2, AlertCircle, CheckCircle, ArrowLeft, ArrowRight, KeyRound, Mail, Lock, User } from "lucide-react";
 import DynamicBackground from "@/components/DynamicBackground";
 import { supabase } from "@/lib/supabase";
 
 export default function SignUp() {
   const router = useRouter();
   
-  // 🔒 Define your Access Code here
-  const INVITE_CODE = "CDM2025"; 
-
   const [formData, setFormData] = useState({
-    firstName: "", 
-    lastName: "", 
-    email: "", 
-    password: "", 
-    confirmPassword: "", 
-    accessCode: "" 
+    firstName: "", lastName: "", email: "", password: "", confirmPassword: "", accessCode: ""
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // 1. Check Passwords
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
       setLoading(false);
       return;
     }
 
-    // 2. Check Access Code
-    if (formData.accessCode !== INVITE_CODE) {
-      setError("Invalid Access Code. Please contact your administrator.");
-      setLoading(false);
-      return;
-    }
-
     try {
+      // 1. Validate Access Code (Use correct table 'access_codes')
+      const { data: codeData, error: codeError } = await supabase
+        .from('access_codes')
+        .select('role')
+        .eq('code', formData.accessCode)
+        .single();
+
+      if (codeError || !codeData) {
+        throw new Error("Invalid Invite Code.");
+      }
+
+      const assignedRole = codeData.role;
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
-      // 3. Sign Up
-      const { data, error: authError } = await supabase.auth.signUp({
+      // 2. Sign Up with Supabase Auth
+      const { error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: "Student",
-            // No student_id or google_id sent here
-          }
-        }
+        options: { data: { full_name: fullName, role: assignedRole } }
       });
 
       if (authError) throw authError;
 
-      alert("Account created successfully! You can now sign in.");
-      router.push("/signin");
+      setSuccess(true);
+      setTimeout(() => { router.push("/signin"); }, 2000);
 
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to create account. Please try again.");
+      setError(err.message || "Failed to create account.");
     } finally {
       setLoading(false);
     }
@@ -77,40 +67,86 @@ export default function SignUp() {
   return (
     <main className="relative min-h-screen flex items-center justify-center p-4 font-sans text-white">
       <DynamicBackground />
+
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative z-10 w-full max-w-md">
         <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+          
           <div className="flex flex-col items-center mb-6">
-            <div className="bg-indigo-600 p-3 rounded-xl mb-4 shadow-lg"><UserPlus size={32} className="text-white" /></div>
-            <h2 className="text-2xl font-bold">Create Account</h2>
-            <p className="text-xs text-gray-400 mt-1">Join the exclusive workspace</p>
+            <div className="bg-orange-600 p-3 rounded-xl mb-4 shadow-lg shadow-orange-900/20">
+              <UserPlus size={32} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight">Create Account</h2>
+            <p className="text-gray-400 text-sm mt-2">Join Workspace</p>
           </div>
 
           <form onSubmit={handleSignUp} className="space-y-4">
-            {error && <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium"><AlertCircle size={16} /> {error}</div>}
             
-            {/* Access Code Input */}
-            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-2">
-                <label className="text-xs font-bold text-indigo-300 uppercase mb-1 flex items-center gap-1"><Lock size={10}/> Access Code</label>
-                <input required type="text" placeholder="Enter Invite Code" value={formData.accessCode} onChange={(e) => setFormData({...formData, accessCode: e.target.value})} className="w-full bg-black/20 border border-indigo-500/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-400 placeholder:text-gray-600" />
+            {success && (
+              <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold">
+                <CheckCircle size={16} /> Account created! Redirecting...
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium">
+                <AlertCircle size={16} /> {error}
+              </div>
+            )}
+
+            {/* Invite Code */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-orange-300 uppercase tracking-wider ml-1">Invite Code</label>
+              <div className="relative">
+                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400" size={18} />
+                <input required type="text" placeholder="e.g. FACULTY-2025" value={formData.accessCode} onChange={(e) => setFormData({...formData, accessCode: e.target.value})} className="w-full bg-black/20 border border-orange-500/30 rounded-xl pl-11 pr-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-orange-500 font-mono tracking-widest transition-colors" />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <input required type="text" placeholder="First Name" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
-              <input required type="text" placeholder="Last Name" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
+              <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">First Name</label>
+                  <input required type="text" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors" />
+              </div>
+              <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Last Name</label>
+                  <input required type="text" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors" />
+              </div>
             </div>
 
-            <input required type="email" placeholder="Email Address" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
-            
-            <input required type="password" placeholder="Password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
-            <input required type="password" placeholder="Confirm Password" value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" />
+            <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email</label>
+                <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                    <input required type="email" placeholder="you@school.edu" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors placeholder:text-gray-600" />
+                </div>
+            </div>
 
-            <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-white shadow-lg transition-all disabled:opacity-50 flex justify-center gap-2">
-              {loading ? <Loader2 size={18} className="animate-spin" /> : "Sign Up"}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Password</label>
+                    <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                        <input required type="password" placeholder="••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors" />
+                    </div>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Confirm</label>
+                    <input required type="password" placeholder="••••••" value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors" />
+                </div>
+            </div>
+
+            <button type="submit" disabled={loading || success} className="group w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 font-bold text-white shadow-lg shadow-orange-900/20 hover:shadow-orange-500/40 hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <>Create Account <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform"/></>}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-500">
-             Already have an account? <Link href="/signin" className="text-indigo-400 hover:text-indigo-300 font-medium">Sign In</Link>
+          <div className="mt-8 text-center space-y-4">
+            <p className="text-sm text-gray-500">
+              Already have an account? <Link href="/signin" className="text-orange-400 hover:text-orange-300 transition-colors font-medium">Sign in</Link>
+            </p>
+            <div className="pt-4 border-t border-white/5">
+                <Link href="/" className="inline-flex items-center text-xs text-gray-500 hover:text-white transition-colors"><ArrowLeft size={12} className="mr-1.5" /> Back to home</Link>
+            </div>
           </div>
         </div>
       </motion.div>

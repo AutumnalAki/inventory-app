@@ -5,6 +5,7 @@ import "./globals.css";
 import { RoleProvider } from "@/context/RoleContext";
 import { InventoryProvider } from "@/context/InventoryContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { PopupProvider } from "@/context/PopupContext"; // <--- IMPORT THIS
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,15 +29,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning> 
-      {/* FIX: Removed 'bg-gray-50' and 'dark:bg-black'. 
-          Added 'transition-colors' to ensure the body background fades too. */}
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors duration-500 ease-in-out`}>
         <ThemeProvider>
-          <RoleProvider>
-            <InventoryProvider>
-              {children}
-            </InventoryProvider>
-          </RoleProvider>
+          <PopupProvider> {/* <--- WRAP HERE */}
+            <RoleProvider>
+              <InventoryProvider>
+                {children}
+              </InventoryProvider>
+            </RoleProvider>
+          </PopupProvider>
         </ThemeProvider>
       </body>
     </html>
