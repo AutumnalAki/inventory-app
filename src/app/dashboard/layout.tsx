@@ -4,9 +4,10 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Box, ShieldAlert 
+  LogOut, ChevronLeft, ChevronRight, ShieldAlert 
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import DashboardBackground from "@/components/DashboardBackground";
 import { useRole } from "@/context/RoleContext";
@@ -47,12 +48,12 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
         className="relative z-20 h-full border-r border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/50 backdrop-blur-xl flex flex-col shrink-0 transition-colors duration-200"
       >
         <div className="p-6 flex items-center gap-3 overflow-hidden whitespace-nowrap">
-          <div className="bg-orange-600 p-2 rounded-lg min-w-[36px]">
-            <Box size={20} className="text-white" />
+          <div className="bg-white/5 border border-white/10 p-2 rounded-xl min-w-[40px] flex items-center justify-center shadow-lg">
+            <Image src="/favicon.ico" alt="Logo" width={24} height={24} className="rounded-sm" />
           </div>
           {!isCollapsed && (
             <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-lg tracking-tight">
-              CDM LabTrack
+              CDM <span className="text-orange-600">LabTrack</span>
             </motion.span>
           )}
         </div>
@@ -83,7 +84,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        
+
         <div className="p-4 border-t border-gray-200 dark:border-white/10">
           <button 
             onClick={handleSignOut} 

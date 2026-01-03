@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation"; 
 import { useInventory, Item } from "@/context/InventoryContext";
+import { usePopup } from "@/context/PopupContext";
 
 // --- EXPORT LIBRARIES ---
 import jsPDF from "jspdf";
@@ -158,13 +159,22 @@ function InventoryContent() {
     setIsExportOpen(false);
   };
 
+  // --- POPUP ---
+  const { showConfirm } = usePopup();
+
   // --- BATCH & STANDARD HANDLERS ---
   const toggleSelect = (id: number) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   const toggleSelectAll = () => setSelectedIds(selectedIds.length === currentItems.length && currentItems.length > 0 ? [] : currentItems.map(i => i.id));
-  const handleBatchDelete = async () => { if (confirm(`Delete ${selectedIds.length} items?`)) { await deleteItems(selectedIds); setSelectedIds([]); } };
+  const handleBatchDelete = async () => { 
+    const confirmed = await showConfirm({ title: "Delete Items", message: `Are you sure you want to delete ${selectedIds.length} item(s)? This action cannot be undone.`, variant: "danger", confirmText: "Delete", cancelText: "Cancel" });
+    if (confirmed) { await deleteItems(selectedIds); setSelectedIds([]); } 
+  };
   const handleBatchStatusUpdate = async (newStock: any) => { await updateItems(selectedIds, { stock: newStock }); setSelectedIds([]); };
   const handleBatchConditionUpdate = async (newCondition: any) => { await updateItems(selectedIds, { condition: newCondition }); setSelectedIds([]); };
-  const handleDelete = (id: number) => confirm("Delete this item?") && deleteItem(id);
+  const handleDelete = async (id: number) => { 
+    const confirmed = await showConfirm({ title: "Delete Item", message: "Are you sure you want to delete this item? This action cannot be undone.", variant: "danger", confirmText: "Delete", cancelText: "Cancel" });
+    if (confirmed) deleteItem(id); 
+  };
   
   const openAddModal = () => { setIsEditing(false); setCurrentId(null); setNewItem({ name: "", controlId: "", quantity: 0, location: "", supplier: "", stock: "In Stock", condition: "Available", remarks: "" }); setIsModalOpen(true); };
   const openEditModal = (item: Item) => { setIsEditing(true); setCurrentId(item.id); setNewItem({ ...item } as any); setIsModalOpen(true); };
