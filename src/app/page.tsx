@@ -2,15 +2,15 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Shield, Package, ArrowRight, Menu, X 
+  Shield, ArrowRight, Menu, X 
 } from "lucide-react";
 import DynamicBackground from "@/components/DynamicBackground";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // State to toggle the "About" footer details
   const [showAboutFooter, setShowAboutFooter] = useState(false);
 
   return (
@@ -21,24 +21,29 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/20 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Package size={22} className="text-white" />
+            <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center shadow-lg">
+              <Image 
+                src="/favicon.ico" 
+                alt="Logo" 
+                width={24} 
+                height={24} 
+                className="rounded-sm"
+              />
             </div>
-            <span className="text-xl font-black tracking-tighter uppercase italic">
+            {/* Removed 'italic' and kept standard bold weight */}
+            <span className="text-xl font-black tracking-tighter uppercase">
               CDM <span className="text-indigo-500">LabTrack</span>
             </span>
           </div>
 
+          {/* Home and Contact links removed */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Home</Link>
-            {/* About button triggers the footer display */}
             <button 
               onClick={() => setShowAboutFooter(!showAboutFooter)}
               className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
             >
               About
             </button>
-            <Link href="/contact" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Contact</Link>
             <Link href="/signin">
               <button className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition-all">
                 Sign In
@@ -60,14 +65,12 @@ export default function LandingPage() {
               exit={{ opacity: 0, y: -20 }}
               className="absolute top-20 left-0 w-full bg-black/90 border-b border-white/10 p-6 flex flex-col gap-4 md:hidden"
             >
-              <Link href="/" className="text-lg font-medium">Home</Link>
               <button 
                 onClick={() => { setShowAboutFooter(!showAboutFooter); setIsMenuOpen(false); }}
                 className="text-left text-lg font-medium"
               >
                 About
               </button>
-              <Link href="/contact" className="text-lg font-medium">Contact</Link>
               <Link href="/signin" className="bg-white text-black text-center py-3 rounded-xl font-bold">Sign In</Link>
             </motion.div>
           )}
@@ -92,7 +95,10 @@ export default function LandingPage() {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-8xl font-black mb-6 tracking-tighter leading-none"
           >
-            SMART <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">INVENTORY</span><br />
+            SMART{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-slate-400 to-indigo-600">
+              INVENTORY
+            </span><br />
             MANAGEMENT.
           </motion.h1>
 
@@ -112,14 +118,18 @@ export default function LandingPage() {
             transition={{ delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
           >
+            {/* Primary button changed to Sign Up */}
             <Link href="/signup">
               <button className="group bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-2xl shadow-indigo-500/20 flex items-center justify-center gap-2 w-full sm:w-auto">
-                Get Started Free <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                Sign Up <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </Link>
-            <button className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-2xl font-bold transition-all w-full sm:w-auto">
-              View Demo
-            </button>
+            {/* Secondary button changed to Sign In */}
+            <Link href="/signin">
+              <button className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-2xl font-bold transition-all w-full sm:w-auto">
+                Sign In
+              </button>
+            </Link>
           </motion.div>
         </div>
       </main>
