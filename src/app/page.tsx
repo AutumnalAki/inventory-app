@@ -78,7 +78,7 @@ export default function LandingPage() {
             className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full mb-8"
           >
             <Shield size={14} className="text-indigo-400" />
-            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Enterprise Grade Security</span>
+            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Invite-Only</span>
           </motion.div>
 
           <motion.h1 

@@ -75,6 +75,13 @@ export default function SignIn() {
               {loading ? <Loader2 className="animate-spin" size={20} /> : "Sign In"}
             </button>
           </form>
+
+          <p className="text-center text-gray-400 text-sm mt-6">
+            Don't have an account?{" "}
+            <Link href="/signup" className="text-white font-semibold hover:text-orange-500 transition-colors">
+              Create one
+            </Link>
+          </p>
         </div>
       </div>
     </div>
