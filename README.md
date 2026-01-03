@@ -20,7 +20,6 @@
   - Monitor active loans and returns.
 
 - **🎨 Personalization**
-  - Light/Dark mode support.
   - Custom accent color picker and preset themes.
 
 - **⚡ Tech Stack**
