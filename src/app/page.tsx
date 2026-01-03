@@ -1,101 +1,152 @@
-//App Home Page with Animated Hero Section
-
 "use client";
 
-import React from "react";
-import { motion, Variants } from "framer-motion";
-import { ArrowRight, Box } from "lucide-react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Shield, Package, BarChart3, Users, 
+  ArrowRight, CheckCircle2, Menu, X 
+} from "lucide-react";
 import DynamicBackground from "@/components/DynamicBackground";
 
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
-};
+export default function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // State to control the visibility of the "About" footer
+  const [showAboutFooter, setShowAboutFooter] = useState(false);
 
-const staggerContainer: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.2 },
-  },
-};
-
-export default function Home() {
   return (
-    <main className="relative min-h-screen text-white selection:bg-orange-500 selection:text-white font-sans overflow-hidden">
+    <div className="relative min-h-screen text-white overflow-hidden bg-[#050505]">
       <DynamicBackground />
 
-      {/* --- Navbar --- */}
-      <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
-          <div className="bg-orange-600 p-2 rounded-lg shadow-lg shadow-orange-900/20">
-            <Box size={24} className="text-white" />
+      {/* --- NAVIGATION --- */}
+      <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/20 backdrop-blur-lg">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Package size={22} className="text-white" />
+            </div>
+            <span className="text-xl font-black tracking-tighter uppercase italic">
+              CDM <span className="text-indigo-500">LabTrack</span>
+            </span>
           </div>
-          <span className="text-xl font-bold tracking-tighter">CDM LabTrack</span>
-        </div>
-        
-        <div className="hidden md:flex gap-8 text-sm font-medium text-gray-400">
-          <Link href="#" className="hover:text-white transition-colors">About</Link>
-          <Link href="#" className="hover:text-white transition-colors">Contact</Link>
+
+          {/* Desktop Nav - Contact Removed */}
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="/" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Home</Link>
+            <button 
+              onClick={() => setShowAboutFooter(!showAboutFooter)} 
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            >
+              About
+            </button>
+            <Link href="/signin">
+              <button className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition-all">
+                Sign In
+              </button>
+            </Link>
+          </div>
+
+          <button className="md:hidden text-gray-400" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Link href="/signin" className="px-6 py-2.5 text-sm font-bold bg-white text-black rounded-full hover:bg-gray-200 transition-all">
-            Sign In
-          </Link>
-        </div>
+        {/* Mobile Nav - Contact Removed */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-20 left-0 w-full bg-black/90 border-b border-white/10 p-6 flex flex-col gap-4 md:hidden"
+            >
+              <Link href="/" className="text-lg font-medium">Home</Link>
+              <button 
+                onClick={() => { setShowAboutFooter(!showAboutFooter); setIsMenuOpen(false); }} 
+                className="text-left text-lg font-medium"
+              >
+                About
+              </button>
+              <Link href="/signin" className="bg-white text-black text-center py-3 rounded-xl font-bold">Sign In</Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
-      {/* --- Hero Section --- */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[85vh] px-4 text-center">
-        <motion.div 
-          initial="hidden" 
-          animate="visible" 
-          variants={staggerContainer}
-          className="max-w-5xl mx-auto"
-        >
-          <motion.div variants={fadeInUp} className="flex justify-center mb-8">
-            <span className="px-4 py-1.5 text-xs font-semibold tracking-wider uppercase border border-red-500/30 bg-red-500/10 text-red-400 rounded-full">
-              ● Invite Only
-            </span>
+      {/* --- HERO SECTION --- */}
+      <main className="relative pt-32 pb-20 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full mb-8"
+          >
+            <Shield size={14} className="text-indigo-400" />
+            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Enterprise Grade Security</span>
           </motion.div>
 
           <motion.h1 
-            variants={fadeInUp} 
-            className="text-5xl md:text-8xl font-extrabold tracking-tighter mb-8 leading-[1.1]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-5xl md:text-8xl font-black mb-6 tracking-tighter leading-none"
           >
-            Welcome to <br />
-            <span className="bg-gradient-to-r from-orange-500 via-orange-400 to-red-600 bg-clip-text text-transparent">
-              CDM LabTrack.
-            </span>
+            SMART <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">INVENTORY</span><br />
+            MANAGEMENT.
           </motion.h1>
 
           <motion.p 
-            variants={fadeInUp} 
-            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed"
           >
-            An exclusive workspace for selected members. Join your team and collaborate on groundbreaking projects.
+            Experience the future of laboratory tracking. Real-time monitoring, 
+            automated reporting, and seamless equipment loans.
           </motion.p>
 
-          <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-5">
-            <Link 
-              href="/signup" 
-              className="group relative px-9 py-4 bg-gradient-to-r from-orange-500 to-red-600 rounded-full font-bold text-white shadow-xl shadow-orange-900/20 hover:shadow-orange-500/40 transition-all hover:scale-105"
-            >
-              Sign Up
-              <ArrowRight className="inline ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+          >
+            <Link href="/signup">
+              <button className="group bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-2xl shadow-indigo-500/20 flex items-center justify-center gap-2 w-full sm:w-auto">
+                Get Started Free <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </button>
             </Link>
-            
-            <Link 
-              href="/signin" 
-              className="px-9 py-4 rounded-full font-bold text-gray-300 border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white transition-all"
-            >
-              Sign In
-            </Link>
+            <button className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-2xl font-bold transition-all w-full sm:w-auto">
+              View Demo
+            </button>
           </motion.div>
-        </motion.div>
-      </div>
-    </main>
+        </div>
+      </main>
+
+      {/* --- ABOUT FOOTER --- */}
+      <AnimatePresence>
+        {showAboutFooter && (
+          <motion.footer 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-0 left-0 w-full z-40 bg-[#0a0a0a]/90 backdrop-blur-xl border-t border-white/10 p-8"
+          >
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+              <div>
+                <h3 className="text-lg font-bold text-white mb-1">CDM Inventory Management Website 2025</h3>
+                <p className="text-gray-400 text-sm">Developed by: <span className="text-indigo-400 font-medium">Justin L.</span></p>
+              </div>
+              <button 
+                onClick={() => setShowAboutFooter(false)}
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X size={20} className="text-gray-400" />
+              </button>
+            </div>
+          </motion.footer>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

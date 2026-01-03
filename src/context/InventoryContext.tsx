@@ -165,9 +165,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         fetchData();
       })
       .subscribe((status) => {
-        // DEBUGGING: Check the browser console on Vercel
         console.log(`Supabase Realtime Status: ${status}`);
-        
         if (status === 'CHANNEL_ERROR') {
           console.error("Realtime connection failed. Check your API Keys.");
         }
@@ -204,6 +202,11 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (updatedItem.stock) payload.stock_status = updatedItem.stock;
     if (updatedItem.condition) payload.condition_status = updatedItem.condition;
     if (updatedItem.remarks) payload.remarks = updatedItem.remarks;
+    
+    // --- FIX: Added these two lines ---
+    if (updatedItem.controlId) payload.control_id = updatedItem.controlId;
+    if (updatedItem.supplier) payload.supplier = updatedItem.supplier;
+    // ----------------------------------
     
     const { error } = await supabase.from('inventory').update(payload).eq('id', id);
     if (!error) {
