@@ -4,14 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Shield, Package, BarChart3, Users, 
-  ArrowRight, CheckCircle2, Menu, X 
+  Shield, Package, ArrowRight, Menu, X 
 } from "lucide-react";
 import DynamicBackground from "@/components/DynamicBackground";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // State to control the visibility of the "About" footer
+  // State to toggle the "About" footer details
   const [showAboutFooter, setShowAboutFooter] = useState(false);
 
   return (
@@ -30,15 +29,16 @@ export default function LandingPage() {
             </span>
           </div>
 
-          {/* Desktop Nav - Contact Removed */}
           <div className="hidden md:flex items-center gap-8">
             <Link href="/" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Home</Link>
+            {/* About button triggers the footer display */}
             <button 
-              onClick={() => setShowAboutFooter(!showAboutFooter)} 
+              onClick={() => setShowAboutFooter(!showAboutFooter)}
               className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
             >
               About
             </button>
+            <Link href="/contact" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Contact</Link>
             <Link href="/signin">
               <button className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition-all">
                 Sign In
@@ -51,7 +51,7 @@ export default function LandingPage() {
           </button>
         </div>
 
-        {/* Mobile Nav - Contact Removed */}
+        {/* Mobile Navigation */}
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div 
@@ -62,11 +62,12 @@ export default function LandingPage() {
             >
               <Link href="/" className="text-lg font-medium">Home</Link>
               <button 
-                onClick={() => { setShowAboutFooter(!showAboutFooter); setIsMenuOpen(false); }} 
+                onClick={() => { setShowAboutFooter(!showAboutFooter); setIsMenuOpen(false); }}
                 className="text-left text-lg font-medium"
               >
                 About
               </button>
+              <Link href="/contact" className="text-lg font-medium">Contact</Link>
               <Link href="/signin" className="bg-white text-black text-center py-3 rounded-xl font-bold">Sign In</Link>
             </motion.div>
           )}
@@ -123,25 +124,25 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {/* --- ABOUT FOOTER --- */}
+      {/* --- FOOTER (Visible when About is clicked) --- */}
       <AnimatePresence>
         {showAboutFooter && (
           <motion.footer 
-            initial={{ y: 100, opacity: 0 }}
+            initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 left-0 w-full z-40 bg-[#0a0a0a]/90 backdrop-blur-xl border-t border-white/10 p-8"
+            exit={{ y: 50, opacity: 0 }}
+            className="fixed bottom-0 left-0 w-full z-40 bg-black/80 backdrop-blur-md border-t border-white/10 p-6"
           >
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
-              <div>
-                <h3 className="text-lg font-bold text-white mb-1">CDM Inventory Management Website 2025</h3>
-                <p className="text-gray-400 text-sm">Developed by: <span className="text-indigo-400 font-medium">Justin L.</span></p>
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+              <div className="text-center md:text-left">
+                <p className="text-sm font-bold text-white">CDM Inventory Management Website 2025</p>
+                <p className="text-xs text-gray-400 mt-1">Developed by: <span className="text-indigo-400 font-medium">Justin L.</span></p>
               </div>
               <button 
                 onClick={() => setShowAboutFooter(false)}
-                className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+                className="text-xs text-gray-500 hover:text-white transition-colors"
               >
-                <X size={20} className="text-gray-400" />
+                Close [x]
               </button>
             </div>
           </motion.footer>
