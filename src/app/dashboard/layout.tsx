@@ -10,36 +10,32 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import DashboardBackground from "@/components/DashboardBackground";
 import { RoleProvider, useRole } from "@/context/RoleContext";
+// 1. Import InventoryProvider
+import { InventoryProvider } from "@/context/InventoryContext";
 
-// 1. Sidebar Content Wrapper (Uses the Context)
 function SidebarContent({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const { role, setRole } = useRole(); // Global Role State
+  const { role, setRole } = useRole();
 
-  // Access Control: Only Admin & Chair can see "Members"
   const canViewMembers = ["Administrator", "Program Chair"].includes(role);
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Item Tracking", href: "/dashboard/tracking" },
-    { icon: FileText, label: "Reports", href: "/dashboard/reports" }, // New Reports Tab
-    // Conditionally render Members link based on Role
+    { icon: FileText, label: "Reports", href: "/dashboard/reports" },
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
 
   return (
     <div className="flex h-screen bg-black text-white font-sans overflow-hidden selection:bg-orange-500 selection:text-white">
-      
-      {/* Sidebar */}
       <motion.aside 
         initial={false}
         animate={{ width: isCollapsed ? 80 : 280 }}
         className="relative z-20 h-full border-r border-white/10 bg-black/50 backdrop-blur-xl flex flex-col shrink-0"
       >
-        {/* Logo Section */}
         <div className="p-6 flex items-center gap-3 overflow-hidden whitespace-nowrap">
           <div className="bg-orange-600 p-2 rounded-lg min-w-[36px]">
             <Box size={20} className="text-white" />
@@ -55,7 +51,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        {/* Navigation Links */}
         <nav className="flex-1 px-4 space-y-2 mt-4">
           {sidebarItems.map((item) => {
             const isActive = pathname === item.href;
@@ -79,7 +74,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 {!isCollapsed && (
                   <motion.span 
                     initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }}
+                    animate={{ opacity: 1 }} 
                     className="font-medium"
                   >
                     {item.label}
@@ -90,7 +85,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* --- GLOBAL DEBUG ROLE SWITCHER (For Testing) --- */}
         {!isCollapsed && (
           <div className="mx-4 mb-4 p-3 bg-red-900/10 border border-red-500/20 rounded-xl">
              <div className="flex items-center gap-2 mb-2 text-red-400">
@@ -110,7 +104,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* Footer / Sign Out */}
         <div className="p-4 border-t border-white/10">
           <button className="flex items-center gap-3 w-full px-3 py-2 text-gray-400 hover:text-white transition-colors">
             <LogOut size={20} />
@@ -118,7 +111,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Collapse Toggle Button */}
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-9 bg-gray-800 border border-gray-600 text-white rounded-full p-1 hover:bg-orange-600 hover:border-orange-500 transition-colors"
@@ -127,11 +119,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
         </button>
       </motion.aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative flex flex-col">
         <DashboardBackground />
-        
-        {/* Content Container: Full width, padded */}
         <div className="relative z-10 w-full flex-1 p-6">
           {children}
         </div>
@@ -140,11 +129,13 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-// 2. Main Layout Export (Wraps content in RoleProvider)
+// 2. Wrap EVERYTHING in RoleProvider AND InventoryProvider
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <RoleProvider>
-      <SidebarContent>{children}</SidebarContent>
+      <InventoryProvider>
+        <SidebarContent>{children}</SidebarContent>
+      </InventoryProvider>
     </RoleProvider>
   );
 }

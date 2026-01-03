@@ -1,3 +1,5 @@
+//App Home Page with Animated Hero Section
+
 "use client";
 
 import React from "react";

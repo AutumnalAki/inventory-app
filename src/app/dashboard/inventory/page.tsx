@@ -7,22 +7,14 @@ import {
   MapPin, Hash, FileText, MoreHorizontal, X, Save
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// --- Initial Mock Data ---
-const INITIAL_INVENTORY = [
-  { id: 1, name: "V5 Robot Brain", controlId: "VEX-001", quantity: 12, supplier: "VEX Robotics", location: "Computer Lab", stock: "In Stock", condition: "Available", remarks: "FW Updated v1.2" },
-  { id: 2, name: "Smart Motor (11W)", controlId: "VEX-002", quantity: 4, supplier: "VEX Robotics", location: "ECE Lab", stock: "Low Stock", condition: "Available", remarks: "Order pending approval" },
-  { id: 3, name: "Optical Sensor", controlId: "VEX-003", quantity: 0, supplier: "Mouser", location: "Physics Lab", stock: "Out of Stock", condition: "Broken", remarks: "Lens cracked, needs triage" },
-  { id: 4, name: "Aluminum C-Channel", controlId: "STR-055", quantity: 45, supplier: "Local Metal", location: "ME Lab", stock: "In Stock", condition: "Available", remarks: "-" },
-  { id: 5, name: "393 Motor Controller", controlId: "LEG-012", quantity: 8, supplier: "VEX Legacy", location: "EE Lab", stock: "In Stock", condition: "For Repairs", remarks: "Soldering issue on pins" },
-  { id: 6, name: "V5 Battery", controlId: "VEX-009", quantity: 20, supplier: "VEX Robotics", location: "Computer Lab", stock: "In Stock", condition: "Available", remarks: "Charged" },
-  { id: 7, name: "Vision Sensor", controlId: "VEX-014", quantity: 2, supplier: "Mouser", location: "ECE Lab", stock: "Low Stock", condition: "Available", remarks: "-" },
-];
+// 1. Import the hook
+import { useInventory, Item } from "@/context/InventoryContext";
 
 const LABS = ["All Labs", "Computer Lab", "ECE Lab", "CE Lab", "Chem Lab", "Physics Lab", "EE Lab", "ME Lab"];
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState(INITIAL_INVENTORY);
+  // 2. Use Global State instead of local useState
+  const { inventory, addItem, updateItem, deleteItem } = useInventory();
   
   // --- FILTER & SORT STATES ---
   const [selectedLab, setSelectedLab] = useState("All Labs");
@@ -45,17 +37,14 @@ export default function InventoryPage() {
   const processedData = useMemo(() => {
     let data = [...inventory];
 
-    // 1. Filter by Location
     if (selectedLab !== "All Labs") {
       data = data.filter(item => item.location === selectedLab);
     }
 
-    // 2. Filter by Status
     if (filterStatus !== "All") {
       data = data.filter(item => item.stock === filterStatus);
     }
 
-    // 3. Sort
     data.sort((a, b) => {
       if (sortOption === "Newest") return b.id - a.id;
       if (sortOption === "Name (A-Z)") return a.name.localeCompare(b.name);
@@ -67,17 +56,16 @@ export default function InventoryPage() {
     return data;
   }, [inventory, selectedLab, filterStatus, sortOption]);
 
-  // 4. Pagination Slicing
   const totalItems = processedData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentItems = processedData.slice(startIndex, startIndex + itemsPerPage);
 
-  // --- HANDLERS ---
+  // --- HANDLERS (Connected to Context) ---
 
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this item?")) {
-      setInventory(inventory.filter((item) => item.id !== id));
+      deleteItem(id); // Global Delete
     }
   };
 
@@ -88,64 +76,50 @@ export default function InventoryPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item: any) => {
+  const openEditModal = (item: Item) => {
     setIsEditing(true);
     setCurrentId(item.id);
-    setNewItem({ ...item });
+    setNewItem({ ...item } as any);
     setIsModalOpen(true);
   };
 
   const handleSaveItem = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Auto-calculate stock status
+    const calculatedStock = newItem.quantity === 0 ? "Out of Stock" : (newItem.quantity <= 5 ? "Low Stock" : "In Stock");
+    const itemToSave = { ...newItem, stock: calculatedStock };
+
     if (isEditing && currentId !== null) {
-      setInventory(inventory.map((item) => item.id === currentId ? { ...item, ...newItem } : item));
+      updateItem(currentId, itemToSave as any); // Global Update
     } else {
-      const itemToAdd = {
-        id: inventory.length > 0 ? Math.max(...inventory.map(i => i.id)) + 1 : 1,
-        ...newItem,
-      };
-      setInventory([itemToAdd, ...inventory]);
+      addItem(itemToSave as any); // Global Add
     }
     setIsModalOpen(false);
   };
 
-  // Helper to reset page when filters change
   const handleFilterChange = (setter: any, value: any) => {
     setter(value);
-    setCurrentPage(1); // Reset to page 1 to avoid empty states
+    setCurrentPage(1);
   };
 
   return (
     <div className="space-y-6 h-full flex flex-col relative">
-      
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
         <p className="text-gray-400 mt-1">Manage and track equipment across all laboratories.</p>
       </div>
 
-      {/* --- ACTION BAR --- */}
       <div className="bg-white/5 border border-white/10 p-2.5 rounded-2xl backdrop-blur-xl flex flex-col xl:flex-row items-center justify-between gap-2 w-full">
-        
-        {/* Left Actions */}
         <div className="flex items-center gap-2 w-full xl:w-auto shrink-0">
-           <button 
-             onClick={openAddModal}
-             className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap flex-1 xl:flex-none"
-           >
-            <Plus size={16} />
-            Add Item
+           <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap flex-1 xl:flex-none">
+            <Plus size={16} /> Add Item
           </button>
 
-          {/* Show Limit Dropdown */}
           <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hidden md:flex">
             <span className="text-gray-400 text-xs font-medium">Show:</span>
             <div className="relative">
-               <select 
-                value={itemsPerPage}
-                onChange={(e) => handleFilterChange(setItemsPerPage, Number(e.target.value))}
-                className="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-5"
-               >
+               <select value={itemsPerPage} onChange={(e) => handleFilterChange(setItemsPerPage, Number(e.target.value))} className="appearance-none bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-5">
                 <option className="bg-gray-900" value={5}>5</option>
                 <option className="bg-gray-900" value={25}>25</option>
                 <option className="bg-gray-900" value={50}>50</option>
@@ -156,40 +130,24 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {/* Center Tabs (Location Filter) */}
         <div className="flex-1 overflow-x-auto no-scrollbar mask-linear-fade flex justify-center w-full">
             <div className="flex items-center gap-1 min-w-max px-2">
                 {LABS.map((lab) => (
-                <button
-                    key={lab}
-                    onClick={() => handleFilterChange(setSelectedLab, lab)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap border ${
-                    selectedLab === lab 
-                        ? "bg-white text-black border-white shadow-sm" 
-                        : "text-gray-400 border-transparent hover:text-white hover:bg-white/5"
-                    }`}
-                >
+                <button key={lab} onClick={() => handleFilterChange(setSelectedLab, lab)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap border ${selectedLab === lab ? "bg-white text-black border-white shadow-sm" : "text-gray-400 border-transparent hover:text-white hover:bg-white/5"}`}>
                     {lab}
                 </button>
                 ))}
             </div>
         </div>
 
-        {/* Right Filters */}
         <div className="flex flex-wrap xl:flex-nowrap items-center justify-end gap-2 w-full xl:w-auto shrink-0">
-          
-          {/* Status Filter */}
           <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors flex-1 xl:flex-none justify-between xl:justify-start">
             <div className="flex items-center gap-2">
                 <Filter size={14} className="text-gray-500" />
                 <span className="text-gray-400 text-xs hidden lg:inline">Status:</span>
             </div>
             <div className="relative">
-              <select 
-                value={filterStatus}
-                onChange={(e) => handleFilterChange(setFilterStatus, e.target.value)}
-                className="appearance-none bg-transparent text-white text-xs font-medium focus:outline-none cursor-pointer pl-2 pr-6 w-full xl:w-24 text-right xl:text-left"
-              >
+              <select value={filterStatus} onChange={(e) => handleFilterChange(setFilterStatus, e.target.value)} className="appearance-none bg-transparent text-white text-xs font-medium focus:outline-none cursor-pointer pl-2 pr-6 w-full xl:w-24 text-right xl:text-left">
                 <option className="bg-gray-900" value="All">All</option>
                 <option className="bg-gray-900" value="In Stock">In Stock</option>
                 <option className="bg-gray-900" value="Low Stock">Low Stock</option>
@@ -199,18 +157,13 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          {/* Sort Filter */}
           <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors flex-1 xl:flex-none justify-between xl:justify-start">
              <div className="flex items-center gap-2">
                 <ArrowUpDown size={14} className="text-gray-500" />
                 <span className="text-gray-400 text-xs hidden lg:inline">Sort:</span>
              </div>
             <div className="relative">
-              <select 
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-                className="appearance-none bg-transparent text-white text-xs font-medium focus:outline-none cursor-pointer pl-2 pr-6 w-full xl:w-28 text-right xl:text-left"
-              >
+              <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className="appearance-none bg-transparent text-white text-xs font-medium focus:outline-none cursor-pointer pl-2 pr-6 w-full xl:w-28 text-right xl:text-left">
                 <option className="bg-gray-900">Newest</option>
                 <option className="bg-gray-900">Name (A-Z)</option>
                 <option className="bg-gray-900">Qty (High)</option>
@@ -222,7 +175,6 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* --- Data Table --- */}
       <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl flex-1 flex flex-col">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">

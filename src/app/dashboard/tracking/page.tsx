@@ -6,75 +6,17 @@ import {
   Clock, MapPin, User, Calendar, RotateCcw, X, Save, ArrowUpDown, ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// --- Mock Data ---
-const MOCK_LOANS = [
-  { 
-    id: 1, 
-    studentId: "20231010803", 
-    itemName: "Weight Holder", 
-    controlId: "PHY-004", 
-    qty: 1, 
-    location: "Physics Lab", 
-    teacher: "Engr. Lorenzo Diuco", 
-    room: "613", 
-    section: "NASC 2031", 
-    dateGiven: "Jun 23, 2025 • 11:29 PM", 
-    dateReceived: "-", 
-    status: "Borrowed" 
-  },
-  { 
-    id: 2, 
-    studentId: "20241020132", 
-    itemName: "Discover Density Set", 
-    controlId: "PHY-005", 
-    qty: 1, 
-    location: "Physics Lab", 
-    teacher: "Engr. Lorenzo Diuco", 
-    room: "613", 
-    section: "NASC 2031", 
-    dateGiven: "Jun 23, 2025 • 11:28 PM", 
-    dateReceived: "-", 
-    status: "Borrowed" 
-  },
-  { 
-    id: 3, 
-    studentId: "20241050450", 
-    itemName: "VEX Clawbot Kit", 
-    controlId: "VEX-007", 
-    qty: 1, 
-    location: "Robotics Lab", 
-    teacher: "Engr. Sarah Lee", 
-    room: "404", 
-    section: "ROBO 101", 
-    dateGiven: "Jun 22, 2025 • 09:15 AM", 
-    dateReceived: "Jun 22, 2025 • 04:00 PM", 
-    status: "Returned" 
-  },
-  { 
-    id: 4, 
-    studentId: "20231099111", 
-    itemName: "Oscilloscope", 
-    controlId: "ECE-012", 
-    qty: 1, 
-    location: "ECE Lab", 
-    teacher: "Engr. Mike Chen", 
-    room: "302", 
-    section: "ECE 101", 
-    dateGiven: "Jun 21, 2025 • 02:30 PM", 
-    dateReceived: "-", 
-    status: "Borrowed" 
-  },
-];
+// 1. Import the hook
+import { useInventory } from "@/context/InventoryContext";
 
 const LABS = ["All Labs", "Computer Lab", "Physics Lab", "Chemistry Lab", "ECE Lab", "Robotics Lab", "ME Lab"];
 
 export default function ItemTrackingPage() {
-  const [loans, setLoans] = useState(MOCK_LOANS);
+  // 2. Use Global State
+  const { loans, addLoan, returnLoan, deleteLoan } = useInventory();
   
-  // --- Filter & Sort States ---
   const [filterStatus, setFilterStatus] = useState("All");
-  const [filterLab, setFilterLab] = useState("All Labs"); // NEW Location Filter
+  const [filterLab, setFilterLab] = useState("All Labs");
   const [sortOption, setSortOption] = useState("Newest");
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,10 +31,9 @@ export default function ItemTrackingPage() {
     room: "",
   });
 
-  // --- Logic: Filter by Status -> Filter by Lab -> Sort ---
-  const processedLoans = [...loans]
+  const processedLoans = loans
     .filter(loan => filterStatus === "All" ? true : loan.status === filterStatus)
-    .filter(loan => filterLab === "All Labs" ? true : loan.location === filterLab) // Apply Lab Filter
+    .filter(loan => filterLab === "All Labs" ? true : loan.location === filterLab)
     .sort((a, b) => {
       if (sortOption === "Newest") return b.id - a.id; 
       if (sortOption === "Location") return a.location.localeCompare(b.location);
@@ -104,34 +45,18 @@ export default function ItemTrackingPage() {
   const returnedToday = loans.filter(l => l.status === "Returned").length;
 
   const handleReceive = (id: number) => {
-    const now = new Date();
-    const dateString = `${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
-    
-    setLoans(loans.map(loan => 
-      loan.id === id ? { ...loan, status: "Returned", dateReceived: dateString } : loan
-    ));
+    returnLoan(id); // Global Return
   };
 
   const handleDelete = (id: number) => {
     if(confirm("Delete this loan record?")) {
-      setLoans(loans.filter(l => l.id !== id));
+      deleteLoan(id); // Global Delete
     }
   };
 
   const handleAddLoan = (e: React.FormEvent) => {
     e.preventDefault();
-    const now = new Date();
-    const dateString = `${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
-    
-    const loanEntry = {
-      id: loans.length + 1,
-      ...newLoan,
-      dateGiven: dateString,
-      dateReceived: "-",
-      status: "Borrowed"
-    };
-
-    setLoans([loanEntry, ...loans]);
+    addLoan(newLoan); // Global Add Loan (Updates Inventory automatically)
     setIsModalOpen(false);
     setNewLoan({ studentId: "", section: "", itemName: "", controlId: "", qty: 1, location: "Computer Lab", teacher: "", room: "" });
   };
