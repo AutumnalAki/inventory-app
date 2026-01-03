@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  User, Lock, Palette, Save, Check, Loader2, Plus 
+  User, Lock, Palette, Save, Check, Loader2 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -54,10 +54,8 @@ export default function SettingsPage() {
     fetchUserData();
   }, []);
 
-  // Check if current accent is a preset
   const isCustomColor = !PRESET_THEMES.some(t => t.id === accent);
 
-  // Handlers
   const handleSaveProfile = async () => {
     setLoading(true);
     const userId = localStorage.getItem("labTrack_userid");
@@ -126,7 +124,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* --- NEW THEME SELECTOR --- */}
+            {/* --- APPEARANCE TAB (NEW) --- */}
             {activeTab === "appearance" && (
               <div className="space-y-8 max-w-4xl">
                 <div>
@@ -135,7 +133,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {/* Presets */}
+                  {/* PRESETS */}
                   {PRESET_THEMES.map((theme) => (
                     <button
                       key={theme.id}
@@ -158,12 +156,12 @@ export default function SettingsPage() {
                   {/* CUSTOM COLOR PICKER */}
                   <div className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all ${isCustomColor ? "bg-white/10 border-white/50 shadow-lg" : "bg-black/20 border-white/10 hover:bg-white/5"}`}>
                     <div className="relative w-12 h-12 rounded-full overflow-hidden shadow-lg shadow-black/50 border border-white/20">
-                         {/* Native Color Input hidden on top */}
+                         {/* Native Color Input - Invisible but clickable */}
                          <input 
                             type="color" 
                             value={isCustomColor ? accent : "#ffffff"}
                             onChange={(e) => setAccent(e.target.value)}
-                            className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 cursor-pointer p-0 border-0"
+                            className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer p-0 border-0"
                          />
                     </div>
                     <div className="text-left flex-1">
@@ -189,6 +187,7 @@ export default function SettingsPage() {
           </motion.div>
         </AnimatePresence>
 
+        {/* Save Button for Profile/Security */}
         {(activeTab === 'profile' || activeTab === 'security') && (
             <div className="absolute bottom-8 right-8">
             <button onClick={activeTab === 'security' ? handleSavePassword : handleSaveProfile} disabled={loading} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50">

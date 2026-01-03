@@ -1,43 +1,67 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
-interface RoleContextType {
-  role: string;
-  setRole: (role: string) => void;
-}
+const RoleContext = createContext<any>(null);
 
-const RoleContext = createContext<RoleContextType | undefined>(undefined);
+export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
+  const [role, setRole] = useState("Student");
+  const [loading, setLoading] = useState(true);
 
-export function RoleProvider({ children }: { children: React.ReactNode }) {
-  // Default to "Student" (least privilege) to avoid leaking admin features
-  const [role, setRoleState] = useState("Student");
-
-  // 1. Load role from Local Storage when the app starts
   useEffect(() => {
-    const storedRole = localStorage.getItem("labTrack_role");
-    if (storedRole) {
-      setRoleState(storedRole);
-    }
+    // 1. Check active session on load
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        fetchUserRole(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+
+    // 2. Listen for login/logout events automatically
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        fetchUserRole(session.user.id);
+      } else {
+        setRole("Student");
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  // 2. Save role to Local Storage whenever it changes
-  const setRole = (newRole: string) => {
-    setRoleState(newRole);
-    localStorage.setItem("labTrack_role", newRole);
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (data) {
+        // Capitalize for UI consistency
+        const cleanRole = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+        setRole(cleanRole);
+      }
+    } catch (error) {
+      console.error("Error fetching role:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <RoleContext.Provider value={{ role, setRole }}>
+    <RoleContext.Provider value={{ role, setRole, loading }}>
       {children}
     </RoleContext.Provider>
   );
-}
+};
 
-export function useRole() {
-  const context = useContext(RoleContext);
-  if (!context) {
-    throw new Error("useRole must be used within a RoleProvider");
-  }
-  return context;
-}
+export const useRole = () => useContext(RoleContext);

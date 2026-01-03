@@ -6,7 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 export default function DashboardBackground() {
   const { accent } = useTheme();
 
-  // Helper to get hex codes for presets, or use the custom hex directly
+  // Helper: If accent is a preset name, return hex. If it's a hex, return it as is.
   const getColor = (color: string) => {
     const presets: Record<string, string> = {
       orange: "#ea580c", // orange-600
@@ -15,7 +15,7 @@ export default function DashboardBackground() {
       emerald:"#059669", // emerald-600
       rose:   "#e11d48", // rose-600
     };
-    return presets[color] || color; // Return preset hex OR the raw custom hex
+    return presets[color] || color; 
   };
 
   const activeColor = getColor(accent);
@@ -32,7 +32,7 @@ export default function DashboardBackground() {
         }}
       />
 
-      {/* 2. Bottom Right Glow (Same color but subtle variation) */}
+      {/* 2. Bottom Right Glow (Subtler) */}
       <div 
         className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full blur-[120px] transition-all duration-1000 ease-in-out"
         style={{ 
