@@ -57,7 +57,7 @@ interface InventoryContextType {
   addItem: (item: Omit<Item, "id">) => Promise<void>;
   updateItem: (id: number, updatedItem: Partial<Item>) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
-  // -- NEW BATCH OPERATIONS --
+  // -- BATCH OPERATIONS --
   deleteItems: (ids: number[]) => Promise<void>;
   updateItems: (ids: number[], data: Partial<Item>) => Promise<void>;
   // --------------------------
@@ -148,11 +148,30 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
     const channel = supabase
       .channel('global_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment_tracking' }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => fetchData())
-      .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+        console.log("Realtime: Inventory updated");
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment_tracking' }, () => {
+        console.log("Realtime: Tracking updated");
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
+        console.log("Realtime: Users updated");
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
+        console.log("Realtime: Logs updated");
+        fetchData();
+      })
+      .subscribe((status) => {
+        // DEBUGGING: Check the browser console on Vercel
+        console.log(`Supabase Realtime Status: ${status}`);
+        
+        if (status === 'CHANNEL_ERROR') {
+          console.error("Realtime connection failed. Check your API Keys.");
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -201,7 +220,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // --- NEW BATCH ACTIONS ---
+  // --- BATCH ACTIONS ---
   const deleteItems = async (ids: number[]) => {
     const { error } = await supabase.from('inventory').delete().in('id', ids);
     if (!error) {
@@ -212,12 +231,10 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
   const updateItems = async (ids: number[], data: Partial<Item>) => {
     const payload: any = {};
-    // Map partial Item fields to DB columns
     if (data.stock) payload.stock_status = data.stock;
     if (data.condition) payload.condition_status = data.condition;
     if (data.location) payload.location = data.location;
     
-    // Only proceed if there is data to update
     if (Object.keys(payload).length === 0) return;
 
     const { error } = await supabase.from('inventory').update(payload).in('id', ids);
@@ -226,7 +243,6 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       fetchData();
     }
   };
-  // -------------------------
 
   const addLoan = async (loan: any) => { 
      const { error } = await supabase.from('equipment_tracking').insert([{
@@ -281,7 +297,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     <InventoryContext.Provider value={{ 
       inventory, loans, users, logs, 
       addItem, updateItem, deleteItem, 
-      deleteItems, updateItems, // Export new functions
+      deleteItems, updateItems, 
       addLoan, returnLoan, deleteLoan,
       addUser, updateUser, deleteUser,
       refreshData: fetchData 
