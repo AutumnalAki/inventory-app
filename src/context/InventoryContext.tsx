@@ -201,7 +201,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (updatedItem.quantity !== undefined) payload.quantity = updatedItem.quantity;
     if (updatedItem.stock) payload.stock_status = updatedItem.stock;
     if (updatedItem.condition) payload.condition_status = updatedItem.condition;
-    if (updatedItem.remarks) payload.remarks = updatedItem.remarks;
+    if (updatedItem.remarks !== undefined) payload.remarks = updatedItem.remarks;
     
     // --- FIX: Added these two lines ---
     if (updatedItem.controlId) payload.control_id = updatedItem.controlId;
