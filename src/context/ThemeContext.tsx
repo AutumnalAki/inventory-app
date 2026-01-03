@@ -1,52 +1,71 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
-type Theme = "dark" | "light" | "system";
-
+// We allow any string now (for Hex codes), not just specific names
 interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+  accent: string;
+  setAccent: (color: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [accent, setAccentState] = useState<string>("orange");
 
-  // 1. Load from LocalStorage on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem("labTrack_theme") as Theme;
-    if (savedTheme) {
-      setThemeState(savedTheme);
-      applyTheme(savedTheme);
-    } else {
-        // Default to dark
-        applyTheme("dark");
-    }
+    // 1. Fetch the user's saved theme from DB on mount
+    const fetchUserTheme = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const { data } = await supabase
+          .from('users')
+          .select('theme_color')
+          .eq('id', session.user.id) // Supabase Auth ID usually matches your users table ID logic
+          .single();
+        
+        // If we found a saved color, use it. Otherwise default to orange.
+        if (data?.theme_color) {
+          setAccentState(data.theme_color);
+        }
+      } else {
+        // Fallback for non-logged in users (optional: check local storage)
+        const local = localStorage.getItem("labTrack_accent");
+        if (local) setAccentState(local);
+      }
+    };
+
+    fetchUserTheme();
   }, []);
 
-  // 2. Apply Theme Class to HTML tag
-  const applyTheme = (newTheme: Theme) => {
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+  const setAccent = async (newAccent: string) => {
+    // 1. Update State immediately for UI feedback
+    setAccentState(newAccent);
+    
+    // 2. Save to LocalStorage (as backup/fast load)
+    localStorage.setItem("labTrack_accent", newAccent);
 
-    if (newTheme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(newTheme);
+    // 3. Save to Database (Permanent Account Storage)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      // Assuming your 'users' table is linked via the ID
+      // You might need to adjust if your 'users' table uses a different ID than auth.uid()
+      // But based on your previous code, we stored 'labTrack_userid' in localStorage.
+      const storedId = localStorage.getItem("labTrack_userid");
+      
+      if (storedId) {
+        await supabase
+          .from('users')
+          .update({ theme_color: newAccent })
+          .eq('id', storedId);
+      }
     }
-  };
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem("labTrack_theme", newTheme);
-    applyTheme(newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ accent, setAccent }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,29 +1,47 @@
+"use client";
+
 import React from "react";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function DashboardBackground() {
+  const { accent } = useTheme();
+
+  // Helper to get hex codes for presets, or use the custom hex directly
+  const getColor = (color: string) => {
+    const presets: Record<string, string> = {
+      orange: "#ea580c", // orange-600
+      blue:   "#2563eb", // blue-600
+      purple: "#9333ea", // purple-600
+      emerald:"#059669", // emerald-600
+      rose:   "#e11d48", // rose-600
+    };
+    return presets[color] || color; // Return preset hex OR the raw custom hex
+  };
+
+  const activeColor = getColor(accent);
+
   return (
-    <div className="fixed inset-0 z-0 bg-black pointer-events-none">
-      {/* 1. Top Center Glow: 
-           Changed from 'bg-orange-900/20' to 'bg-orange-600/30' 
-           (Brighter color, slightly higher opacity)
-      */}
+    <div className="fixed inset-0 z-0 bg-black pointer-events-none transition-colors duration-700">
+      
+      {/* 1. Top Left Glow (Primary Color) */}
       <div 
-        className="absolute top-[-20%] left-[10%] right-[10%] h-[600px] rounded-full bg-orange-800/20 blur-[120px]" 
+        className="absolute top-[-20%] left-[10%] right-[10%] h-[600px] rounded-full blur-[120px] transition-all duration-1000 ease-in-out"
+        style={{ 
+          backgroundColor: activeColor, 
+          opacity: 0.25 
+        }}
       />
 
-      {/* 2. Bottom Right Glow:
-           Changed from 'bg-red-900/10' to 'bg-red-600/20'
-           (More visible red ambient light)
-      */}
+      {/* 2. Bottom Right Glow (Same color but subtle variation) */}
       <div 
-        className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-red-600/30 blur-[120px]" 
+        className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full blur-[120px] transition-all duration-1000 ease-in-out"
+        style={{ 
+          backgroundColor: activeColor, 
+          opacity: 0.15 
+        }}
       />
       
-      {/* 3. Overall Gradient Wash:
-           Changed 'via-black/80' to 'via-black/40'.
-           This reduces the heavy darkness in the middle of the screen,
-           letting more of the colored glow shine through.
-      */}
+      {/* 3. Texture Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black/90" />
     </div>
   );

@@ -1,22 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: #f9fafb;
-  --foreground: #171717;
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
-.dark {
+:root {
+  /* Permanently Dark Mode Variables */
   --background: #000000;
   --foreground: #ededed;
 }
 
 body {
-  color: var(--foreground);
   background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  
+  /* Smooth transitions for text colors */
+  transition: color 0.5s ease;
 }
 
+/* Custom Scrollbar */
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;

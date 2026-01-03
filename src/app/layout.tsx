@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Import Providers
 import { RoleProvider } from "@/context/RoleContext";
 import { InventoryProvider } from "@/context/InventoryContext";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -29,7 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning> 
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 dark:bg-black dark:text-white transition-colors duration-200`}>
+      {/* FIX: Removed 'bg-gray-50' and 'dark:bg-black'. 
+          Added 'transition-colors' to ensure the body background fades too. */}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors duration-500 ease-in-out`}>
         <ThemeProvider>
           <RoleProvider>
             <InventoryProvider>

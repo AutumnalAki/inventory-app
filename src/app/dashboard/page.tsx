@@ -2,42 +2,47 @@
 
 import React from "react";
 import { 
-  AlertTriangle, Package, CheckCircle, Clock, 
-  TrendingUp, MoreHorizontal, Activity, ArrowRight 
-} from "lucide-react";
+  AlertTriangle, Package, Clock, 
+  TrendingUp, Activity, ArrowRight, Wrench 
+} from "lucide-react"; // Fixed Wrench import
 import { motion } from "framer-motion";
-// 1. Import Hook
+import { useRouter } from "next/navigation"; // 1. Import Router
 import { useInventory } from "@/context/InventoryContext";
 
 export default function Dashboard() {
-  // 2. Get Real Data
   const { inventory, loans, logs } = useInventory();
+  const router = useRouter(); // 2. Initialize Router
 
-  // 3. Calculate Stats
-  const totalItems = inventory.reduce((acc, item) => acc + item.quantity, 0); // Sum of all quantities
+  // Stats
+  const totalItems = inventory.reduce((acc, item) => acc + item.quantity, 0);
   const totalTypes = inventory.length;
   const lowStockItems = inventory.filter(i => i.stock === "Low Stock" || i.stock === "Out of Stock").length;
   const activeLoans = loans.filter(l => l.status === "Borrowed").length;
   const brokenItems = inventory.filter(i => i.condition === "Broken").length;
 
+  // 3. Navigation Handlers
+  const navigateTo = (path: string) => router.push(path);
+
   return (
     <div className="space-y-8">
-      
-      {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
         <p className="text-gray-400 mt-1">Overview of your lab inventory and equipment status.</p>
       </div>
 
-      {/* Stats Grid - Connected to Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        {/* Card 1: Total -> Go to Inventory (Clear Filters) */}
         <StatCard 
           title="Total Items" 
           value={totalItems} 
           change={`${totalTypes} unique types`}
           icon={<Package size={24} />}
           trend="up"
+          onClick={() => navigateTo('/dashboard/inventory')}
         />
+
+        {/* Card 2: Low Stock -> Go to Inventory (Filter: Critical) */}
         <StatCard 
           title="Low Stock / Out" 
           value={lowStockItems} 
@@ -45,34 +50,39 @@ export default function Dashboard() {
           icon={<AlertTriangle size={24} />}
           alert={lowStockItems > 0}
           trend={lowStockItems > 0 ? "down" : "neutral"}
+          onClick={() => navigateTo('/dashboard/inventory?status=Critical')}
         />
+
+        {/* Card 3: Loans -> Go to Tracking */}
         <StatCard 
           title="Active Loans" 
           value={activeLoans} 
           change="Currently borrowed"
           icon={<Clock size={24} />}
           trend="neutral"
+          onClick={() => navigateTo('/dashboard/tracking')}
         />
+
+        {/* Card 4: Broken -> Go to Inventory (Filter: Broken) */}
         <StatCard 
           title="Broken Items" 
           value={brokenItems} 
           change="Needs Repair"
-          icon={<WrenchIcon size={24} />}
+          icon={<Wrench size={24} />}
           alert={brokenItems > 0}
           trend={brokenItems > 0 ? "down" : "neutral"}
+          onClick={() => navigateTo('/dashboard/inventory?condition=Broken')}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Recent Activity Feed - Connected to Real Logs */}
+        {/* Recent Activity */}
         <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold flex items-center gap-2">
+            <h3 className="text-xl font-semibold flex items-center gap-2 text-white">
                <Activity className="text-indigo-400" size={20} /> Recent Activity
             </h3>
           </div>
-          
           <div className="space-y-4">
             {logs.slice(0, 5).map((log) => (
                <div key={log.id} className="flex items-center gap-4 p-3 rounded-xl bg-black/20 border border-white/5">
@@ -94,12 +104,11 @@ export default function Dashboard() {
             <div>
               <h3 className="text-xl font-bold text-white mb-2">Quick Actions</h3>
               <p className="text-indigo-200 text-sm mb-6">Manage your laboratory efficiently.</p>
-              
               <div className="space-y-3">
-                 <button className="w-full bg-white/10 hover:bg-white/20 p-3 rounded-xl text-left text-sm font-bold flex items-center justify-between transition-colors">
+                 <button onClick={() => navigateTo('/dashboard/inventory')} className="w-full bg-white/10 hover:bg-white/20 p-3 rounded-xl text-left text-sm font-bold flex items-center justify-between transition-colors text-white">
                     Add New Equipment <ArrowRight size={16} />
                  </button>
-                 <button className="w-full bg-white/10 hover:bg-white/20 p-3 rounded-xl text-left text-sm font-bold flex items-center justify-between transition-colors">
+                 <button onClick={() => navigateTo('/dashboard/tracking')} className="w-full bg-white/10 hover:bg-white/20 p-3 rounded-xl text-left text-sm font-bold flex items-center justify-between transition-colors text-white">
                     Create Loan Record <ArrowRight size={16} />
                  </button>
               </div>
@@ -110,16 +119,16 @@ export default function Dashboard() {
   );
 }
 
-// --- Helper Components ---
-
-function StatCard({ title, value, change, icon, alert = false, trend }: any) {
+// Updated StatCard with onClick support
+function StatCard({ title, value, change, icon, alert = false, trend, onClick }: any) {
   return (
     <motion.div 
       whileHover={{ y: -5 }}
-      className={`p-6 rounded-3xl border backdrop-blur-md relative overflow-hidden group ${
+      onClick={onClick}
+      className={`p-6 rounded-3xl border backdrop-blur-md relative overflow-hidden group cursor-pointer transition-all ${
         alert 
-        ? "bg-red-900/10 border-red-500/30" 
-        : "bg-white/5 border-white/10 hover:bg-white/10"
+        ? "bg-red-900/10 border-red-500/30 hover:border-red-500/50" 
+        : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
       }`}
     >
       <div className="flex justify-between items-start mb-4">
@@ -128,17 +137,9 @@ function StatCard({ title, value, change, icon, alert = false, trend }: any) {
         </div>
         {trend === "up" && <div className="flex items-center text-emerald-400 text-xs bg-emerald-400/10 px-2 py-1 rounded-full"><TrendingUp size={12} className="mr-1"/></div>}
       </div>
-      <h3 className="text-4xl font-bold tracking-tighter mb-1 tabular-nums">{value}</h3>
+      <h3 className="text-4xl font-bold tracking-tighter mb-1 tabular-nums text-white">{value}</h3>
       <p className="text-sm text-gray-400 font-medium">{title}</p>
       <p className={`text-xs mt-2 ${alert ? "text-red-400" : "text-gray-500"}`}>{change}</p>
     </motion.div>
-  );
-}
-
-function WrenchIcon({ size }: { size: number }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-    </svg>
   );
 }
