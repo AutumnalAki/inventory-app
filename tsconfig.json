@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "../components/DynamicBackground.tsx", "../components/DynamicBackground.tsx"  ],
   "exclude": ["node_modules"]
 }

@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// 1. Import the Context Providers
+// Import Providers
 import { RoleProvider } from "@/context/RoleContext";
 import { InventoryProvider } from "@/context/InventoryContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,14 +28,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white`}>
-        {/* 2. Wrap the entire application with Providers here */}
-        <RoleProvider>
-          <InventoryProvider>
-            {children}
-          </InventoryProvider>
-        </RoleProvider>
+    <html lang="en" className="dark" suppressHydrationWarning> 
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 dark:bg-black dark:text-white transition-colors duration-200`}>
+        <ThemeProvider>
+          <RoleProvider>
+            <InventoryProvider>
+              {children}
+            </InventoryProvider>
+          </RoleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

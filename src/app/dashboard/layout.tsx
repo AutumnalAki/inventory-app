@@ -17,8 +17,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { role, setRole } = useRole();
 
-  // --- FIX: Case-Insensitive Check ---
-  // This ensures 'administrator' (from DB) matches 'Administrator' (from App)
   const normalizedRole = role ? role.toLowerCase() : "student";
   const canViewMembers = ["administrator", "program chair"].includes(normalizedRole);
 
@@ -27,7 +25,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Item Tracking", href: "/dashboard/tracking" },
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
-    // Only show Members if permission check passes
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
@@ -40,11 +37,14 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white font-sans overflow-hidden selection:bg-orange-500 selection:text-white">
+    // FIX: Using 'bg-background' allows the theme variable to control the color
+    <div className="flex h-screen bg-background text-foreground font-sans overflow-hidden transition-colors duration-200">
+      
+      {/* Sidebar - Updated colors for Light/Dark modes */}
       <motion.aside 
         initial={false}
         animate={{ width: isCollapsed ? 80 : 280 }}
-        className="relative z-20 h-full border-r border-white/10 bg-black/50 backdrop-blur-xl flex flex-col shrink-0"
+        className="relative z-20 h-full border-r border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/50 backdrop-blur-xl flex flex-col shrink-0 transition-colors duration-200"
       >
         <div className="p-6 flex items-center gap-3 overflow-hidden whitespace-nowrap">
           <div className="bg-orange-600 p-2 rounded-lg min-w-[36px]">
@@ -66,16 +66,16 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all group relative overflow-hidden whitespace-nowrap ${
                   isActive 
-                    ? "bg-white/10 text-white" 
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    ? "bg-gray-200 dark:bg-white/10 text-black dark:text-white font-semibold" 
+                    : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
                 }`}
               >
                 {isActive && (
-                  <motion.div layoutId="activeTab" className="absolute inset-0 bg-white/10 rounded-xl" />
+                  <motion.div layoutId="activeTab" className="absolute inset-0 bg-gray-200 dark:bg-white/10 rounded-xl" />
                 )}
-                <item.icon size={22} className={isActive ? "text-orange-500" : "group-hover:text-orange-400"} />
+                <item.icon size={22} className={isActive ? "text-orange-600 dark:text-orange-500" : "group-hover:text-orange-500 transition-colors"} />
                 {!isCollapsed && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium">
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium relative z-10">
                     {item.label}
                   </motion.span>
                 )}
@@ -84,34 +84,29 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Debug Role Switcher */}
         {!isCollapsed && (
-          <div className="mx-4 mb-4 p-3 bg-red-900/10 border border-red-500/20 rounded-xl">
-             <div className="flex items-center gap-2 mb-2 text-red-400">
+          <div className="mx-4 mb-4 p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-500/20 rounded-xl">
+             <div className="flex items-center gap-2 mb-2 text-red-600 dark:text-red-400">
                 <ShieldAlert size={14} />
                 <span className="text-[10px] font-bold uppercase tracking-wider">Debug Role</span>
              </div>
-             {/* Note: This allows manual overriding for testing */}
              <select 
                value={role} 
                onChange={(e: any) => setRole(e.target.value)}
-               className="w-full bg-black/40 text-xs text-white border border-white/10 rounded-lg p-2 focus:outline-none focus:border-red-500 cursor-pointer"
+               className="w-full bg-white dark:bg-black/40 text-xs text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-lg p-2 focus:outline-none focus:border-red-500 cursor-pointer"
              >
                <option value="Administrator">Administrator</option>
                <option value="Program Chair">Program Chair</option>
                <option value="Faculty">Faculty</option>
                <option value="Student">Student</option>
              </select>
-             <div className="mt-1 text-[10px] text-gray-500">
-               Current: <span className="text-gray-300 font-mono">{role}</span>
-             </div>
           </div>
         )}
 
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-gray-200 dark:border-white/10">
           <button 
             onClick={handleSignOut} 
-            className="flex items-center gap-3 w-full px-3 py-2 text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
           >
             <LogOut size={20} />
             {!isCollapsed && <span>Sign Out</span>}
@@ -120,13 +115,14 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-9 bg-gray-800 border border-gray-600 text-white rounded-full p-1 hover:bg-orange-600 hover:border-orange-500 transition-colors"
+          className="absolute -right-3 top-9 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-white rounded-full p-1 hover:bg-orange-50 dark:hover:bg-orange-600 hover:border-orange-500 transition-colors shadow-sm"
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </motion.aside>
 
       <main className="flex-1 overflow-y-auto relative flex flex-col">
+        {/* The background component handles its own dark/light logic */}
         <DashboardBackground />
         <div className="relative z-10 w-full flex-1 p-6">
           {children}
