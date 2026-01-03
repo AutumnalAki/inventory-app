@@ -7,27 +7,37 @@ import {
   LogOut, ChevronLeft, ChevronRight, Box, ShieldAlert 
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import DashboardBackground from "@/components/DashboardBackground";
-import { RoleProvider, useRole } from "@/context/RoleContext";
-// 1. Import InventoryProvider
-import { InventoryProvider } from "@/context/InventoryContext";
+import { useRole } from "@/context/RoleContext";
 
 function SidebarContent({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { role, setRole } = useRole();
 
-  const canViewMembers = ["Administrator", "Program Chair"].includes(role);
+  // --- FIX: Case-Insensitive Check ---
+  // This ensures 'administrator' (from DB) matches 'Administrator' (from App)
+  const normalizedRole = role ? role.toLowerCase() : "student";
+  const canViewMembers = ["administrator", "program chair"].includes(normalizedRole);
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Item Tracking", href: "/dashboard/tracking" },
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
+    // Only show Members if permission check passes
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
+
+  const handleSignOut = () => {
+    setRole("Student"); 
+    localStorage.removeItem("labTrack_role");
+    localStorage.removeItem("labTrack_userid");
+    router.push("/signin");
+  };
 
   return (
     <div className="flex h-screen bg-black text-white font-sans overflow-hidden selection:bg-orange-500 selection:text-white">
@@ -41,11 +51,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             <Box size={20} className="text-white" />
           </div>
           {!isCollapsed && (
-            <motion.span 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              className="font-bold text-lg tracking-tight"
-            >
+            <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-lg tracking-tight">
               CDM LabTrack
             </motion.span>
           )}
@@ -65,18 +71,11 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 {isActive && (
-                  <motion.div 
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-white/10 rounded-xl" 
-                  />
+                  <motion.div layoutId="activeTab" className="absolute inset-0 bg-white/10 rounded-xl" />
                 )}
                 <item.icon size={22} className={isActive ? "text-orange-500" : "group-hover:text-orange-400"} />
                 {!isCollapsed && (
-                  <motion.span 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    className="font-medium"
-                  >
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium">
                     {item.label}
                   </motion.span>
                 )}
@@ -85,12 +84,14 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
+        {/* Debug Role Switcher */}
         {!isCollapsed && (
           <div className="mx-4 mb-4 p-3 bg-red-900/10 border border-red-500/20 rounded-xl">
              <div className="flex items-center gap-2 mb-2 text-red-400">
                 <ShieldAlert size={14} />
                 <span className="text-[10px] font-bold uppercase tracking-wider">Debug Role</span>
              </div>
+             {/* Note: This allows manual overriding for testing */}
              <select 
                value={role} 
                onChange={(e: any) => setRole(e.target.value)}
@@ -101,11 +102,17 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                <option value="Faculty">Faculty</option>
                <option value="Student">Student</option>
              </select>
+             <div className="mt-1 text-[10px] text-gray-500">
+               Current: <span className="text-gray-300 font-mono">{role}</span>
+             </div>
           </div>
         )}
 
         <div className="p-4 border-t border-white/10">
-          <button className="flex items-center gap-3 w-full px-3 py-2 text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={handleSignOut} 
+            className="flex items-center gap-3 w-full px-3 py-2 text-gray-400 hover:text-white transition-colors"
+          >
             <LogOut size={20} />
             {!isCollapsed && <span>Sign Out</span>}
           </button>
@@ -129,13 +136,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-// 2. Wrap EVERYTHING in RoleProvider AND InventoryProvider
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RoleProvider>
-      <InventoryProvider>
-        <SidebarContent>{children}</SidebarContent>
-      </InventoryProvider>
-    </RoleProvider>
+    <SidebarContent>{children}</SidebarContent>
   );
 }
