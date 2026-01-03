@@ -57,6 +57,10 @@ interface InventoryContextType {
   addItem: (item: Omit<Item, "id">) => Promise<void>;
   updateItem: (id: number, updatedItem: Partial<Item>) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
+  // -- NEW BATCH OPERATIONS --
+  deleteItems: (ids: number[]) => Promise<void>;
+  updateItems: (ids: number[], data: Partial<Item>) => Promise<void>;
+  // --------------------------
   addLoan: (loan: Omit<Loan, "id" | "dateGiven" | "dateReceived" | "status">) => Promise<void>;
   returnLoan: (id: number) => Promise<void>;
   deleteLoan: (id: number) => Promise<void>;
@@ -77,8 +81,6 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
   // 1. FETCH DATA FUNCTION
   const fetchData = async () => {
-    // console.log("♻️ Refreshing Data..."); // Uncomment for debugging
-
     // A. Inventory
     const { data: itemsData } = await supabase.from('inventory').select('*').order('id', { ascending: false });
     if (itemsData) {
@@ -96,7 +98,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       })));
     }
 
-    // B. Loans (Fixed 'teacher' mapping)
+    // B. Loans
     const { data: loansData } = await supabase.from('equipment_tracking').select('*').order('id', { ascending: false });
     if (loansData) {
       setLoans(loansData.map((l: any) => ({
@@ -106,7 +108,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         controlId: l.control_id,
         qty: l.quantity, 
         location: l.location, 
-        teacher: l.active_teacher, // <--- FIXED MAPPING
+        teacher: l.active_teacher, 
         room: l.room, 
         section: l.program_section, 
         dateGiven: new Date(l.date_given).toLocaleString(),
@@ -144,18 +146,13 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchData(); // Initial Load
 
-    // Create a single channel for all table updates
     const channel = supabase
       .channel('global_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment_tracking' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => fetchData())
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log("⚡ Realtime Connected");
-        }
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -177,7 +174,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }]);
     if (!error) {
       await logAction("New Item Added", `Item: ${item.name}`);
-      fetchData(); // Force immediate local update
+      fetchData();
     }
   };
 
@@ -204,6 +201,33 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // --- NEW BATCH ACTIONS ---
+  const deleteItems = async (ids: number[]) => {
+    const { error } = await supabase.from('inventory').delete().in('id', ids);
+    if (!error) {
+      await logAction("Batch Delete", `Deleted ${ids.length} items`);
+      fetchData();
+    }
+  };
+
+  const updateItems = async (ids: number[], data: Partial<Item>) => {
+    const payload: any = {};
+    // Map partial Item fields to DB columns
+    if (data.stock) payload.stock_status = data.stock;
+    if (data.condition) payload.condition_status = data.condition;
+    if (data.location) payload.location = data.location;
+    
+    // Only proceed if there is data to update
+    if (Object.keys(payload).length === 0) return;
+
+    const { error } = await supabase.from('inventory').update(payload).in('id', ids);
+    if (!error) {
+      await logAction("Batch Update", `Updated ${ids.length} items`);
+      fetchData();
+    }
+  };
+  // -------------------------
+
   const addLoan = async (loan: any) => { 
      const { error } = await supabase.from('equipment_tracking').insert([{
         student_number: loan.studentId, item_name: loan.itemName, control_id: loan.controlId,
@@ -223,10 +247,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
   const addUser = async (user: Omit<User, "id" | "joined">, password?: string) => {
     const { error } = await supabase.from('users').insert([{
-        username: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status.toLowerCase(),
+        username: user.name, email: user.email, role: user.role, status: user.status.toLowerCase(),
     }]);
     if (!error) {
       await logAction("User Created", `User: ${user.name}`);
@@ -260,6 +281,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     <InventoryContext.Provider value={{ 
       inventory, loans, users, logs, 
       addItem, updateItem, deleteItem, 
+      deleteItems, updateItems, // Export new functions
       addLoan, returnLoan, deleteLoan,
       addUser, updateUser, deleteUser,
       refreshData: fetchData 

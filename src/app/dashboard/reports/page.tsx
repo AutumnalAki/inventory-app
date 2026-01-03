@@ -2,25 +2,28 @@
 
 import React, { useState, useMemo } from "react";
 import { 
-  Download, Calendar, Box, FileText, 
-  AlertTriangle, TrendingUp, AlertOctagon 
+  Download, Box, FileText, AlertTriangle, TrendingUp, AlertOctagon, ChevronDown 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInventory } from "@/context/InventoryContext";
 
-export default function ReportsPage() {
-  // 1. Get Real Data
-  const { inventory, loans, logs } = useInventory();
-  const [hoveredSegment, setHoveredSegment] = useState<any>(null);
-  const [dateRange, setDateRange] = useState("This Month");
+// --- EXPORT LIBRARIES ---
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
-  // 2. Real Stats Logic
+export default function ReportsPage() {
+  const { inventory, loans } = useInventory();
+  const [hoveredSegment, setHoveredSegment] = useState<any>(null);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+
+  // --- STATS LOGIC ---
   const totalItems = inventory.reduce((acc, i) => acc + i.quantity, 0);
-  const brokenItems = inventory.filter(i => i.condition === "Broken"); // Actual list of broken items
+  const brokenItems = inventory.filter(i => i.condition === "Broken");
   const inUseItems = loans.filter(l => l.status === "Borrowed").reduce((acc, l) => acc + l.qty, 0);
   const availableItems = totalItems - inUseItems - brokenItems.length;
 
-  // 3. Dynamic Charts
+  // --- CHARTS DATA ---
   const chartData = useMemo(() => {
     const total = totalItems || 1;
     const data = [
@@ -45,10 +48,149 @@ export default function ReportsPage() {
      return Object.entries(counts).map(([label, count]) => ({ label, count }));
   }, [inventory]);
 
+  // --- EXPORT HANDLERS ---
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    const date = new Date().toLocaleDateString();
+
+    // Title
+    doc.setFontSize(18);
+    doc.text("Inventory Status Report", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${date}`, 14, 28);
+
+    // 1. Executive Summary
+    doc.setFontSize(14);
+    doc.text("1. Executive Summary", 14, 40);
+    
+    const summaryData = [
+      ["Total Items", totalItems],
+      ["Available", availableItems],
+      ["In Use (Borrowed)", inUseItems],
+      ["Broken / Damaged", brokenItems.length],
+    ];
+
+    autoTable(doc, {
+      startY: 45,
+      head: [['Metric', 'Count']],
+      body: summaryData,
+      theme: 'striped',
+      headStyles: { fillColor: [79, 70, 229] } // Indigo
+    });
+
+    // 2. Inventory by Location (ADDED THIS SECTION)
+    let finalY = (doc as any).lastAutoTable.finalY + 15;
+    doc.text("2. Inventory by Location", 14, finalY);
+
+    const locationRows = locationCounts.map(l => [l.label, l.count]);
+
+    autoTable(doc, {
+      startY: finalY + 5,
+      head: [['Location', 'Total Items']],
+      body: locationRows,
+      theme: 'grid',
+      headStyles: { fillColor: [16, 185, 129] } // Emerald
+    });
+
+    // 3. Broken Items Report
+    finalY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Check if we need a new page for the next table
+    if (finalY > 250) {
+      doc.addPage();
+      finalY = 20;
+    }
+
+    doc.text("3. Broken Items Report", 14, finalY);
+
+    const brokenRows = brokenItems.map(item => [item.name, item.controlId, item.location, item.remarks]);
+
+    autoTable(doc, {
+      startY: finalY + 5,
+      head: [['Item Name', 'Control ID', 'Location', 'Remarks']],
+      body: brokenRows,
+      theme: 'grid',
+      headStyles: { fillColor: [239, 68, 68] } // Red
+    });
+
+    doc.save(`Inventory_Report_${date}.pdf`);
+    setIsExportOpen(false);
+  };
+
+  const exportExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Summary
+    const summaryData = [
+      { Metric: "Total Items", Count: totalItems },
+      { Metric: "Available", Count: availableItems },
+      { Metric: "In Use", Count: inUseItems },
+      { Metric: "Broken", Count: brokenItems.length },
+    ];
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+
+    // Sheet 2: Locations (Ensured this is included)
+    const locData = locationCounts.map(l => ({ Location: l.label, Total_Items: l.count }));
+    const wsLoc = XLSX.utils.json_to_sheet(locData);
+    XLSX.utils.book_append_sheet(wb, wsLoc, "Locations");
+
+    // Sheet 3: Broken Items
+    const brokenData = brokenItems.map(i => ({
+        Name: i.name, ControlID: i.controlId, Location: i.location, Remarks: i.remarks
+    }));
+    const wsBroken = XLSX.utils.json_to_sheet(brokenData);
+    XLSX.utils.book_append_sheet(wb, wsBroken, "Broken Items");
+
+    XLSX.writeFile(wb, `Inventory_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setIsExportOpen(false);
+  };
+
+  const exportCSV = () => {
+    // CSV is flat, so we export the "Locations" summary as that's useful data
+    const headers = ["Location,Total Items"];
+    const rows = locationCounts.map(l => `"${l.label}",${l.count}`);
+    const csvContent = [headers, ...rows].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Location_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    setIsExportOpen(false);
+  };
+
   return (
     <div className="space-y-6 h-full flex flex-col">
-      <div className="flex justify-between items-center"><h1 className="text-3xl font-bold">Reports</h1></div>
+      <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Reports</h1>
+          
+          {/* EXPORT DROPDOWN */}
+          <div className="relative">
+            <button 
+                onClick={() => setIsExportOpen(!isExportOpen)} 
+                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+            >
+                <Download size={16} /> Export Report <ChevronDown size={14}/>
+            </button>
+            <AnimatePresence>
+                {isExportOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 top-12 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                    >
+                        <button onClick={exportPDF} className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-gray-300 hover:text-white">Export as PDF</button>
+                        <button onClick={exportExcel} className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-gray-300 hover:text-white">Export as Excel</button>
+                        <button onClick={exportCSV} className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-gray-300 hover:text-white">Export CSV (Locations)</button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+          </div>
+      </div>
       
+      {/* STAT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatCard title="Total Items" value={totalItems} icon={Box} color="bg-indigo-500/10 text-indigo-400" />
           <StatCard title="Available" value={availableItems} icon={TrendingUp} color="bg-emerald-500/10 text-emerald-400" />
@@ -91,7 +233,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Broken Items Table - Connected to Real Data */}
+      {/* Broken Items Table */}
       <div className="grid grid-cols-1 gap-6">
         <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm">
             <div className="p-4 border-b border-white/10 flex justify-between items-center bg-red-500/5">
