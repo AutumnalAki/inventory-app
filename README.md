@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## ✨ Features
 
-## Getting Started
+- **📊 Dashboard & Analytics**
+  - Real-time overview of inventory stats (Total, Low Stock, Active Loans).
+  - Activity logs tracking all user actions.
+  - Visual charts for item condition and location distribution.
 
-First, run the development server:
+- **📦 Inventory Management**
+  - Full CRUD capabilities for equipment.
+  - **Batch Operations**: Bulk delete and bulk update status/condition.
+  - Advanced filtering by Location, Status, and Condition.
+  - Global Search and Sorting options.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **📥 Data Export**
+  - Export data to **PDF**, **Excel**, and **CSV**.
+  - Specialized reports for Broken Items and Inventory by Location.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **🔄 Equipment Tracking**
+  - Loan management system to track borrowed items.
+  - Monitor active loans and returns.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **🎨 Personalization**
+  - Light/Dark mode support.
+  - Custom accent color picker and preset themes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **⚡ Tech Stack**
+  - **Framework**: Next.js 14 (App Router)
+  - **Backend**: Supabase (Auth, Database, Realtime)
+  - **Styling**: Tailwind CSS & Framer Motion
