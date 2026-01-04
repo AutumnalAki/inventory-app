@@ -130,6 +130,19 @@ export default function MembersPage() {
     if (!isConfirmed) return;
 
     try {
+      // Delete from Supabase Auth via API route
+      const authResponse = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authId: userId })
+      });
+      
+      if (!authResponse.ok) {
+        const authError = await authResponse.json();
+        console.error('Auth delete error:', authError);
+      }
+
+      // Delete from users table
       const { error } = await supabase.from('users').delete().eq('id', userId);
       if (error) throw error;
 

@@ -291,6 +291,23 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteUser = async (id: number) => {
+    // First get the user's auth id (UUID) from the users table
+    const { data: userData } = await supabase.from('users').select('id').eq('id', id).single();
+    
+    if (userData) {
+      // Delete from Supabase Auth via API route
+      try {
+        await fetch('/api/delete-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ authId: userData.id })
+        });
+      } catch (err) {
+        console.error('Failed to delete from auth:', err);
+      }
+    }
+
+    // Delete from users table
     const { error } = await supabase.from('users').delete().eq('id', id);
     if (!error) {
       await logAction("User Deleted", `User ID: ${id}`);
