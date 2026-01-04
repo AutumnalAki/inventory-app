@@ -40,12 +40,22 @@ export default function SettingsPage() {
   // Router for navigation
   const router = useRouter();
 
-  // Function to reset and replay tutorial
-  const handleReplayTutorial = () => {
-    localStorage.removeItem("cdm-labtrack-onboarding-complete");
-    router.push("/dashboard");
-    // Small delay to ensure navigation completes before reload triggers onboarding
-    setTimeout(() => window.location.reload(), 100);
+  // Function to reset and replay tutorial (account-based)
+  const handleReplayTutorial = async () => {
+    try {
+      const { data: { session } } = await (await import("@/lib/supabase")).supabase.auth.getSession();
+      if (session?.user) {
+        await (await import("@/lib/supabase")).supabase
+          .from('users')
+          .update({ onboarding_complete: false })
+          .eq('id', session.user.id);
+      }
+      router.push("/dashboard");
+      setTimeout(() => window.location.reload(), 100);
+    } catch (error) {
+      console.error("Error resetting tutorial:", error);
+      showAlert({ title: "Error", message: "Failed to reset tutorial. Please try again.", variant: "error" });
+    }
   };
 
   // User Data State
@@ -166,14 +176,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 h-full flex flex-col max-h-[calc(100vh-100px)]">
+    <div className="space-y-4 md:space-y-6 h-full flex flex-col max-h-[calc(100vh-100px)]">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Settings</h1>
-        <p className="text-gray-400 mt-1">Manage your account and workspace preferences.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Settings</h1>
+        <p className="text-gray-400 mt-1 text-sm md:text-base">Manage your account and workspace preferences.</p>
       </div>
 
       {/* --- TAB NAVIGATION --- */}
-      <div className="bg-white/5 border border-white/10 p-1.5 rounded-2xl backdrop-blur-xl flex flex-wrap gap-1 w-full shrink-0">
+      <div className="bg-white/5 border border-white/10 p-1 md:p-1.5 rounded-xl md:rounded-2xl backdrop-blur-xl flex gap-1 w-full shrink-0 overflow-x-auto no-scrollbar">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -181,12 +191,12 @@ export default function SettingsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-1 min-w-[70px] flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 isActive ? "bg-white text-black shadow-lg" : "text-gray-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              <Icon size={16} />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <Icon size={14} className="md:w-4 md:h-4 shrink-0" />
+              <span className="hidden xs:inline sm:inline">{tab.label}</span>
             </button>
           );
         })}
@@ -205,16 +215,16 @@ export default function SettingsPage() {
           >
             {/* 1. PROFILE TAB */}
             {activeTab === "profile" && (
-              <div className="p-6 md:p-8">
-                <div className="max-w-2xl space-y-8">
+              <div className="p-4 md:p-6 lg:p-8">
+                <div className="max-w-2xl space-y-6 md:space-y-8">
                   {/* Profile Header */}
-                  <div className="flex items-center gap-6 pb-6 border-b border-white/10">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white shadow-lg">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-6 pb-4 md:pb-6 border-b border-white/10">
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl md:text-3xl font-black text-white shadow-lg shrink-0">
                       {profileData.firstName.charAt(0) || "U"}{profileData.lastName.charAt(0) || ""}
                     </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">{profileData.firstName} {profileData.lastName || "User"}</h3>
-                      <p className="text-gray-400 flex items-center gap-2 mt-1"><Mail size={14} /> {profileData.email}</p>
+                    <div className="text-center sm:text-left">
+                      <h3 className="text-xl md:text-2xl font-bold text-white">{profileData.firstName} {profileData.lastName || "User"}</h3>
+                      <p className="text-gray-400 flex items-center justify-center sm:justify-start gap-2 mt-1 text-sm"><Mail size={14} /> <span className="truncate max-w-[200px]">{profileData.email}</span></p>
                     </div>
                   </div>
 

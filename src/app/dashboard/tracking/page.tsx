@@ -62,118 +62,112 @@ export default function ItemTrackingPage() {
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col relative">
+    <div className="space-y-4 md:space-y-6 h-full flex flex-col relative">
       
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Item Tracking</h1>
-        <p className="text-gray-400 mt-1">Monitor active loans, student borrowing history, and returns.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Item Tracking</h1>
+        <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor active loans, student borrowing history, and returns.</p>
       </div>
 
       {/* --- STAT CARDS --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-            <div className="bg-amber-500/20 p-3 rounded-xl text-amber-400">
-              <Clock size={24} />
+      <div className="grid grid-cols-2 gap-3 md:gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4">
+            <div className="bg-amber-500/20 p-2 md:p-3 rounded-lg md:rounded-xl text-amber-400">
+              <Clock size={20} className="md:w-6 md:h-6" />
             </div>
             <div>
-              <div className="text-3xl font-bold text-white tabular-nums">{activeLoans}</div>
-              <div className="text-gray-400 text-xs font-medium uppercase tracking-wider">Active Loans</div>
+              <div className="text-2xl md:text-3xl font-bold text-white tabular-nums">{activeLoans}</div>
+              <div className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Active Loans</div>
             </div>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-            <div className="bg-emerald-500/20 p-3 rounded-xl text-emerald-400">
-              <CheckCircle size={24} />
+        <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4">
+            <div className="bg-emerald-500/20 p-2 md:p-3 rounded-lg md:rounded-xl text-emerald-400">
+              <CheckCircle size={20} className="md:w-6 md:h-6" />
             </div>
             <div>
-              <div className="text-3xl font-bold text-white tabular-nums">{returnedToday}</div>
-              <div className="text-gray-400 text-xs font-medium uppercase tracking-wider">Returned Today</div>
+              <div className="text-2xl md:text-3xl font-bold text-white tabular-nums">{returnedToday}</div>
+              <div className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Returned</div>
             </div>
         </div>
       </div>
 
       {/* --- Controls Bar --- */}
-      <div className="bg-white/5 border border-white/10 p-2.5 rounded-2xl backdrop-blur-xl flex flex-col xl:flex-row items-center justify-between gap-4">
+      <div className="bg-white/5 border border-white/10 p-2 md:p-2.5 rounded-xl md:rounded-2xl backdrop-blur-xl flex flex-col gap-2 md:gap-4">
         
-        {/* Left: Filters & Sorts */}
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+        {/* Top Row: Filters */}
+        <div className="grid grid-cols-3 md:flex md:flex-wrap items-center gap-2 md:gap-3 w-full">
           
           {/* Status Filter */}
-          <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-            <Filter size={14} className="text-gray-500" />
-            <span className="text-gray-400 text-xs hidden sm:inline">Status:</span>
-            <div className="relative">
-                <select 
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-4"
-                >
-                <option value="All" className="bg-gray-900">All</option>
-                <option value="Borrowed" className="bg-gray-900">Active</option>
-                <option value="Returned" className="bg-gray-900">Returned</option>
-                </select>
-            </div>
+          <div className="flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 hover:border-white/30 transition-colors">
+            <Filter size={12} className="text-gray-500 hidden sm:block" />
+            <select 
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
+            >
+              <option value="All" className="bg-gray-900">All Status</option>
+              <option value="Borrowed" className="bg-gray-900">Active</option>
+              <option value="Returned" className="bg-gray-900">Returned</option>
+            </select>
           </div>
 
-          {/* NEW: Location Filter */}
-          <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-            <MapPin size={14} className="text-indigo-400" />
-            <span className="text-gray-400 text-xs hidden sm:inline">Lab:</span>
-            <div className="relative">
-                <select 
-                value={filterLab}
-                onChange={(e) => setFilterLab(e.target.value)}
-                className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-4"
-                >
-                {LABS.map(lab => (
-                    <option key={lab} value={lab} className="bg-gray-900">{lab}</option>
-                ))}
-                </select>
-            </div>
+          {/* Location Filter */}
+          <div className="flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 hover:border-white/30 transition-colors">
+            <MapPin size={12} className="text-indigo-400 hidden sm:block" />
+            <select 
+              value={filterLab}
+              onChange={(e) => setFilterLab(e.target.value)}
+              className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
+            >
+              {LABS.map(lab => (
+                <option key={lab} value={lab} className="bg-gray-900">{lab === "All Labs" ? "All Labs" : lab.replace(" Lab", "")}</option>
+              ))}
+            </select>
           </div>
 
           {/* Sort Option */}
-          <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-            <ArrowUpDown size={14} className="text-gray-500" />
-            <span className="text-gray-400 text-xs hidden sm:inline">Sort:</span>
-            <div className="relative">
-                <select 
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-                className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-4"
-                >
-                <option value="Newest" className="bg-gray-900">Newest</option>
-                <option value="Location" className="bg-gray-900">Location</option>
-                <option value="Status" className="bg-gray-900">Status</option>
-                </select>
-            </div>
+          <div className="flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 hover:border-white/30 transition-colors">
+            <ArrowUpDown size={12} className="text-gray-500 hidden sm:block" />
+            <select 
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
+            >
+              <option value="Newest" className="bg-gray-900">Newest</option>
+              <option value="Location" className="bg-gray-900">Location</option>
+              <option value="Status" className="bg-gray-900">Status</option>
+            </select>
           </div>
-          
+        </div>
+        
+        {/* Bottom Row: Search & Add Button */}
+        <div className="flex items-center gap-2">
           {/* Search */}
-          <div className="relative flex-1 xl:w-64 min-w-[200px]">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
             <input 
               type="text" 
               placeholder="Search Student ID..." 
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-600"
+              className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-600"
             />
           </div>
-        </div>
 
-        {/* Right: Add Button */}
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          data-tour="add-loan-btn"
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 w-full xl:w-auto"
-        >
-          <Plus size={16} />
-          New Equipment Loan
-        </button>
+          {/* Add Button */}
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            data-tour="add-loan-btn"
+            className="flex items-center justify-center gap-1.5 md:gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-5 py-2 rounded-lg md:rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">New Loan</span>
+          </button>
+        </div>
       </div>
 
-      {/* --- Main Table --- */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl flex-1 flex flex-col">
+      {/* --- Main Table - Desktop --- */}
+      <div className="hidden md:flex bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl flex-1 flex-col">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead>
@@ -280,6 +274,96 @@ export default function ItemTrackingPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* --- Mobile Cards View --- */}
+      <div className="md:hidden flex-1 overflow-y-auto space-y-3">
+        {processedLoans.length > 0 ? (
+          processedLoans.map((loan) => (
+            <motion.div
+              key={loan.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+            >
+              {/* Card Header */}
+              <div className="flex items-center justify-between p-3 bg-black/20 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="bg-emerald-500/20 p-1.5 rounded text-emerald-400">
+                    <User size={14} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-emerald-400 text-sm tabular-nums">{loan.studentId}</p>
+                    <p className="text-[10px] text-gray-500">{loan.section}</p>
+                  </div>
+                </div>
+                <StatusBadge status={loan.status} />
+              </div>
+
+              {/* Card Body */}
+              <div className="p-3 space-y-2">
+                {/* Item Info */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-white text-sm truncate">{loan.itemName}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-gray-400 font-mono">{loan.controlId}</span>
+                      <span className="text-[10px] text-gray-500">Qty: {loan.qty}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location & Teacher */}
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="flex items-center gap-1.5 text-gray-400">
+                    <MapPin size={10} className="text-indigo-400" />
+                    <span className="truncate">{loan.location}</span>
+                    {loan.room && <span className="text-gray-600">• Rm {loan.room}</span>}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-gray-400">
+                    <User size={10} className="text-gray-500" />
+                    <span className="truncate">{loan.teacher}</span>
+                  </div>
+                </div>
+
+                {/* Dates */}
+                <div className="flex items-center justify-between text-[10px] pt-1 border-t border-white/5">
+                  <div className="text-gray-500">
+                    <Calendar size={10} className="inline mr-1" />
+                    Borrowed: <span className="text-gray-300">{loan.dateGiven.split("•")[0]}</span>
+                  </div>
+                  {loan.dateReceived !== "-" && (
+                    <div className="text-emerald-400/70">
+                      Returned: {loan.dateReceived.split("•")[0]}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card Actions */}
+              <div className="flex items-center gap-2 p-2 bg-black/20 border-t border-white/5">
+                {loan.status === "Borrowed" && (
+                  <button 
+                    onClick={() => handleReceive(loan.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 py-2 rounded-lg text-xs font-medium transition-all"
+                  >
+                    <RotateCcw size={14} /> Mark Returned
+                  </button>
+                )}
+                <button 
+                  onClick={() => handleDelete(loan.id)}
+                  className={`flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 py-2 rounded-lg text-xs font-medium transition-all ${loan.status === "Borrowed" ? "px-3" : "flex-1"}`}
+                >
+                  <Trash2 size={14} /> {loan.status !== "Borrowed" && "Delete"}
+                </button>
+              </div>
+            </motion.div>
+          ))
+        ) : (
+          <div className="flex-1 flex items-center justify-center py-12">
+            <p className="text-gray-500 text-sm">No records found.</p>
+          </div>
+        )}
       </div>
 
       {/* --- ADD LOAN MODAL (Unchanged) --- */}

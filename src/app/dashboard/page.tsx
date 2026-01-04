@@ -24,13 +24,13 @@ export default function Dashboard() {
   const navigateTo = (path: string) => router.push(path);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1">Overview of your lab inventory and equipment status.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Dashboard</h1>
+        <p className="text-gray-400 mt-1 text-sm md:text-base">Overview of your lab inventory and equipment status.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="stat-cards">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6" data-tour="stat-cards">
         
         {/* Card 1: Total -> Go to Inventory (Clear Filters) */}
         <StatCard 
@@ -75,23 +75,23 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm" data-tour="activity-log">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold flex items-center gap-2 text-white">
-               <Activity className="text-indigo-400" size={20} /> Recent Activity
+        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 backdrop-blur-sm" data-tour="activity-log">
+          <div className="flex justify-between items-center mb-4 md:mb-6">
+            <h3 className="text-base md:text-xl font-semibold flex items-center gap-2 text-white">
+               <Activity className="text-indigo-400" size={18} /> Recent Activity
             </h3>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {logs.slice(0, 5).map((log) => (
-               <div key={log.id} className="flex items-center gap-4 p-3 rounded-xl bg-black/20 border border-white/5">
+               <div key={log.id} className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-xl bg-black/20 border border-white/5">
                   <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-200">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs md:text-sm text-gray-200 truncate">
                       {log.action}: <span className="text-white font-bold">{log.item}</span>
                     </p>
-                    <p className="text-xs text-gray-500">{log.time}</p>
+                    <p className="text-[10px] md:text-xs text-gray-500">{log.time}</p>
                   </div>
                </div>
             ))}
@@ -100,16 +100,16 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-white/10 rounded-3xl p-6 flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 flex flex-col justify-between">
             <div>
-              <h3 className="text-xl font-bold text-white mb-2">Quick Actions</h3>
-              <p className="text-indigo-200 text-sm mb-6">Manage your laboratory efficiently.</p>
-              <div className="space-y-3">
-                 <button onClick={() => navigateTo('/dashboard/inventory')} className="w-full bg-white/10 hover:bg-white/20 p-3 rounded-xl text-left text-sm font-bold flex items-center justify-between transition-colors text-white">
-                    Add New Equipment <ArrowRight size={16} />
+              <h3 className="text-base md:text-xl font-bold text-white mb-1 md:mb-2">Quick Actions</h3>
+              <p className="text-indigo-200 text-xs md:text-sm mb-4 md:mb-6">Manage your laboratory efficiently.</p>
+              <div className="space-y-2 md:space-y-3">
+                 <button onClick={() => navigateTo('/dashboard/inventory')} className="w-full bg-white/10 hover:bg-white/20 p-2.5 md:p-3 rounded-xl text-left text-xs md:text-sm font-bold flex items-center justify-between transition-colors text-white">
+                    Add New Equipment <ArrowRight size={14} className="md:w-4 md:h-4" />
                  </button>
-                 <button onClick={() => navigateTo('/dashboard/tracking')} className="w-full bg-white/10 hover:bg-white/20 p-3 rounded-xl text-left text-sm font-bold flex items-center justify-between transition-colors text-white">
-                    Create Loan Record <ArrowRight size={16} />
+                 <button onClick={() => navigateTo('/dashboard/tracking')} className="w-full bg-white/10 hover:bg-white/20 p-2.5 md:p-3 rounded-xl text-left text-xs md:text-sm font-bold flex items-center justify-between transition-colors text-white">
+                    Create Loan Record <ArrowRight size={14} className="md:w-4 md:h-4" />
                  </button>
               </div>
             </div>
@@ -125,21 +125,21 @@ function StatCard({ title, value, change, icon, alert = false, trend, onClick }:
     <motion.div 
       whileHover={{ y: -5 }}
       onClick={onClick}
-      className={`p-6 rounded-3xl border backdrop-blur-md relative overflow-hidden group cursor-pointer transition-all ${
+      className={`p-3 md:p-6 rounded-2xl md:rounded-3xl border backdrop-blur-md relative overflow-hidden group cursor-pointer transition-all ${
         alert 
         ? "bg-red-900/10 border-red-500/30 hover:border-red-500/50" 
         : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
       }`}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-3 rounded-2xl ${alert ? "bg-red-500/20 text-red-400" : "bg-white/5 text-gray-400 group-hover:text-orange-500 group-hover:bg-orange-500/10"} transition-colors`}>
-          {icon}
+      <div className="flex justify-between items-start mb-2 md:mb-4">
+        <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${alert ? "bg-red-500/20 text-red-400" : "bg-white/5 text-gray-400 group-hover:text-orange-500 group-hover:bg-orange-500/10"} transition-colors`}>
+          <span className="[&>svg]:w-4 [&>svg]:h-4 md:[&>svg]:w-6 md:[&>svg]:h-6">{icon}</span>
         </div>
-        {trend === "up" && <div className="flex items-center text-emerald-400 text-xs bg-emerald-400/10 px-2 py-1 rounded-full"><TrendingUp size={12} className="mr-1"/></div>}
+        {trend === "up" && <div className="hidden md:flex items-center text-emerald-400 text-xs bg-emerald-400/10 px-2 py-1 rounded-full"><TrendingUp size={12} className="mr-1"/></div>}
       </div>
-      <h3 className="text-4xl font-bold tracking-tighter mb-1 tabular-nums text-white">{value}</h3>
-      <p className="text-sm text-gray-400 font-medium">{title}</p>
-      <p className={`text-xs mt-2 ${alert ? "text-red-400" : "text-gray-500"}`}>{change}</p>
+      <h3 className="text-2xl md:text-4xl font-bold tracking-tighter mb-0.5 md:mb-1 tabular-nums text-white">{value}</h3>
+      <p className="text-xs md:text-sm text-gray-400 font-medium">{title}</p>
+      <p className={`text-[10px] md:text-xs mt-1 md:mt-2 hidden sm:block ${alert ? "text-red-400" : "text-gray-500"}`}>{change}</p>
     </motion.div>
   );
 }

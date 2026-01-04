@@ -163,15 +163,15 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
-      <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Reports</h1>
+    <div className="space-y-4 md:space-y-6 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold">Reports</h1>
           
           {/* EXPORT DROPDOWN */}
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <button 
                 onClick={() => setIsExportOpen(!isExportOpen)} 
-                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all w-full sm:w-auto"
             >
                 <Download size={16} /> Export Report <ChevronDown size={14}/>
             </button>
@@ -191,18 +191,18 @@ export default function ReportsPage() {
       </div>
       
       {/* STAT CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
           <StatCard title="Total Items" value={totalItems} icon={Box} color="bg-indigo-500/10 text-indigo-400" />
           <StatCard title="Available" value={availableItems} icon={TrendingUp} color="bg-emerald-500/10 text-emerald-400" />
           <StatCard title="In Use" value={inUseItems} icon={FileText} color="bg-blue-500/10 text-blue-400" />
           <StatCard title="Broken" value={brokenItems.length} icon={AlertOctagon} color="bg-red-500/10 text-red-400" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Donut Chart */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center relative min-h-[320px]">
-            <h3 className="absolute top-6 left-6 text-lg font-bold">Item Condition</h3>
-            <div className="relative w-56 h-56 mt-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center relative min-h-[280px] md:min-h-[320px]">
+            <h3 className="absolute top-4 md:top-6 left-4 md:left-6 text-sm md:text-lg font-bold">Item Condition</h3>
+            <div className="relative w-40 h-40 md:w-56 md:h-56 mt-4 md:mt-6">
                 <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                     <circle cx="50" cy="50" r="40" stroke="#333" strokeWidth="12" fill="none" className="opacity-30" />
                     {chartData.map((segment) => (
@@ -213,16 +213,16 @@ export default function ReportsPage() {
                     ))}
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
-                   <p className="text-3xl font-bold text-white tabular-nums">{hoveredSegment ? hoveredSegment.value : totalItems}</p>
-                   <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{hoveredSegment ? hoveredSegment.label : "Total"}</p>
+                   <p className="text-2xl md:text-3xl font-bold text-white tabular-nums">{hoveredSegment ? hoveredSegment.value : totalItems}</p>
+                   <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-500">{hoveredSegment ? hoveredSegment.label : "Total"}</p>
                 </div>
             </div>
         </div>
 
         {/* Location Bars */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[320px]">
-             <h3 className="text-lg font-bold mb-6">Inventory by Location</h3>
-             <div className="space-y-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 min-h-[280px] md:min-h-[320px]">
+             <h3 className="text-sm md:text-lg font-bold mb-4 md:mb-6">Inventory by Location</h3>
+             <div className="space-y-4 md:space-y-6">
                 {locationCounts.map(l => (
                     <div key={l.label}>
                         <div className="flex justify-between text-xs mb-1.5"><span className="text-gray-300">{l.label}</span><span className="text-gray-500">{l.count}</span></div>
@@ -233,8 +233,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Broken Items Table */}
-      <div className="grid grid-cols-1 gap-6">
+      {/* Broken Items Table - Desktop */}
+      <div className="hidden md:grid grid-cols-1 gap-6">
         <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm">
             <div className="p-4 border-b border-white/10 flex justify-between items-center bg-red-500/5">
                 <div className="flex items-center gap-2">
@@ -270,13 +270,42 @@ export default function ReportsPage() {
             </table>
         </div>
       </div>
+
+      {/* Broken Items - Mobile Cards */}
+      <div className="md:hidden">
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="p-3 border-b border-white/10 flex justify-between items-center bg-red-500/5">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-red-400" />
+              <h3 className="font-bold text-white text-sm">Broken Items</h3>
+            </div>
+            <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              {brokenItems.length}
+            </span>
+          </div>
+          <div className="divide-y divide-white/5 max-h-[300px] overflow-y-auto">
+            {brokenItems.map(item => (
+              <div key={item.id} className="p-3">
+                <div className="flex justify-between items-start mb-1">
+                  <p className="font-medium text-white text-sm">{item.name}</p>
+                  <span className="text-[10px] font-mono text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">{item.controlId}</span>
+                </div>
+                {item.remarks && <p className="text-red-400 text-xs mt-1">{item.remarks}</p>}
+              </div>
+            ))}
+            {brokenItems.length === 0 && (
+              <div className="p-6 text-center text-gray-500 text-sm">No broken items. Good job!</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function StatCard({ title, value, icon: Icon, color }: any) {
-    return <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-        <div><p className="text-xs text-gray-400 font-bold uppercase">{title}</p><h3 className="text-2xl font-bold text-white">{value}</h3></div>
-        <div className={`p-3 rounded-xl ${color}`}><Icon size={20} /></div>
+    return <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between gap-2">
+        <div className="min-w-0"><p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase truncate">{title}</p><h3 className="text-xl md:text-2xl font-bold text-white">{value}</h3></div>
+        <div className={`p-2 md:p-3 rounded-lg md:rounded-xl shrink-0 ${color}`}><Icon size={16} className="md:w-5 md:h-5" /></div>
     </div>;
 }

@@ -9,6 +9,7 @@ import {
   LayoutDashboard, FileText, Settings, Sparkles, CheckCircle, Users,
   MousePointer, Download, UserPlus, Eye, Edit2, Trash2, Key, BarChart3
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface OnboardingStep {
   id: number;
@@ -618,28 +619,69 @@ export default function Onboarding({ onComplete, isOpen, canViewMembers = false 
   return createPortal(content, document.body);
 }
 
-// Hook to manage onboarding state
+// Hook to manage onboarding state (account-based)
 export function useOnboarding() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user has completed onboarding
-    const hasCompletedOnboarding = localStorage.getItem("cdm-labtrack-onboarding-complete");
-    if (!hasCompletedOnboarding) {
-      setShowOnboarding(true);
-    }
-    setIsLoaded(true);
+    const checkOnboardingStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          setUserId(session.user.id);
+          
+          // Check if user has completed onboarding from database
+          const { data } = await supabase
+            .from('users')
+            .select('onboarding_complete')
+            .eq('id', session.user.id)
+            .single();
+          
+          // Show onboarding if not completed (null, undefined, or false)
+          if (!data?.onboarding_complete) {
+            setShowOnboarding(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking onboarding status:", error);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+
+    checkOnboardingStatus();
   }, []);
 
-  const completeOnboarding = () => {
-    localStorage.setItem("cdm-labtrack-onboarding-complete", "true");
+  const completeOnboarding = async () => {
     setShowOnboarding(false);
+    
+    if (userId) {
+      try {
+        await supabase
+          .from('users')
+          .update({ onboarding_complete: true })
+          .eq('id', userId);
+      } catch (error) {
+        console.error("Error saving onboarding status:", error);
+      }
+    }
   };
 
-  const resetOnboarding = () => {
-    localStorage.removeItem("cdm-labtrack-onboarding-complete");
-    setShowOnboarding(true);
+  const resetOnboarding = async () => {
+    if (userId) {
+      try {
+        await supabase
+          .from('users')
+          .update({ onboarding_complete: false })
+          .eq('id', userId);
+        setShowOnboarding(true);
+      } catch (error) {
+        console.error("Error resetting onboarding status:", error);
+      }
+    }
   };
 
   return {

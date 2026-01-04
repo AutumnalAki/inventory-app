@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Search, User, Shield, Trash2, Key, Copy, Loader2, X, 
-  Eye, Lock, Power
+  Eye, Lock, Power, Edit2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -45,6 +45,12 @@ export default function MembersPage() {
   const [revealPassword, setRevealPassword] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [revealedCodeIds, setRevealedCodeIds] = useState<Set<string>>(new Set());
+
+  // --- STATES FOR EDIT USER MODAL ---
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editRole, setEditRole] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // Fetch Data
   const fetchData = async () => {
@@ -130,6 +136,36 @@ export default function MembersPage() {
     }
   };
 
+  // 3. Edit User Role
+  const handleOpenEdit = (user: any) => {
+    setEditingUser(user);
+    setEditRole(user.role || "");
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ role: editRole })
+        .eq('id', editingUser.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(users.map(u => u.id === editingUser.id ? { ...u, role: editRole } : u));
+      showAlert({ title: "Success", message: "User role updated successfully.", variant: "success" });
+      setIsEditOpen(false);
+      setEditingUser(null);
+    } catch (err: any) {
+      showAlert({ title: "Error", message: err.message, variant: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
 
   // --- CODE ACTIONS (Generate/Reveal) ---
 
@@ -186,72 +222,80 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-4 md:space-y-6 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Members & Access</h1>
-          <p className="text-gray-400 mt-1">Manage users and secure invite codes.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Members & Access</h1>
+          <p className="text-gray-400 mt-1 text-sm md:text-base">Manage users and secure invite codes.</p>
         </div>
-        <button onClick={() => setIsGenerateOpen(true)} data-tour="generate-code-btn" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20">
-          <Key size={18} /> Generate Invite
+        <button onClick={() => setIsGenerateOpen(true)} data-tour="generate-code-btn" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20 text-sm w-full sm:w-auto justify-center">
+          <Key size={16} className="md:w-[18px] md:h-[18px]" /> Generate Invite
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 flex-1 min-h-0">
         
         {/* LEFT: User List */}
-        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <User size={18} className="text-indigo-400"/> Registered Members
+        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col">
+          <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4 flex items-center gap-2">
+            <User size={16} className="md:w-[18px] md:h-[18px] text-indigo-400"/> Registered Members
           </h3>
           
-          <div className="relative mb-4">
+          <div className="relative mb-3 md:mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-            <input type="text" placeholder="Search members..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+            <input type="text" placeholder="Search members..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg md:rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
           </div>
 
-          <div className="overflow-y-auto flex-1 pr-2 space-y-2 no-scrollbar">
+          <div className="overflow-y-auto flex-1 pr-1 md:pr-2 space-y-2 no-scrollbar">
             {users.filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase())).map((user) => {
                const isActive = user.status === 'active';
                const isMe = currentUser?.id === user.id;
 
                return (
-                <div key={user.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${isActive ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-red-900/10 border-red-900/20'}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`relative w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${user.role === 'Administrator' ? 'bg-orange-500 text-white' : 'bg-indigo-600 text-white'}`}>
+                <div key={user.id} className={`flex items-center justify-between p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-colors ${isActive ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-red-900/10 border-red-900/20'}`}>
+                  <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                    <div className={`relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ${user.role === 'Administrator' ? 'bg-orange-500 text-white' : 'bg-indigo-600 text-white'}`}>
                       {user.username?.charAt(0) || "U"}
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111] ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                      <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full border-2 border-[#111] ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                         <p className={`font-bold text-sm ${isActive ? 'text-white' : 'text-gray-400 line-through'}`}>{user.username}</p>
-                         {!isActive && <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded uppercase font-bold">Inactive</span>}
+                         <p className={`font-bold text-xs md:text-sm truncate ${isActive ? 'text-white' : 'text-gray-400 line-through'}`}>{user.username}</p>
+                         {!isActive && <span className="text-[9px] md:text-[10px] bg-red-500/20 text-red-400 px-1 md:px-1.5 py-0.5 rounded uppercase font-bold shrink-0">Inactive</span>}
                       </div>
-                      <p className="text-xs text-gray-400">{user.email}</p>
+                      <p className="text-[10px] md:text-xs text-gray-400 truncate">{user.email}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="hidden sm:inline-block text-xs px-2 py-1 rounded-md bg-white/10 text-gray-300 border border-white/5 font-medium mr-2">
+                  <div className="flex items-center gap-1 md:gap-2 shrink-0">
+                    <span className="hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-white/10 text-gray-300 border border-white/5 font-medium mr-1 md:mr-2">
                       {user.role}
                     </span>
 
                     {!isMe && (
-                      <div data-tour="user-actions" className="flex items-center gap-1">
+                      <div data-tour="user-actions" className="flex items-center">
+                        <button 
+                          onClick={() => handleOpenEdit(user)}
+                          title="Edit User Role"
+                          className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                        >
+                          <Edit2 size={14} className="md:w-4 md:h-4" />
+                        </button>
+
                         <button 
                           onClick={() => handleToggleStatus(user.id, user.status)}
                           title={isActive ? "Deactivate User" : "Activate User"}
-                          className={`p-2 rounded-lg transition-colors ${isActive ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'}`}
+                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${isActive ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'}`}
                         >
-                          <Power size={16} />
+                          <Power size={14} className="md:w-4 md:h-4" />
                         </button>
 
                         <button 
                           onClick={() => handleDeleteUser(user.id)}
                           title="Delete User"
-                          className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} className="md:w-4 md:h-4" />
                         </button>
                       </div>
                     )}
@@ -263,11 +307,11 @@ export default function MembersPage() {
         </div>
 
         {/* RIGHT: Active Invites (Secure View) */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col" data-tour="invite-codes-section">
-           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Key size={18} className="text-emerald-400"/> Active Invites
+        <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col" data-tour="invite-codes-section">
+           <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4 flex items-center gap-2">
+            <Key size={16} className="md:w-[18px] md:h-[18px] text-emerald-400"/> Active Invites
           </h3>
-          <div className="overflow-y-auto flex-1 pr-2 space-y-3 no-scrollbar">
+          <div className="overflow-y-auto flex-1 pr-1 md:pr-2 space-y-2 md:space-y-3 no-scrollbar">
             {activeCodes.length === 0 && <p className="text-gray-500 text-sm italic">No active invite codes.</p>}
             {activeCodes.map((invite) => {
               const isRevealed = revealedCodeIds.has(invite.id);
@@ -358,6 +402,65 @@ export default function MembersPage() {
                         </button>
                     </div>
                 </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MODAL 3: EDIT USER ROLE --- */}
+      <AnimatePresence>
+        {isEditOpen && editingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-white">Edit User Role</h2>
+                  <button onClick={() => setIsEditOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                </div>
+                
+                {/* User Info */}
+                <div className="flex items-center gap-3 mb-6 p-3 bg-white/5 rounded-xl">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${editingUser.role === 'Administrator' ? 'bg-orange-500' : 'bg-indigo-600'} text-white`}>
+                    {editingUser.username?.charAt(0) || "U"}
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">{editingUser.username}</p>
+                    <p className="text-xs text-gray-400">{editingUser.email}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-400 uppercase">New Role</label>
+                    <select 
+                      value={editRole} 
+                      onChange={(e) => setEditRole(e.target.value)} 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500"
+                    >
+                      {ROLES.map(role => (
+                        <option key={role} value={role} className="bg-gray-900">{role}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsEditOpen(false)} 
+                      className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-bold text-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSaveEdit} 
+                      disabled={saving || editRole === editingUser.role}
+                      className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm font-bold text-white transition-colors flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {saving ? <Loader2 className="animate-spin" size={16} /> : "Save Changes"}
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
