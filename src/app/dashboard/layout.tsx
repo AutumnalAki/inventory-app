@@ -116,6 +116,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
     ...(canViewSuggestions ? [{ icon: Lightbulb, label: "Suggestions", href: "/dashboard/suggestions" }] : []),
+    // Developer-only Chatbot (Experimental) link
+    ...(["developer"].includes(normalizedRole) ? [{ icon: Sparkles, label: "Chatbot (Experimental)", href: "/chatbot-experimental" }] : []),
     { icon: Sparkles, label: "Update Logs", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
@@ -125,6 +127,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: LayoutDashboard, label: "Home", href: "/dashboard" },
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
+    // Developer-only Chatbot (Experimental) link
+    ...(["developer"].includes(normalizedRole) ? [{ icon: Sparkles, label: "Chatbot (Experimental)", href: "/chatbot-experimental" }] : []),
     { icon: Sparkles, label: "Updates", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
