@@ -3,12 +3,13 @@
 import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { 
   Plus, Filter, Edit2, Trash2, ChevronDown, ArrowUpDown, CheckCircle, AlertCircle, XCircle, 
-  MapPin, Hash, MoreHorizontal, X, Save, Search, Wrench, Download, CheckSquare, Square
+  MapPin, Hash, MoreHorizontal, X, Save, Search, Wrench, Download, CheckSquare, Square, Lock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation"; 
 import { useInventory, Item } from "@/context/InventoryContext";
 import { usePopup } from "@/context/PopupContext";
+import { useRole } from "@/context/RoleContext";
 
 // --- EXPORT LIBRARIES ---
 import jsPDF from "jspdf";
@@ -23,13 +24,34 @@ const LAB_MAPPING: Record<string, string> = {
   "Physics Lab": "Physics Laboratory",
   "EE Lab": "Electrical Engineering Laboratory",
   "ME Lab": "Mechanical Engineering Laboratory",
-  "ECE Lab": "ECE Laboratory"
+  "ECE Lab": "ECE Laboratory",
+  "CPE Lab": "CPE Laboratory"
 };
 const LAB_TABS = Object.keys(LAB_MAPPING);
 
+// Role to Lab Mapping - maps role names to their assigned lab tab
+const ROLE_LAB_MAPPING: Record<string, string> = {
+  "ME Lab": "ME Lab",
+  "CE Lab": "CE Lab",
+  "ECE Lab": "ECE Lab",
+  "CPE Lab": "Computer Lab",
+  "CHEM Lab": "Chem Lab",
+  "PHYS Lab": "Physics Lab",
+  "EE Lab": "EE Lab"
+};
+
+// Roles with full access to all labs
+const FULL_ACCESS_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
+
 function InventoryContent() {
   const { inventory, addItem, updateItem, deleteItem, deleteItems, updateItems } = useInventory();
+  const { role } = useRole();
   const searchParams = useSearchParams();
+
+  // Check if user has restricted lab access
+  const isLabRestricted = !FULL_ACCESS_ROLES.includes(role) && ROLE_LAB_MAPPING[role];
+  const userLabTab = isLabRestricted ? ROLE_LAB_MAPPING[role] : null;
+  const userLabDbName = userLabTab ? LAB_MAPPING[userLabTab] : null;
 
   // --- STATES ---
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,6 +74,13 @@ function InventoryContent() {
     name: "", controlId: "", quantity: 0, location: "", supplier: "", stock: "In Stock", condition: "Available", remarks: ""
   });
 
+  // Set lab filter based on role restriction
+  useEffect(() => {
+    if (isLabRestricted && userLabTab) {
+      setSelectedLab(userLabTab);
+    }
+  }, [isLabRestricted, userLabTab]);
+
   // URL Params and Filtering Logic
   useEffect(() => {
     const statusParam = searchParams.get("status");
@@ -62,10 +91,15 @@ function InventoryContent() {
 
   const processedData = useMemo(() => {
     let data = [...inventory];
-    if (selectedLab !== "All Labs") {
+    
+    // Apply role-based lab restriction first
+    if (isLabRestricted && userLabDbName) {
+      data = data.filter(item => item.location === userLabDbName);
+    } else if (selectedLab !== "All Labs") {
       const dbLocationName = LAB_MAPPING[selectedLab];
       data = data.filter(item => item.location === dbLocationName);
     }
+    
     if (filterStatus !== "All") {
       if (filterStatus === "Critical") {
         data = data.filter(item => item.stock === "Low Stock" || item.stock === "Out of Stock");
@@ -84,7 +118,7 @@ function InventoryContent() {
       );
     }
     data.sort((a, b) => {
-      if (sortOption === "Newest") return b.id - a.id;
+      if (sortOption === "Newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       if (sortOption === "Name (A-Z)") return a.name.localeCompare(b.name);
       if (sortOption === "Qty (High)") return b.quantity - a.quantity;
       if (sortOption === "Qty (Low)") return a.quantity - b.quantity;
@@ -176,7 +210,14 @@ function InventoryContent() {
     if (confirmed) deleteItem(id); 
   };
   
-  const openAddModal = () => { setIsEditing(false); setCurrentId(null); setNewItem({ name: "", controlId: "", quantity: 0, location: "", supplier: "", stock: "In Stock", condition: "Available", remarks: "" }); setIsModalOpen(true); };
+  const openAddModal = () => { 
+    setIsEditing(false); 
+    setCurrentId(null); 
+    // Auto-set location for lab-restricted users
+    const defaultLocation = isLabRestricted && userLabDbName ? userLabDbName : "";
+    setNewItem({ name: "", controlId: "", quantity: 0, location: defaultLocation, supplier: "", stock: "In Stock", condition: "Available", remarks: "" }); 
+    setIsModalOpen(true); 
+  };
   const openEditModal = (item: Item) => { setIsEditing(true); setCurrentId(item.id); setNewItem({ ...item } as any); setIsModalOpen(true); };
   const handleSaveItem = (e: React.FormEvent) => { e.preventDefault(); const calculatedStock = newItem.quantity === 0 ? "Out of Stock" : (newItem.quantity <= 5 ? "Low Stock" : "In Stock"); const itemToSave = { ...newItem, stock: calculatedStock }; isEditing && currentId !== null ? updateItem(currentId, itemToSave as any) : addItem(itemToSave as any); setIsModalOpen(false); };
 
@@ -224,9 +265,17 @@ function InventoryContent() {
         {/* Row 2: Lab Tabs - Scrollable */}
         <div className="overflow-x-auto no-scrollbar -mx-2.5 px-2.5 md:mx-0 md:px-0" data-tour="filter-tabs">
             <div className="flex items-center gap-1 min-w-max">
-                {LAB_TABS.map((lab) => (
-                <button key={lab} onClick={() => {setSelectedLab(lab); setCurrentPage(1);}} className={`px-2.5 md:px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-medium transition-all whitespace-nowrap border ${selectedLab === lab ? "bg-white text-black border-white" : "text-gray-400 border-transparent hover:text-white hover:bg-white/5"}`}>{lab}</button>
-                ))}
+                {isLabRestricted ? (
+                  // Show only user's assigned lab with lock icon
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-black border border-white">
+                    <Lock size={12} />
+                    <span>{userLabTab}</span>
+                  </div>
+                ) : (
+                  LAB_TABS.map((lab) => (
+                    <button key={lab} onClick={() => {setSelectedLab(lab); setCurrentPage(1);}} className={`px-2.5 md:px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-medium transition-all whitespace-nowrap border ${selectedLab === lab ? "bg-white text-black border-white" : "text-gray-400 border-transparent hover:text-white hover:bg-white/5"}`}>{lab}</button>
+                  ))
+                )}
             </div>
         </div>
 
@@ -513,7 +562,7 @@ function InventoryContent() {
                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5"><h2 className="text-lg font-bold text-white">{isEditing ? "Edit Item" : "Add New Item"}</h2><button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button></div>
                <form onSubmit={handleSaveItem} className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Item Name</label><input required type="text" value={newItem.name} onChange={(e) => setNewItem({...newItem, name: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Control ID</label><input required type="text" value={newItem.controlId} onChange={(e) => setNewItem({...newItem, controlId: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div></div>
-                  <div className="grid grid-cols-3 gap-4"><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Quantity</label><input required type="number" min="0" value={newItem.quantity} onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div><div className="space-y-1.5 col-span-2"><label className="text-xs font-medium text-gray-400 uppercase">Location</label><div className="relative"><select required value={newItem.location} onChange={(e) => setNewItem({...newItem, location: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white appearance-none"><option value="" disabled>Select Laboratory</option>{LAB_TABS.filter(lab => lab !== "All Labs").map((lab) => (<option key={lab} value={LAB_MAPPING[lab]} className="bg-gray-900">{lab}</option>))}</select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} /></div></div></div>
+                  <div className="grid grid-cols-3 gap-4"><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Quantity</label><input required type="number" min="0" value={newItem.quantity} onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div><div className="space-y-1.5 col-span-2"><label className="text-xs font-medium text-gray-400 uppercase flex items-center gap-1.5">Location {isLabRestricted && <Lock size={10} className="text-gray-500" />}</label><div className="relative">{isLabRestricted ? (<div className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-400 flex items-center gap-2"><Lock size={12} />{userLabTab}</div>) : (<><select required value={newItem.location} onChange={(e) => setNewItem({...newItem, location: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white appearance-none"><option value="" disabled>Select Laboratory</option>{LAB_TABS.filter(lab => lab !== "All Labs").map((lab) => (<option key={lab} value={LAB_MAPPING[lab]} className="bg-gray-900">{lab}</option>))}</select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} /></>)}</div></div></div>
                   <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Supplier</label><input type="text" value={newItem.supplier} onChange={(e) => setNewItem({...newItem, supplier: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Condition</label><div className="relative"><select value={newItem.condition} onChange={(e) => setNewItem({...newItem, condition: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white appearance-none"><option className="bg-gray-900">Available</option><option className="bg-gray-900">Broken</option><option className="bg-gray-900">For Repairs</option></select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} /></div></div></div>
                   <div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Remarks</label><div className="relative"><textarea rows={2} value={newItem.remarks} onChange={(e) => setNewItem({...newItem, remarks: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 pr-10 text-sm text-white resize-none"/>{newItem.remarks && <button type="button" onClick={() => setNewItem({...newItem, remarks: ""})} className="absolute right-2 top-2 text-gray-500 hover:text-white transition-colors"><X size={16} /></button>}</div></div>
                   <div className="flex justify-end gap-3 pt-4 border-t border-white/10"><button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg">Cancel</button><button type="submit" className="flex items-center gap-2 px-6 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"><Save size={16} />{isEditing ? "Update Item" : "Save Item"}</button></div>

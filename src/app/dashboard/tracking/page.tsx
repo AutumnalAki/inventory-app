@@ -1,19 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Search, Plus, Filter, Trash2, CheckCircle, 
-  Clock, MapPin, User, Calendar, RotateCcw, X, Save, ArrowUpDown, ChevronDown
+  Clock, MapPin, User, Calendar, RotateCcw, X, Save, ArrowUpDown, ChevronDown, Lock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 // 1. Import the hook
 import { useInventory } from "@/context/InventoryContext";
+import { useRole } from "@/context/RoleContext";
 
-const LABS = ["All Labs", "Computer Lab", "Physics Lab", "Chemistry Lab", "ECE Lab", "Robotics Lab", "ME Lab"];
+const LABS = ["All Labs", "Computer Lab", "Physics Lab", "Chem Lab", "ECE Lab", "ME Lab", "EE Lab", "CE Lab"];
+
+// Role to Lab Mapping - maps role names to their lab filter value
+const ROLE_LAB_MAPPING: Record<string, string> = {
+  "ME Lab": "ME Lab",
+  "CE Lab": "CE Lab",
+  "ECE Lab": "ECE Lab",
+  "CPE Lab": "Computer Lab",
+  "CHEM Lab": "Chem Lab",
+  "PHYS Lab": "Physics Lab",
+  "EE Lab": "EE Lab"
+};
+
+// Roles with full access to all labs
+const FULL_ACCESS_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
 
 export default function ItemTrackingPage() {
   // 2. Use Global State
   const { loans, addLoan, returnLoan, deleteLoan } = useInventory();
+  const { role } = useRole();
+  
+  // Check if user has restricted lab access
+  const isLabRestricted = !FULL_ACCESS_ROLES.includes(role) && ROLE_LAB_MAPPING[role];
+  const userLabFilter = isLabRestricted ? ROLE_LAB_MAPPING[role] : null;
   
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterLab, setFilterLab] = useState("All Labs");
@@ -31,18 +51,56 @@ export default function ItemTrackingPage() {
     room: "",
   });
 
-  const processedLoans = loans
-    .filter(loan => filterStatus === "All" ? true : loan.status === filterStatus)
-    .filter(loan => filterLab === "All Labs" ? true : loan.location === filterLab)
-    .sort((a, b) => {
+  // Set lab filter based on role restriction
+  useEffect(() => {
+    if (isLabRestricted && userLabFilter) {
+      setFilterLab(userLabFilter);
+    }
+  }, [isLabRestricted, userLabFilter]);
+
+  // Set default location for restricted users when opening modal
+  useEffect(() => {
+    if (isLabRestricted && userLabFilter) {
+      setNewLoan(prev => ({ ...prev, location: userLabFilter }));
+    }
+  }, [isLabRestricted, userLabFilter]);
+
+  const processedLoans = useMemo(() => {
+    let filtered = [...loans];
+    
+    // Apply role-based lab restriction first
+    if (isLabRestricted && userLabFilter) {
+      filtered = filtered.filter(loan => loan.location === userLabFilter);
+    } else if (filterLab !== "All Labs") {
+      filtered = filtered.filter(loan => loan.location === filterLab);
+    }
+    
+    // Apply status filter
+    if (filterStatus !== "All") {
+      filtered = filtered.filter(loan => loan.status === filterStatus);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
       if (sortOption === "Newest") return b.id - a.id; 
       if (sortOption === "Location") return a.location.localeCompare(b.location);
       if (sortOption === "Status") return a.status.localeCompare(b.status);
       return 0;
     });
+    
+    return filtered;
+  }, [loans, filterStatus, filterLab, sortOption, isLabRestricted, userLabFilter]);
 
-  const activeLoans = loans.filter(l => l.status === "Borrowed").length;
-  const returnedToday = loans.filter(l => l.status === "Returned").length;
+  // Stats based on filtered data for restricted users
+  const filteredLoansForStats = useMemo(() => {
+    if (isLabRestricted && userLabFilter) {
+      return loans.filter(l => l.location === userLabFilter);
+    }
+    return loans;
+  }, [loans, isLabRestricted, userLabFilter]);
+
+  const activeLoans = filteredLoansForStats.filter(l => l.status === "Borrowed").length;
+  const returnedToday = filteredLoansForStats.filter(l => l.status === "Returned").length;
 
   const handleReceive = (id: number) => {
     returnLoan(id); // Global Return
@@ -58,7 +116,9 @@ export default function ItemTrackingPage() {
     e.preventDefault();
     addLoan(newLoan); // Global Add Loan (Updates Inventory automatically)
     setIsModalOpen(false);
-    setNewLoan({ studentId: "", section: "", itemName: "", controlId: "", qty: 1, location: "Computer Lab", teacher: "", room: "" });
+    // Reset with user's lab if restricted
+    const defaultLocation = isLabRestricted && userLabFilter ? userLabFilter : "Computer Lab";
+    setNewLoan({ studentId: "", section: "", itemName: "", controlId: "", qty: 1, location: defaultLocation, teacher: "", room: "" });
   };
 
   return (
@@ -68,6 +128,12 @@ export default function ItemTrackingPage() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Item Tracking</h1>
         <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor active loans, student borrowing history, and returns.</p>
+        {isLabRestricted && userLabFilter && (
+          <div className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+            <Lock size={12} />
+            <span>Viewing loans for {userLabFilter}</span>
+          </div>
+        )}
       </div>
 
       {/* --- STAT CARDS --- */}
@@ -114,17 +180,25 @@ export default function ItemTrackingPage() {
           </div>
 
           {/* Location Filter */}
-          <div className="flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-            <MapPin size={12} className="text-indigo-400 hidden sm:block" />
-            <select 
-              value={filterLab}
-              onChange={(e) => setFilterLab(e.target.value)}
-              className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
-            >
-              {LABS.map(lab => (
-                <option key={lab} value={lab} className="bg-gray-900">{lab === "All Labs" ? "All Labs" : lab.replace(" Lab", "")}</option>
-              ))}
-            </select>
+          <div className={`flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 ${isLabRestricted ? 'opacity-60' : 'hover:border-white/30'} transition-colors`}>
+            {isLabRestricted ? (
+              <Lock size={12} className="text-gray-500 hidden sm:block" />
+            ) : (
+              <MapPin size={12} className="text-indigo-400 hidden sm:block" />
+            )}
+            {isLabRestricted ? (
+              <span className="text-white text-[11px] md:text-xs font-bold">{userLabFilter}</span>
+            ) : (
+              <select 
+                value={filterLab}
+                onChange={(e) => setFilterLab(e.target.value)}
+                className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
+              >
+                {LABS.map(lab => (
+                  <option key={lab} value={lab} className="bg-gray-900">{lab === "All Labs" ? "All Labs" : lab.replace(" Lab", "")}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Sort Option */}
@@ -415,16 +489,24 @@ export default function ItemTrackingPage() {
                 {/* Location Info */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-400 uppercase">Location</label>
-                        <select 
-                            value={newLoan.location}
-                            onChange={(e) => setNewLoan({...newLoan, location: e.target.value})}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none"
-                        >
-                            {LABS.filter(l => l !== "All Labs").map(lab => (
-                                <option key={lab} value={lab} className="bg-gray-900">{lab}</option>
-                            ))}
-                        </select>
+                        <label className="text-xs font-medium text-gray-400 uppercase flex items-center gap-1.5">
+                          Location {isLabRestricted && <Lock size={10} className="text-gray-500" />}
+                        </label>
+                        {isLabRestricted ? (
+                          <div className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-400 flex items-center gap-2">
+                            <Lock size={12} />{userLabFilter}
+                          </div>
+                        ) : (
+                          <select 
+                              value={newLoan.location}
+                              onChange={(e) => setNewLoan({...newLoan, location: e.target.value})}
+                              className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none"
+                          >
+                              {LABS.filter(l => l !== "All Labs").map(lab => (
+                                  <option key={lab} value={lab} className="bg-gray-900">{lab}</option>
+                              ))}
+                          </select>
+                        )}
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-gray-400 uppercase">Room Number</label>

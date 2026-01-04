@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Menu, X 
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles 
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,6 +13,7 @@ import DashboardBackground from "@/components/DashboardBackground";
 import Onboarding, { useOnboarding } from "@/components/Onboarding";
 import { useRole } from "@/context/RoleContext";
 import { useTheme } from "@/context/ThemeContext";
+import { supabase } from "@/lib/supabase";
 
 // Map accent colors to Tailwind classes (for preset colors)
 const accentColorMap: Record<string, { text: string; textDark: string; hover: string; bg: string }> = {
@@ -42,6 +43,68 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const customColorStyle = isCustomHex ? { color: accent } : undefined;
   const customBgStyle = isCustomHex ? { backgroundColor: accent } : undefined;
 
+  // Track if there are new updates since last visit
+  const [hasNewUpdates, setHasNewUpdates] = useState(false);
+  
+  useEffect(() => {
+    // If we're on the updates page, no animation needed
+    if (pathname === '/dashboard/updates') {
+      setHasNewUpdates(false);
+      return;
+    }
+    
+    // Check for new updates
+    const checkForNewUpdates = async () => {
+      try {
+        const lastSeenTimestamp = localStorage.getItem("labTrack_lastSeenUpdate");
+        
+        // Get the latest update from database
+        const { data, error } = await supabase
+          .from('update_logs')
+          .select('created_at')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (error || !data) {
+          setHasNewUpdates(false);
+          return;
+        }
+        
+        // If never visited or there's a newer update
+        if (!lastSeenTimestamp || new Date(data.created_at) > new Date(lastSeenTimestamp)) {
+          setHasNewUpdates(true);
+        } else {
+          setHasNewUpdates(false);
+        }
+      } catch (err) {
+        console.error('Error checking for updates:', err);
+        setHasNewUpdates(false);
+      }
+    };
+    
+    checkForNewUpdates();
+    
+    // Subscribe to new updates in real-time
+    const channel = supabase
+      .channel('layout_update_logs')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'update_logs' },
+        () => {
+          // New update added, show animation (only if not on updates page)
+          if (pathname !== '/dashboard/updates') {
+            setHasNewUpdates(true);
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pathname]);
+
   const normalizedRole = role ? role.toLowerCase() : "student";
   const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
 
@@ -51,6 +114,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
+    { icon: Sparkles, label: "Update Logs", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
 
@@ -59,7 +123,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: LayoutDashboard, label: "Home", href: "/dashboard" },
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
-    { icon: FileText, label: "Reports", href: "/dashboard/reports" },
+    { icon: Sparkles, label: "Updates", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
 
@@ -109,6 +173,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 px-4 space-y-2 mt-4">
           {sidebarItems.map((item) => {
             const isActive = pathname === item.href;
+            const isNewItem = 'isNew' in item && item.isNew;
             return (
               <Link 
                 key={item.href} 
@@ -116,6 +181,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all group relative overflow-hidden whitespace-nowrap ${
                   isActive 
                     ? "bg-gray-200 dark:bg-white/10 text-black dark:text-white font-semibold" 
+                    : isNewItem
+                    ? ""
                     : "text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
                 }`}
               >
@@ -124,14 +191,23 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 )}
                 <item.icon 
                   size={22} 
-                  className={!isCustomHex 
-                    ? (isActive ? `${accentColors?.text} ${accentColors?.textDark}` : `${accentColors?.hover} transition-colors`)
-                    : "transition-colors"
+                  className={isNewItem && !isActive
+                    ? `${!isCustomHex ? `${accentColors?.text} ${accentColors?.textDark}` : ""} animate-pulse`
+                    : (!isCustomHex 
+                      ? (isActive ? `${accentColors?.text} ${accentColors?.textDark}` : `${accentColors?.hover} transition-colors`)
+                      : "transition-colors")
                   }
-                  style={isCustomHex && isActive ? customColorStyle : undefined}
+                  style={(isCustomHex && (isActive || isNewItem)) ? customColorStyle : undefined}
                 />
                 {!isCollapsed && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium relative z-10">
+                  <motion.span 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    className={`font-medium relative z-10 ${isNewItem && !isActive 
+                      ? `${!isCustomHex ? `${accentColors?.text} ${accentColors?.textDark}` : ""} animate-pulse` 
+                      : ""}`}
+                    style={(isCustomHex && isNewItem && !isActive) ? customColorStyle : undefined}
+                  >
                     {item.label}
                   </motion.span>
                 )}
@@ -206,6 +282,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
               <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                 {sidebarItems.map((item) => {
                   const isActive = pathname === item.href;
+                  const isNewItem = 'isNew' in item && item.isNew;
                   return (
                     <Link 
                       key={item.href} 
@@ -213,15 +290,28 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                         isActive 
                           ? "bg-gray-200 dark:bg-white/10 text-black dark:text-white font-semibold" 
+                          : isNewItem
+                          ? ""
                           : "text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       <item.icon 
                         size={20} 
-                        className={isActive ? (!isCustomHex ? `${accentColors?.text}` : "") : ""}
-                        style={isCustomHex && isActive ? customColorStyle : undefined}
+                        className={isNewItem && !isActive 
+                          ? `${!isCustomHex ? accentColors?.text : ""} animate-pulse`
+                          : (isActive ? (!isCustomHex ? `${accentColors?.text}` : "") : "")
+                        }
+                        style={isCustomHex && (isActive || isNewItem) ? customColorStyle : undefined}
                       />
-                      <span>{item.label}</span>
+                      <span 
+                        className={isNewItem && !isActive 
+                          ? `${!isCustomHex ? accentColors?.text : ""} animate-pulse` 
+                          : ""
+                        }
+                        style={isCustomHex && isNewItem && !isActive ? customColorStyle : undefined}
+                      >
+                        {item.label}
+                      </span>
                     </Link>
                   );
                 })}
@@ -252,19 +342,44 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 flex items-center justify-around px-2 safe-area-bottom">
         {mobileNavItems.map((item) => {
           const isActive = pathname === item.href;
+          const isNewItem = 'isNew' in item && item.isNew;
           return (
             <Link 
               key={item.href} 
               href={item.href}
               className="flex flex-col items-center justify-center flex-1 py-2 gap-0.5"
             >
-              <div className={`p-1.5 rounded-xl transition-all ${isActive ? (!isCustomHex ? accentColors?.bg : "") + " text-white" : ""}`}
-                style={isCustomHex && isActive ? customBgStyle : undefined}
+              <div 
+                className={`p-1.5 rounded-xl transition-all ${
+                  isActive 
+                    ? (!isCustomHex ? accentColors?.bg : "") + " text-white" 
+                    : isNewItem 
+                    ? "animate-pulse" 
+                    : ""
+                }`}
+                style={isCustomHex && (isActive || isNewItem) ? (isActive ? customBgStyle : { backgroundColor: `${accent}30` }) : undefined}
               >
-                <item.icon size={20} className={!isActive ? "text-gray-500" : ""} />
+                <item.icon 
+                  size={20} 
+                  className={
+                    isActive 
+                      ? "" 
+                      : isNewItem 
+                      ? (!isCustomHex ? accentColors?.text : "") 
+                      : "text-gray-500"
+                  } 
+                  style={isCustomHex && isNewItem && !isActive ? customColorStyle : undefined}
+                />
               </div>
-              <span className={`text-[10px] font-medium ${isActive ? (!isCustomHex ? `${accentColors?.text}` : "text-white") : "text-gray-500"}`}
-                style={isCustomHex && isActive ? customColorStyle : undefined}
+              <span 
+                className={`text-[10px] font-medium ${
+                  isActive 
+                    ? (!isCustomHex ? `${accentColors?.text}` : "") 
+                    : isNewItem
+                    ? `${!isCustomHex ? accentColors?.text : ""} animate-pulse`
+                    : "text-gray-500"
+                }`}
+                style={isCustomHex && (isActive || isNewItem) ? customColorStyle : undefined}
               >
                 {item.label}
               </span>

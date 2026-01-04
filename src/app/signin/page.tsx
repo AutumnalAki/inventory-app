@@ -22,7 +22,11 @@ export default function SignIn() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      showAlert({ title: "Error", message: error.message, variant: "error" });
+      // Show friendlier message for unverified email
+      const message = error.message.toLowerCase().includes("email not confirmed") 
+        ? `Please verify your email address (${email}) before signing in. Check your inbox for the verification link.`
+        : error.message;
+      showAlert({ title: "Error", message, variant: "error" });
     } else {
       router.push("/dashboard");
     }

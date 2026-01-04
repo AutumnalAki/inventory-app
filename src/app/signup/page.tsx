@@ -18,6 +18,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,8 +55,8 @@ export default function SignUp() {
 
       if (authError) throw authError;
 
+      setRegisteredEmail(formData.email);
       setSuccess(true);
-      setTimeout(() => { router.push("/signin"); }, 2000);
 
     } catch (err: any) {
       setError(err.message || "Failed to create account.");
@@ -82,8 +83,13 @@ export default function SignUp() {
           <form onSubmit={handleSignUp} className="space-y-4">
             
             {success && (
-              <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold">
-                <CheckCircle size={16} /> Account created! Redirecting...
+              <div className="flex flex-col gap-2 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400">
+                <div className="flex items-center gap-2 font-bold text-sm">
+                  <CheckCircle size={18} /> Account Created Successfully!
+                </div>
+                <p className="text-xs text-emerald-300/80">
+                  Please check your email at <span className="font-semibold text-emerald-300">{registeredEmail}</span> to verify your account before signing in.
+                </p>
               </div>
             )}
 

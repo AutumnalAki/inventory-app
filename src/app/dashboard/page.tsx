@@ -1,24 +1,60 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { 
   AlertTriangle, Package, Clock, 
-  TrendingUp, Activity, ArrowRight, Wrench 
+  TrendingUp, Activity, ArrowRight, Wrench, Lock 
 } from "lucide-react"; // Fixed Wrench import
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation"; // 1. Import Router
 import { useInventory } from "@/context/InventoryContext";
+import { useRole } from "@/context/RoleContext";
+
+// Role to Lab Mapping - maps role names to their database location names
+const ROLE_LAB_DB_MAPPING: Record<string, string> = {
+  "ME Lab": "Mechanical Engineering Laboratory",
+  "CE Lab": "Civil Engineering Laboratory",
+  "ECE Lab": "ECE Laboratory",
+  "CPE Lab": "Computer Laboratory",
+  "CHEM Lab": "Chemistry Laboratory",
+  "PHYS Lab": "Physics Laboratory",
+  "EE Lab": "Electrical Engineering Laboratory"
+};
+
+// Roles with full access to all labs
+const FULL_ACCESS_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
 
 export default function Dashboard() {
   const { inventory, loans, logs } = useInventory();
+  const { role } = useRole();
   const router = useRouter(); // 2. Initialize Router
 
-  // Stats
-  const totalItems = inventory.reduce((acc, item) => acc + item.quantity, 0);
-  const totalTypes = inventory.length;
-  const lowStockItems = inventory.filter(i => i.stock === "Low Stock" || i.stock === "Out of Stock").length;
-  const activeLoans = loans.filter(l => l.status === "Borrowed").length;
-  const brokenItems = inventory.filter(i => i.condition === "Broken").length;
+  // Check if user has restricted lab access
+  const isLabRestricted = !FULL_ACCESS_ROLES.includes(role) && ROLE_LAB_DB_MAPPING[role];
+  const userLabDbName = isLabRestricted ? ROLE_LAB_DB_MAPPING[role] : null;
+
+  // Filter inventory based on role
+  const filteredInventory = useMemo(() => {
+    if (isLabRestricted && userLabDbName) {
+      return inventory.filter(item => item.location === userLabDbName);
+    }
+    return inventory;
+  }, [inventory, isLabRestricted, userLabDbName]);
+
+  // Filter loans based on role
+  const filteredLoans = useMemo(() => {
+    if (isLabRestricted && userLabDbName) {
+      return loans.filter(loan => loan.location === userLabDbName);
+    }
+    return loans;
+  }, [loans, isLabRestricted, userLabDbName]);
+
+  // Stats (now using filtered data)
+  const totalItems = filteredInventory.reduce((acc, item) => acc + item.quantity, 0);
+  const totalTypes = filteredInventory.length;
+  const lowStockItems = filteredInventory.filter(i => i.stock === "Low Stock" || i.stock === "Out of Stock").length;
+  const activeLoans = filteredLoans.filter(l => l.status === "Borrowed").length;
+  const brokenItems = filteredInventory.filter(i => i.condition === "Broken").length;
 
   // 3. Navigation Handlers
   const navigateTo = (path: string) => router.push(path);
@@ -28,6 +64,12 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Dashboard</h1>
         <p className="text-gray-400 mt-1 text-sm md:text-base">Overview of your lab inventory and equipment status.</p>
+        {isLabRestricted && userLabDbName && (
+          <div className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+            <Lock size={12} />
+            <span>Viewing data for {userLabDbName}</span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6" data-tour="stat-cards">

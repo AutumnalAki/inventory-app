@@ -14,7 +14,8 @@ export type Item = {
   stock: "In Stock" | "Low Stock" | "Out of Stock";
   condition: "Available" | "Broken" | "For Repairs";
   remarks: string;
-  category: string; 
+  category: string;
+  created_at: string;
 };
 
 export type Loan = {
@@ -82,7 +83,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   // 1. FETCH DATA FUNCTION
   const fetchData = async () => {
     // A. Inventory
-    const { data: itemsData } = await supabase.from('inventory').select('*').order('id', { ascending: false });
+    const { data: itemsData } = await supabase.from('inventory').select('*').order('created_at', { ascending: false });
     if (itemsData) {
       setInventory(itemsData.map((i: any) => ({
         id: i.id, 
@@ -94,7 +95,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         stock: i.stock_status,
         condition: i.condition_status, 
         remarks: i.remarks || "", 
-        category: "General"
+        category: "General",
+        created_at: i.created_at
       })));
     }
 

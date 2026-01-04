@@ -2,25 +2,61 @@
 
 import React, { useState, useMemo } from "react";
 import { 
-  Download, Box, FileText, AlertTriangle, TrendingUp, AlertOctagon, ChevronDown 
+  Download, Box, FileText, AlertTriangle, TrendingUp, AlertOctagon, ChevronDown, Lock 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInventory } from "@/context/InventoryContext";
+import { useRole } from "@/context/RoleContext";
 
 // --- EXPORT LIBRARIES ---
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
+// Role to Lab Mapping - maps role names to their database location names
+const ROLE_LAB_DB_MAPPING: Record<string, string> = {
+  "ME Lab": "Mechanical Engineering Laboratory",
+  "CE Lab": "Civil Engineering Laboratory",
+  "ECE Lab": "ECE Laboratory",
+  "CPE Lab": "Computer Laboratory",
+  "CHEM Lab": "Chemistry Laboratory",
+  "PHYS Lab": "Physics Laboratory",
+  "EE Lab": "Electrical Engineering Laboratory"
+};
+
+// Roles with full access to all labs
+const FULL_ACCESS_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
+
 export default function ReportsPage() {
   const { inventory, loans } = useInventory();
+  const { role } = useRole();
   const [hoveredSegment, setHoveredSegment] = useState<any>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
-  // --- STATS LOGIC ---
-  const totalItems = inventory.reduce((acc, i) => acc + i.quantity, 0);
-  const brokenItems = inventory.filter(i => i.condition === "Broken");
-  const inUseItems = loans.filter(l => l.status === "Borrowed").reduce((acc, l) => acc + l.qty, 0);
+  // Check if user has restricted lab access
+  const isLabRestricted = !FULL_ACCESS_ROLES.includes(role) && ROLE_LAB_DB_MAPPING[role];
+  const userLabDbName = isLabRestricted ? ROLE_LAB_DB_MAPPING[role] : null;
+
+  // Filter inventory based on role
+  const filteredInventory = useMemo(() => {
+    if (isLabRestricted && userLabDbName) {
+      return inventory.filter(item => item.location === userLabDbName);
+    }
+    return inventory;
+  }, [inventory, isLabRestricted, userLabDbName]);
+
+  // Filter loans based on role
+  const filteredLoans = useMemo(() => {
+    if (isLabRestricted && userLabDbName) {
+      return loans.filter(loan => loan.location === userLabDbName);
+    }
+    return loans;
+  }, [loans, isLabRestricted, userLabDbName]);
+
+  // --- STATS LOGIC (now using filtered data) ---
+  const totalItems = filteredInventory.reduce((acc, i) => acc + i.quantity, 0);
+  const brokenItems = filteredInventory.filter(i => i.condition === "Broken");
+  const inUseItems = filteredLoans.filter(l => l.status === "Borrowed").reduce((acc, l) => acc + l.qty, 0);
   const availableItems = totalItems - inUseItems - brokenItems.length;
 
   // --- CHARTS DATA ---
@@ -44,9 +80,9 @@ export default function ReportsPage() {
 
   const locationCounts = useMemo(() => {
      const counts: Record<string, number> = {};
-     inventory.forEach(item => { counts[item.location] = (counts[item.location] || 0) + item.quantity; });
+     filteredInventory.forEach(item => { counts[item.location] = (counts[item.location] || 0) + item.quantity; });
      return Object.entries(counts).map(([label, count]) => ({ label, count }));
-  }, [inventory]);
+  }, [filteredInventory]);
 
   // --- EXPORT HANDLERS ---
 
@@ -165,7 +201,15 @@ export default function ReportsPage() {
   return (
     <div className="space-y-4 md:space-y-6 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h1 className="text-2xl md:text-3xl font-bold">Reports</h1>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Reports</h1>
+            {isLabRestricted && userLabDbName && (
+              <div className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+                <Lock size={12} />
+                <span>Viewing reports for {userLabDbName}</span>
+              </div>
+            )}
+          </div>
           
           {/* EXPORT DROPDOWN */}
           <div className="relative w-full sm:w-auto">
