@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Search, Plus, Filter, Trash2, CheckCircle, 
   Clock, MapPin, User, Calendar, RotateCcw, X, Save, ArrowUpDown, ChevronDown, Lock
@@ -39,6 +39,16 @@ export default function ItemTrackingPage() {
   const [filterLab, setFilterLab] = useState("All Labs");
   const [sortOption, setSortOption] = useState("Newest");
   
+  // Dropdown states
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [labDropdownOpen, setLabDropdownOpen] = useState(false);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  
+  // Refs for dropdown containers
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const labDropdownRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newLoan, setNewLoan] = useState({
     studentId: "",
@@ -50,6 +60,30 @@ export default function ItemTrackingPage() {
     teacher: "",
     room: "",
   });
+  
+  // Modal dropdown state
+  const [modalLocationOpen, setModalLocationOpen] = useState(false);
+  const modalLocationRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setStatusDropdownOpen(false);
+      }
+      if (labDropdownRef.current && !labDropdownRef.current.contains(event.target as Node)) {
+        setLabDropdownOpen(false);
+      }
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setSortDropdownOpen(false);
+      }
+      if (modalLocationRef.current && !modalLocationRef.current.contains(event.target as Node)) {
+        setModalLocationOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Set lab filter based on role restriction
   useEffect(() => {
@@ -160,59 +194,134 @@ export default function ItemTrackingPage() {
       </div>
 
       {/* --- Controls Bar --- */}
-      <div className="bg-white/5 border border-white/10 p-2 md:p-2.5 rounded-xl md:rounded-2xl backdrop-blur-xl flex flex-col gap-2 md:gap-4">
+      <div className="bg-white/5 border border-white/10 p-2 md:p-2.5 rounded-xl md:rounded-2xl backdrop-blur-xl flex flex-col gap-2 md:gap-4 relative z-20">
         
         {/* Top Row: Filters */}
-        <div className="grid grid-cols-3 md:flex md:flex-wrap items-center gap-2 md:gap-3 w-full">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full">
           
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-            <Filter size={12} className="text-gray-500 hidden sm:block" />
-            <select 
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
+          {/* Status Filter Dropdown */}
+          <div className="relative" ref={statusDropdownRef}>
+            <button 
+              onClick={() => { setStatusDropdownOpen(!statusDropdownOpen); setLabDropdownOpen(false); setSortDropdownOpen(false); }}
+              className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
             >
-              <option value="All" className="bg-gray-900">All Status</option>
-              <option value="Borrowed" className="bg-gray-900">Active</option>
-              <option value="Returned" className="bg-gray-900">Returned</option>
-            </select>
+              <Filter size={14} className="text-gray-500" />
+              <span className="text-white text-xs font-medium">{filterStatus === "All" ? "All Status" : filterStatus}</span>
+              <ChevronDown size={14} className={`text-gray-500 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence>
+              {statusDropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-2 w-36 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
+                >
+                  {[
+                    { value: "All", label: "All Status" },
+                    { value: "Borrowed", label: "Active" },
+                    { value: "Returned", label: "Returned" }
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => { setFilterStatus(option.value); setStatusDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                        filterStatus === option.value 
+                          ? 'bg-indigo-500/20 text-indigo-400' 
+                          : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      {option.label}
+                      {filterStatus === option.value && <CheckCircle size={14} />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Location Filter */}
-          <div className={`flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 ${isLabRestricted ? 'opacity-60' : 'hover:border-white/30'} transition-colors`}>
-            {isLabRestricted ? (
-              <Lock size={12} className="text-gray-500 hidden sm:block" />
-            ) : (
-              <MapPin size={12} className="text-indigo-400 hidden sm:block" />
-            )}
-            {isLabRestricted ? (
-              <span className="text-white text-[11px] md:text-xs font-bold">{userLabFilter}</span>
-            ) : (
-              <select 
-                value={filterLab}
-                onChange={(e) => setFilterLab(e.target.value)}
-                className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
+          {/* Location Filter Dropdown */}
+          {isLabRestricted ? (
+            <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 opacity-60">
+              <Lock size={14} className="text-gray-500" />
+              <span className="text-white text-xs font-medium">{userLabFilter}</span>
+            </div>
+          ) : (
+            <div className="relative" ref={labDropdownRef}>
+              <button 
+                onClick={() => { setLabDropdownOpen(!labDropdownOpen); setStatusDropdownOpen(false); setSortDropdownOpen(false); }}
+                className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
               >
-                {LABS.map(lab => (
-                  <option key={lab} value={lab} className="bg-gray-900">{lab === "All Labs" ? "All Labs" : lab.replace(" Lab", "")}</option>
-                ))}
-              </select>
-            )}
-          </div>
+                <MapPin size={14} className="text-indigo-400" />
+                <span className="text-white text-xs font-medium">{filterLab === "All Labs" ? "All Labs" : filterLab.replace(" Lab", "")}</span>
+                <ChevronDown size={14} className={`text-gray-500 transition-transform ${labDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence>
+                {labDropdownOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                    animate={{ opacity: 1, y: 0, scale: 1 }} 
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 mt-2 w-40 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
+                  >
+                    {LABS.map((lab) => (
+                      <button
+                        key={lab}
+                        onClick={() => { setFilterLab(lab); setLabDropdownOpen(false); }}
+                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                          filterLab === lab 
+                            ? 'bg-indigo-500/20 text-indigo-400' 
+                            : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        {lab === "All Labs" ? "All Labs" : lab.replace(" Lab", "")}
+                        {filterLab === lab && <CheckCircle size={14} />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
 
-          {/* Sort Option */}
-          <div className="flex items-center gap-1.5 md:gap-2 bg-white/5 px-2 md:px-3 py-2 rounded-lg md:rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-            <ArrowUpDown size={12} className="text-gray-500 hidden sm:block" />
-            <select 
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="bg-transparent text-white text-[11px] md:text-xs font-bold focus:outline-none cursor-pointer w-full"
+          {/* Sort Option Dropdown */}
+          <div className="relative" ref={sortDropdownRef}>
+            <button 
+              onClick={() => { setSortDropdownOpen(!sortDropdownOpen); setStatusDropdownOpen(false); setLabDropdownOpen(false); }}
+              className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
             >
-              <option value="Newest" className="bg-gray-900">Newest</option>
-              <option value="Location" className="bg-gray-900">Location</option>
-              <option value="Status" className="bg-gray-900">Status</option>
-            </select>
+              <ArrowUpDown size={14} className="text-gray-500" />
+              <span className="text-white text-xs font-medium">{sortOption}</span>
+              <ChevronDown size={14} className={`text-gray-500 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence>
+              {sortDropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-2 w-32 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
+                >
+                  {["Newest", "Location", "Status"].map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => { setSortOption(option); setSortDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                        sortOption === option 
+                          ? 'bg-indigo-500/20 text-indigo-400' 
+                          : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      {option}
+                      {sortOption === option && <CheckCircle size={14} />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
         
@@ -497,15 +606,43 @@ export default function ItemTrackingPage() {
                             <Lock size={12} />{userLabFilter}
                           </div>
                         ) : (
-                          <select 
-                              value={newLoan.location}
-                              onChange={(e) => setNewLoan({...newLoan, location: e.target.value})}
-                              className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none"
-                          >
-                              {LABS.filter(l => l !== "All Labs").map(lab => (
-                                  <option key={lab} value={lab} className="bg-gray-900">{lab}</option>
-                              ))}
-                          </select>
+                          <div className="relative" ref={modalLocationRef}>
+                            <button 
+                              type="button"
+                              onClick={() => setModalLocationOpen(!modalLocationOpen)}
+                              className="w-full flex items-center justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
+                            >
+                              <span>{newLoan.location}</span>
+                              <ChevronDown size={14} className={`text-gray-500 transition-transform ${modalLocationOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            <AnimatePresence>
+                              {modalLocationOpen && (
+                                <motion.div 
+                                  initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto no-scrollbar"
+                                >
+                                  {LABS.filter(l => l !== "All Labs").map((lab) => (
+                                    <button
+                                      key={lab}
+                                      type="button"
+                                      onClick={() => { setNewLoan({...newLoan, location: lab}); setModalLocationOpen(false); }}
+                                      className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                                        newLoan.location === lab 
+                                          ? 'bg-indigo-500/20 text-indigo-400' 
+                                          : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                      }`}
+                                    >
+                                      {lab}
+                                      {newLoan.location === lab && <CheckCircle size={14} />}
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         )}
                     </div>
                     <div className="space-y-1.5">

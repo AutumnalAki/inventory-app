@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { 
-  Download, Box, FileText, AlertTriangle, TrendingUp, AlertOctagon, ChevronDown, Lock 
+  Download, Box, FileText, AlertTriangle, TrendingUp, AlertOctagon, ChevronDown, Lock, CheckCircle 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInventory } from "@/context/InventoryContext";
@@ -32,6 +32,18 @@ export default function ReportsPage() {
   const { role } = useRole();
   const [hoveredSegment, setHoveredSegment] = useState<any>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Check if user has restricted lab access
   const isLabRestricted = !FULL_ACCESS_ROLES.includes(role) && ROLE_LAB_DB_MAPPING[role];
@@ -212,22 +224,31 @@ export default function ReportsPage() {
           </div>
           
           {/* EXPORT DROPDOWN */}
-          <div className="relative w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto" ref={exportDropdownRef}>
             <button 
                 onClick={() => setIsExportOpen(!isExportOpen)} 
-                className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-white/5 hover:border-white/20 border border-white/10 px-4 py-2 rounded-xl text-xs md:text-sm font-medium transition-all w-full sm:w-auto"
             >
-                <Download size={16} /> Export Report <ChevronDown size={14}/>
+                <Download size={16} /> Export Report <ChevronDown size={14} className={`text-gray-500 transition-transform ${isExportOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
                 {isExportOpen && (
                     <motion.div 
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                        className="absolute right-0 top-12 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                        animate={{ opacity: 1, y: 0, scale: 1 }} 
+                        exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
                     >
-                        <button onClick={exportPDF} className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-gray-300 hover:text-white">Export as PDF</button>
-                        <button onClick={exportExcel} className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-gray-300 hover:text-white">Export as Excel</button>
-                        <button onClick={exportCSV} className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-gray-300 hover:text-white">Export CSV (Locations)</button>
+                        <button onClick={() => { exportPDF(); setIsExportOpen(false); }} className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+                          <FileText size={14} /> Export as PDF
+                        </button>
+                        <button onClick={() => { exportExcel(); setIsExportOpen(false); }} className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+                          <Box size={14} /> Export as Excel
+                        </button>
+                        <button onClick={() => { exportCSV(); setIsExportOpen(false); }} className="w-full text-left px-4 py-2.5 text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+                          <Download size={14} /> Export CSV (Locations)
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Search, User, Shield, Trash2, Key, Copy, Loader2, X, 
-  Eye, Lock, Power, Edit2
+  Eye, Lock, Power, Edit2, ChevronDown, CheckCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -24,6 +24,36 @@ const ROLES = [
   "EE Lab"
 ];
 
+// Role Hierarchy Levels (higher number = higher authority)
+const ROLE_HIERARCHY: Record<string, number> = {
+  "Developer": 100,      // Apex - cannot be touched
+  "Administrator": 80,   // Second
+  "Program Chair": 60,   // Third
+  "Faculty": 60,         // Third (same level as Program Chair)
+  "ME Lab": 40,          // Lab accounts (lowest)
+  "CE Lab": 40,
+  "ECE Lab": 40,
+  "CPE Lab": 40,
+  "CHEM Lab": 40,
+  "PHYS Lab": 40,
+  "EE Lab": 40,
+};
+
+// Get role level (default to lowest if unknown)
+const getRoleLevel = (role: string): number => ROLE_HIERARCHY[role] ?? 0;
+
+// Check if current user can manage target user
+const canManageUser = (currentUserRole: string, targetUserRole: string): boolean => {
+  const currentLevel = getRoleLevel(currentUserRole);
+  const targetLevel = getRoleLevel(targetUserRole);
+  
+  // Developer cannot be managed by anyone
+  if (targetUserRole === "Developer") return false;
+  
+  // Can only manage users with strictly lower role level
+  return currentLevel > targetLevel;
+};
+
 // Selectable Roles (excludes Developer - exclusive to website creator)
 const SELECTABLE_ROLES = ROLES.filter(role => role !== "Developer");
 
@@ -35,6 +65,7 @@ export default function MembersPage() {
   const [, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null); // To prevent deleting self
+  const [currentUserRole, setCurrentUserRole] = useState<string>(""); // Current user's role for permissions
   
   // --- STATES FOR GENERATE MODAL ---
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
@@ -42,11 +73,27 @@ export default function MembersPage() {
   const [customCode, setCustomCode] = useState("");
   const [generatePassword, setGeneratePassword] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
 
   // --- STATES FOR REVEAL SECURITY ---
   const [isRevealOpen, setIsRevealOpen] = useState(false);
   const [codeToReveal, setCodeToReveal] = useState<string | null>(null);
   const [revealPassword, setRevealPassword] = useState("");
+  
+  // Close role dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
+        setRoleDropdownOpen(false);
+      }
+      if (editRoleDropdownRef.current && !editRoleDropdownRef.current.contains(event.target as Node)) {
+        setEditRoleDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [verifying, setVerifying] = useState(false);
   const [revealedCodeIds, setRevealedCodeIds] = useState<Set<string>>(new Set());
 
@@ -54,6 +101,8 @@ export default function MembersPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editRole, setEditRole] = useState("");
+  const [editRoleDropdownOpen, setEditRoleDropdownOpen] = useState(false);
+  const editRoleDropdownRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
 
   // Fetch Data
@@ -62,7 +111,20 @@ export default function MembersPage() {
     
     // Get Current User (to avoid self-actions)
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) setCurrentUser(authUser);
+    if (authUser) {
+      setCurrentUser(authUser);
+      
+      // Fetch current user's role from users table
+      const { data: currentUserData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (currentUserData) {
+        setCurrentUserRole(currentUserData.role || "");
+      }
+    }
 
     // Fetch Users
     const { data: userData } = await supabase
@@ -88,7 +150,17 @@ export default function MembersPage() {
   // --- MEMBER ACTIONS ---
 
   // 1. Toggle Active/Inactive Status
-  const handleToggleStatus = async (userId: string, currentStatus: string) => {
+  const handleToggleStatus = async (userId: string, currentStatus: string, targetRole: string) => {
+    // Check permission
+    if (!canManageUser(currentUserRole, targetRole)) {
+      showAlert({ 
+        title: "Access Denied", 
+        message: `You don't have permission to ${currentStatus === 'active' ? 'deactivate' : 'activate'} a ${targetRole}.`, 
+        variant: "error" 
+      });
+      return;
+    }
+
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const action = newStatus === 'active' ? "Activate" : "Deactivate";
     
@@ -119,7 +191,17 @@ export default function MembersPage() {
   };
 
   // 2. Delete User
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (userId: string, targetRole: string) => {
+    // Check permission
+    if (!canManageUser(currentUserRole, targetRole)) {
+      showAlert({ 
+        title: "Access Denied", 
+        message: `You don't have permission to delete a ${targetRole}.`, 
+        variant: "error" 
+      });
+      return;
+    }
+
     const isConfirmed = await showConfirm({
       title: "Delete User?",
       message: "This action cannot be undone. The user will be permanently removed.",
@@ -155,6 +237,16 @@ export default function MembersPage() {
 
   // 3. Edit User Role
   const handleOpenEdit = (user: any) => {
+    // Check permission
+    if (!canManageUser(currentUserRole, user.role)) {
+      showAlert({ 
+        title: "Access Denied", 
+        message: `You don't have permission to edit a ${user.role}.`, 
+        variant: "error" 
+      });
+      return;
+    }
+    
     setEditingUser(user);
     setEditRole(user.role || "");
     setIsEditOpen(true);
@@ -264,20 +356,45 @@ export default function MembersPage() {
           </div>
 
           <div className="overflow-y-auto flex-1 pr-1 md:pr-2 space-y-2 no-scrollbar">
-            {users.filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase())).map((user) => {
+            {users
+              .filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase()))
+              .sort((a, b) => getRoleLevel(b.role) - getRoleLevel(a.role))
+              .map((user) => {
                const isActive = user.status === 'active';
                const isMe = currentUser?.id === user.id;
+               const isProtected = !canManageUser(currentUserRole, user.role);
+               const isDeveloper = user.role === 'Developer';
+               const isAdmin = user.role === 'Administrator';
+               const isProgramChair = user.role === 'Program Chair';
+               const isFaculty = user.role === 'Faculty';
+
+               // Get row background based on role and status
+               const getRowStyle = () => {
+                 if (!isActive) return 'bg-red-900/10 border-red-900/20';
+                 if (isDeveloper) return 'bg-cyan-500/5 border-cyan-500/20';
+                 if (isAdmin) return 'bg-orange-500/5 border-orange-500/20';
+                 if (isProgramChair) return 'bg-purple-500/5 border-purple-500/20';
+                 if (isFaculty) return 'bg-pink-500/5 border-pink-500/20';
+                 return 'bg-white/5 border-white/5 hover:bg-white/10';
+               };
 
                return (
-                <div key={user.id} className={`flex items-center justify-between p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-colors ${isActive ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-red-900/10 border-red-900/20'}`}>
+                <div key={user.id} className={`flex items-center justify-between p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-colors ${getRowStyle()}`}>
                   <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                    <div className={`relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ${user.role === 'Developer' ? 'bg-cyan-500 text-white' : user.role === 'Administrator' ? 'bg-orange-500 text-white' : 'bg-indigo-600 text-white'}`}>
+                    <div className={`relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ${
+                      user.role === 'Developer' ? 'bg-cyan-500 text-white' : 
+                      user.role === 'Administrator' ? 'bg-orange-500 text-white' : 
+                      user.role === 'Program Chair' ? 'bg-purple-500 text-white' :
+                      user.role === 'Faculty' ? 'bg-pink-500 text-white' :
+                      'bg-indigo-600 text-white'
+                    }`}>
                       {user.username?.charAt(0) || "U"}
                       <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full border-2 border-[#111] ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                          <p className={`font-bold text-xs md:text-sm truncate ${isActive ? 'text-white' : 'text-gray-400 line-through'}`}>{user.username}</p>
+                         {isDeveloper && <span title="Protected Account"><Shield size={12} className="text-cyan-400 shrink-0" /></span>}
                          {!isActive && <span className="text-[9px] md:text-[10px] bg-red-500/20 text-red-400 px-1 md:px-1.5 py-0.5 rounded uppercase font-bold shrink-0">Inactive</span>}
                       </div>
                       <p className="text-[10px] md:text-xs text-gray-400 truncate">{user.email}</p>
@@ -285,7 +402,13 @@ export default function MembersPage() {
                   </div>
 
                   <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                    <span className="hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-white/10 text-gray-300 border border-white/5 font-medium mr-1 md:mr-2">
+                    <span className={`hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md border font-medium mr-1 md:mr-2 ${
+                      isDeveloper ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
+                      user.role === 'Administrator' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                      user.role === 'Program Chair' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                      user.role === 'Faculty' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' :
+                      'bg-white/10 text-gray-300 border-white/5'
+                    }`}>
                       {user.role}
                     </span>
 
@@ -293,24 +416,44 @@ export default function MembersPage() {
                       <div data-tour="user-actions" className="flex items-center">
                         <button 
                           onClick={() => handleOpenEdit(user)}
-                          title="Edit User Role"
-                          className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                          title={canManageUser(currentUserRole, user.role) ? "Edit User Role" : `Cannot edit ${user.role}`}
+                          disabled={!canManageUser(currentUserRole, user.role)}
+                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${
+                            canManageUser(currentUserRole, user.role)
+                              ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/10'
+                              : 'text-gray-600 cursor-not-allowed opacity-50'
+                          }`}
                         >
                           <Edit2 size={14} className="md:w-4 md:h-4" />
                         </button>
 
                         <button 
-                          onClick={() => handleToggleStatus(user.id, user.status)}
-                          title={isActive ? "Deactivate User" : "Activate User"}
-                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${isActive ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'}`}
+                          onClick={() => handleToggleStatus(user.id, user.status, user.role)}
+                          title={canManageUser(currentUserRole, user.role) 
+                            ? (isActive ? "Deactivate User" : "Activate User")
+                            : `Cannot ${isActive ? 'deactivate' : 'activate'} ${user.role}`
+                          }
+                          disabled={!canManageUser(currentUserRole, user.role)}
+                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${
+                            !canManageUser(currentUserRole, user.role)
+                              ? 'text-gray-600 cursor-not-allowed opacity-50'
+                              : isActive 
+                                ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' 
+                                : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'
+                          }`}
                         >
                           <Power size={14} className="md:w-4 md:h-4" />
                         </button>
 
                         <button 
-                          onClick={() => handleDeleteUser(user.id)}
-                          title="Delete User"
-                          className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          onClick={() => handleDeleteUser(user.id, user.role)}
+                          title={canManageUser(currentUserRole, user.role) ? "Delete User" : `Cannot delete ${user.role}`}
+                          disabled={!canManageUser(currentUserRole, user.role)}
+                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${
+                            canManageUser(currentUserRole, user.role)
+                              ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10'
+                              : 'text-gray-600 cursor-not-allowed opacity-50'
+                          }`}
                         >
                           <Trash2 size={14} className="md:w-4 md:h-4" />
                         </button>
@@ -372,9 +515,43 @@ export default function MembersPage() {
                 <form onSubmit={handleGenerateCode} className="space-y-4">
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold text-gray-400 uppercase">Assign Role</label>
-                        <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500">
-                            {SELECTABLE_ROLES.map(role => <option key={role} value={role} className="bg-gray-900">{role}</option>)}
-                        </select>
+                        <div className="relative" ref={roleDropdownRef}>
+                          <button 
+                            type="button"
+                            onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                            className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm hover:border-white/20 transition-colors"
+                          >
+                            <span>{selectedRole}</span>
+                            <ChevronDown size={16} className={`text-gray-500 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {roleDropdownOpen && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto no-scrollbar"
+                              >
+                                {SELECTABLE_ROLES.map((role) => (
+                                  <button
+                                    key={role}
+                                    type="button"
+                                    onClick={() => { setSelectedRole(role); setRoleDropdownOpen(false); }}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                                      selectedRole === role 
+                                        ? 'bg-indigo-500/20 text-indigo-400' 
+                                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                    }`}
+                                  >
+                                    {role}
+                                    {selectedRole === role && <CheckCircle size={14} />}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold text-gray-400 uppercase">Custom Code (Optional)</label>
@@ -450,15 +627,43 @@ export default function MembersPage() {
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-gray-400 uppercase">New Role</label>
-                    <select 
-                      value={editRole} 
-                      onChange={(e) => setEditRole(e.target.value)} 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500"
-                    >
-                      {SELECTABLE_ROLES.map(role => (
-                        <option key={role} value={role} className="bg-gray-900">{role}</option>
-                      ))}
-                    </select>
+                    <div className="relative" ref={editRoleDropdownRef}>
+                      <button 
+                        type="button"
+                        onClick={() => setEditRoleDropdownOpen(!editRoleDropdownOpen)}
+                        className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm hover:border-white/20 transition-colors"
+                      >
+                        <span>{editRole}</span>
+                        <ChevronDown size={16} className={`text-gray-500 transition-transform ${editRoleDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      <AnimatePresence>
+                        {editRoleDropdownOpen && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                            animate={{ opacity: 1, y: 0, scale: 1 }} 
+                            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto no-scrollbar"
+                          >
+                            {SELECTABLE_ROLES.map((role) => (
+                              <button
+                                key={role}
+                                type="button"
+                                onClick={() => { setEditRole(role); setEditRoleDropdownOpen(false); }}
+                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                                  editRole === role 
+                                    ? 'bg-blue-500/20 text-blue-400' 
+                                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                }`}
+                              >
+                                {role}
+                                {editRole === role && <CheckCircle size={14} />}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
 
                   <div className="flex gap-3 pt-4">

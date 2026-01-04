@@ -66,6 +66,16 @@ function InventoryContent() {
   // Export UI State
   const [isExportOpen, setIsExportOpen] = useState(false);
 
+  // Dropdown states
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [conditionDropdownOpen, setConditionDropdownOpen] = useState(false);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+
+  // Refs for dropdown containers
+  const statusDropdownRef = React.useRef<HTMLDivElement>(null);
+  const conditionDropdownRef = React.useRef<HTMLDivElement>(null);
+  const sortDropdownRef = React.useRef<HTMLDivElement>(null);
+
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -73,6 +83,35 @@ function InventoryContent() {
   const [newItem, setNewItem] = useState({
     name: "", controlId: "", quantity: 0, location: "", supplier: "", stock: "In Stock", condition: "Available", remarks: ""
   });
+  
+  // Modal dropdown states
+  const [modalLocationOpen, setModalLocationOpen] = useState(false);
+  const [modalConditionOpen, setModalConditionOpen] = useState(false);
+  const modalLocationRef = React.useRef<HTMLDivElement>(null);
+  const modalConditionRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setStatusDropdownOpen(false);
+      }
+      if (conditionDropdownRef.current && !conditionDropdownRef.current.contains(event.target as Node)) {
+        setConditionDropdownOpen(false);
+      }
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setSortDropdownOpen(false);
+      }
+      if (modalLocationRef.current && !modalLocationRef.current.contains(event.target as Node)) {
+        setModalLocationOpen(false);
+      }
+      if (modalConditionRef.current && !modalConditionRef.current.contains(event.target as Node)) {
+        setModalConditionOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Set lab filter based on role restriction
   useEffect(() => {
@@ -249,66 +288,165 @@ function InventoryContent() {
       </div>
 
       {/* --- CONTROL BAR --- */}
-      <div className="relative z-20 bg-white/5 border border-white/10 p-2.5 md:p-3 rounded-2xl backdrop-blur-xl flex flex-col gap-3 w-full">
+      <div className="relative z-20 bg-white/5 border border-white/10 p-3 md:p-4 rounded-2xl backdrop-blur-xl flex flex-col gap-4 w-full">
         {/* Row 1: Add Button & Search */}
-        <div className="flex items-center gap-2 w-full">
-           <button onClick={openAddModal} data-tour="add-item-btn" className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap shrink-0">
-            <Plus size={16} /> <span className="hidden sm:inline">Add Item</span><span className="sm:hidden">Add</span>
+        <div className="flex items-center gap-3 w-full">
+           <button onClick={openAddModal} data-tour="add-item-btn" className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap shrink-0">
+            <Plus size={16} /> Add Item
           </button>
           
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-            <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+            <input type="text" placeholder="Search items..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-500" />
           </div>
         </div>
 
-        {/* Row 2: Lab Tabs - Scrollable */}
-        <div className="overflow-x-auto no-scrollbar -mx-2.5 px-2.5 md:mx-0 md:px-0" data-tour="filter-tabs">
-            <div className="flex items-center gap-1 min-w-max">
-                {isLabRestricted ? (
-                  // Show only user's assigned lab with lock icon
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-black border border-white">
-                    <Lock size={12} />
-                    <span>{userLabTab}</span>
-                  </div>
-                ) : (
-                  LAB_TABS.map((lab) => (
-                    <button key={lab} onClick={() => {setSelectedLab(lab); setCurrentPage(1);}} className={`px-2.5 md:px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-medium transition-all whitespace-nowrap border ${selectedLab === lab ? "bg-white text-black border-white" : "text-gray-400 border-transparent hover:text-white hover:bg-white/5"}`}>{lab}</button>
-                  ))
-                )}
-            </div>
-        </div>
+        {/* Row 2: Lab Tabs & Filters in same row on desktop */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          {/* Lab Tabs - Scrollable */}
+          <div className="overflow-x-auto no-scrollbar -mx-3 px-3 md:mx-0 md:px-0" data-tour="filter-tabs">
+              <div className="flex items-center gap-1.5 min-w-max">
+                  {isLabRestricted ? (
+                    // Show only user's assigned lab with lock icon
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-black border border-white">
+                      <Lock size={12} />
+                      <span>{userLabTab}</span>
+                    </div>
+                  ) : (
+                    LAB_TABS.map((lab) => (
+                      <button key={lab} onClick={() => {setSelectedLab(lab); setCurrentPage(1);}} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap border ${selectedLab === lab ? "bg-white text-black border-white" : "text-gray-400 border-transparent hover:text-white hover:bg-white/5"}`}>{lab}</button>
+                    ))
+                  )}
+              </div>
+          </div>
 
-        {/* Row 3: Filters - Stack on mobile, row on desktop */}
-        <div className="grid grid-cols-3 md:flex md:flex-row items-center gap-2 w-full">
-             <div className="flex items-center gap-1.5 bg-white/5 px-2 md:px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-               <Filter size={14} className="text-gray-500 shrink-0 hidden sm:block" />
-               <select value={filterStatus} onChange={(e) => {setFilterStatus(e.target.value); setCurrentPage(1);}} className="appearance-none bg-transparent text-white text-[11px] md:text-xs font-medium focus:outline-none cursor-pointer w-full truncate">
-                 <option className="bg-gray-900" value="All">All Status</option>
-                 <option className="bg-gray-900" value="Critical">Critical</option>
-                 <option className="bg-gray-900" value="In Stock">In Stock</option>
-                 <option className="bg-gray-900" value="Low Stock">Low Stock</option>
-                 <option className="bg-gray-900" value="Out of Stock">Out of Stock</option>
-               </select>
-             </div>
-             <div className="flex items-center gap-1.5 bg-white/5 px-2 md:px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-               <Wrench size={14} className="text-gray-500 shrink-0 hidden sm:block" />
-               <select value={filterCondition} onChange={(e) => {setFilterCondition(e.target.value); setCurrentPage(1);}} className="appearance-none bg-transparent text-white text-[11px] md:text-xs font-medium focus:outline-none cursor-pointer w-full truncate">
-                 <option className="bg-gray-900" value="All">All Cond.</option>
-                 <option className="bg-gray-900" value="Available">Available</option>
-                 <option className="bg-gray-900" value="Broken">Broken</option>
-                 <option className="bg-gray-900" value="For Repairs">For Repairs</option>
-               </select>
-             </div>
-             <div className="flex items-center gap-1.5 bg-white/5 px-2 md:px-3 py-2 rounded-xl border border-white/10 hover:border-white/30 transition-colors">
-               <ArrowUpDown size={14} className="text-gray-500 shrink-0 hidden sm:block" />
-               <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className="appearance-none bg-transparent text-white text-[11px] md:text-xs font-medium focus:outline-none cursor-pointer w-full truncate">
-                 <option className="bg-gray-900">Newest</option>
-                 <option className="bg-gray-900">Name (A-Z)</option>
-                 <option className="bg-gray-900">Qty (High)</option>
-                 <option className="bg-gray-900">Qty (Low)</option>
-               </select>
-             </div>
+          {/* Filters - Row on desktop */}
+          <div className="flex items-center gap-2 shrink-0">
+               {/* Status Dropdown */}
+               <div className="relative" ref={statusDropdownRef}>
+                 <button 
+                   onClick={() => { setStatusDropdownOpen(!statusDropdownOpen); setConditionDropdownOpen(false); setSortDropdownOpen(false); }}
+                   className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
+                 >
+                   <Filter size={14} className="text-gray-500" />
+                   <span className="text-white text-xs font-medium">{filterStatus === "All" ? "All Status" : filterStatus}</span>
+                   <ChevronDown size={14} className={`text-gray-500 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                 </button>
+                 <AnimatePresence>
+                   {statusDropdownOpen && (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                       animate={{ opacity: 1, y: 0, scale: 1 }} 
+                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                       transition={{ duration: 0.15 }}
+                       className="absolute top-full left-0 mt-2 w-44 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                     >
+                       {[
+                         { value: "All", label: "All Status" },
+                         { value: "Critical", label: "Critical" },
+                         { value: "In Stock", label: "In Stock" },
+                         { value: "Low Stock", label: "Low Stock" },
+                         { value: "Out of Stock", label: "Out of Stock" }
+                       ].map((option) => (
+                         <button
+                           key={option.value}
+                           onClick={() => { setFilterStatus(option.value); setCurrentPage(1); setStatusDropdownOpen(false); }}
+                           className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                             filterStatus === option.value 
+                               ? 'bg-indigo-500/20 text-indigo-400' 
+                               : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                           }`}
+                         >
+                           {option.label}
+                           {filterStatus === option.value && <CheckCircle size={14} />}
+                         </button>
+                       ))}
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
+               </div>
+
+               {/* Condition Dropdown */}
+               <div className="relative" ref={conditionDropdownRef}>
+                 <button 
+                   onClick={() => { setConditionDropdownOpen(!conditionDropdownOpen); setStatusDropdownOpen(false); setSortDropdownOpen(false); }}
+                   className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
+                 >
+                   <Wrench size={14} className="text-gray-500" />
+                   <span className="text-white text-xs font-medium">{filterCondition === "All" ? "All Cond." : filterCondition}</span>
+                   <ChevronDown size={14} className={`text-gray-500 transition-transform ${conditionDropdownOpen ? 'rotate-180' : ''}`} />
+                 </button>
+                 <AnimatePresence>
+                   {conditionDropdownOpen && (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                       animate={{ opacity: 1, y: 0, scale: 1 }} 
+                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                       transition={{ duration: 0.15 }}
+                       className="absolute top-full left-0 mt-2 w-40 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                     >
+                       {[
+                         { value: "All", label: "All Cond." },
+                         { value: "Available", label: "Available" },
+                         { value: "Broken", label: "Broken" },
+                         { value: "For Repairs", label: "For Repairs" }
+                       ].map((option) => (
+                         <button
+                           key={option.value}
+                           onClick={() => { setFilterCondition(option.value); setCurrentPage(1); setConditionDropdownOpen(false); }}
+                           className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                             filterCondition === option.value 
+                               ? 'bg-indigo-500/20 text-indigo-400' 
+                               : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                           }`}
+                         >
+                           {option.label}
+                           {filterCondition === option.value && <CheckCircle size={14} />}
+                         </button>
+                       ))}
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
+               </div>
+
+               {/* Sort Dropdown */}
+               <div className="relative" ref={sortDropdownRef}>
+                 <button 
+                   onClick={() => { setSortDropdownOpen(!sortDropdownOpen); setStatusDropdownOpen(false); setConditionDropdownOpen(false); }}
+                   className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
+                 >
+                   <ArrowUpDown size={14} className="text-gray-500" />
+                   <span className="text-white text-xs font-medium">{sortOption}</span>
+                   <ChevronDown size={14} className={`text-gray-500 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
+                 </button>
+                 <AnimatePresence>
+                   {sortDropdownOpen && (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                       animate={{ opacity: 1, y: 0, scale: 1 }} 
+                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                       transition={{ duration: 0.15 }}
+                       className="absolute top-full right-0 mt-2 w-36 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                     >
+                       {["Newest", "Name (A-Z)", "Qty (High)", "Qty (Low)"].map((option) => (
+                         <button
+                           key={option}
+                           onClick={() => { setSortOption(option); setSortDropdownOpen(false); }}
+                           className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                             sortOption === option 
+                               ? 'bg-indigo-500/20 text-indigo-400' 
+                               : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                           }`}
+                         >
+                           {option}
+                           {sortOption === option && <CheckCircle size={14} />}
+                         </button>
+                       ))}
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
+               </div>
+          </div>
         </div>
       </div>
 
@@ -561,11 +699,127 @@ function InventoryContent() {
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative bg-[#111] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5"><h2 className="text-lg font-bold text-white">{isEditing ? "Edit Item" : "Add New Item"}</h2><button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button></div>
                <form onSubmit={handleSaveItem} className="p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Item Name</label><input required type="text" value={newItem.name} onChange={(e) => setNewItem({...newItem, name: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Control ID</label><input required type="text" value={newItem.controlId} onChange={(e) => setNewItem({...newItem, controlId: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div></div>
-                  <div className="grid grid-cols-3 gap-4"><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Quantity</label><input required type="number" min="0" value={newItem.quantity} onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div><div className="space-y-1.5 col-span-2"><label className="text-xs font-medium text-gray-400 uppercase flex items-center gap-1.5">Location {isLabRestricted && <Lock size={10} className="text-gray-500" />}</label><div className="relative">{isLabRestricted ? (<div className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-400 flex items-center gap-2"><Lock size={12} />{userLabTab}</div>) : (<><select required value={newItem.location} onChange={(e) => setNewItem({...newItem, location: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white appearance-none"><option value="" disabled>Select Laboratory</option>{LAB_TABS.filter(lab => lab !== "All Labs").map((lab) => (<option key={lab} value={LAB_MAPPING[lab]} className="bg-gray-900">{lab}</option>))}</select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} /></>)}</div></div></div>
-                  <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Supplier</label><input type="text" value={newItem.supplier} onChange={(e) => setNewItem({...newItem, supplier: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" /></div><div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Condition</label><div className="relative"><select value={newItem.condition} onChange={(e) => setNewItem({...newItem, condition: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white appearance-none"><option className="bg-gray-900">Available</option><option className="bg-gray-900">Broken</option><option className="bg-gray-900">For Repairs</option></select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} /></div></div></div>
-                  <div className="space-y-1.5"><label className="text-xs font-medium text-gray-400 uppercase">Remarks</label><div className="relative"><textarea rows={2} value={newItem.remarks} onChange={(e) => setNewItem({...newItem, remarks: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 pr-10 text-sm text-white resize-none"/>{newItem.remarks && <button type="button" onClick={() => setNewItem({...newItem, remarks: ""})} className="absolute right-2 top-2 text-gray-500 hover:text-white transition-colors"><X size={16} /></button>}</div></div>
-                  <div className="flex justify-end gap-3 pt-4 border-t border-white/10"><button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg">Cancel</button><button type="submit" className="flex items-center gap-2 px-6 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"><Save size={16} />{isEditing ? "Update Item" : "Save Item"}</button></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">Item Name</label>
+                      <input required type="text" value={newItem.name} onChange={(e) => setNewItem({...newItem, name: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">Control ID</label>
+                      <input required type="text" value={newItem.controlId} onChange={(e) => setNewItem({...newItem, controlId: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">Quantity</label>
+                      <input required type="number" min="0" value={newItem.quantity} onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-xs font-medium text-gray-400 uppercase flex items-center gap-1.5">Location {isLabRestricted && <Lock size={10} className="text-gray-500" />}</label>
+                      {isLabRestricted ? (
+                        <div className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-400 flex items-center gap-2"><Lock size={12} />{userLabTab}</div>
+                      ) : (
+                        <div className="relative" ref={modalLocationRef}>
+                          <button 
+                            type="button"
+                            onClick={() => { setModalLocationOpen(!modalLocationOpen); setModalConditionOpen(false); }}
+                            className="w-full flex items-center justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
+                          >
+                            <span className={newItem.location ? "text-white" : "text-gray-500"}>{newItem.location ? LAB_TABS.find(lab => LAB_MAPPING[lab] === newItem.location) || newItem.location : "Select Laboratory"}</span>
+                            <ChevronDown size={14} className={`text-gray-500 transition-transform ${modalLocationOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {modalLocationOpen && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto no-scrollbar"
+                              >
+                                {LAB_TABS.filter(lab => lab !== "All Labs").map((lab) => (
+                                  <button
+                                    key={lab}
+                                    type="button"
+                                    onClick={() => { setNewItem({...newItem, location: LAB_MAPPING[lab]}); setModalLocationOpen(false); }}
+                                    className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                                      newItem.location === LAB_MAPPING[lab] 
+                                        ? 'bg-indigo-500/20 text-indigo-400' 
+                                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                    }`}
+                                  >
+                                    {lab}
+                                    {newItem.location === LAB_MAPPING[lab] && <CheckCircle size={14} />}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">Supplier</label>
+                      <input type="text" value={newItem.supplier} onChange={(e) => setNewItem({...newItem, supplier: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">Condition</label>
+                      <div className="relative" ref={modalConditionRef}>
+                        <button 
+                          type="button"
+                          onClick={() => { setModalConditionOpen(!modalConditionOpen); setModalLocationOpen(false); }}
+                          className="w-full flex items-center justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
+                        >
+                          <span>{newItem.condition}</span>
+                          <ChevronDown size={14} className={`text-gray-500 transition-transform ${modalConditionOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        <AnimatePresence>
+                          {modalConditionOpen && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                              animate={{ opacity: 1, y: 0, scale: 1 }} 
+                              exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                            >
+                              {["Available", "Broken", "For Repairs"].map((condition) => (
+                                <button
+                                  key={condition}
+                                  type="button"
+                                  onClick={() => { setNewItem({...newItem, condition}); setModalConditionOpen(false); }}
+                                  className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                                    newItem.condition === condition 
+                                      ? 'bg-indigo-500/20 text-indigo-400' 
+                                      : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                  }`}
+                                >
+                                  {condition}
+                                  {newItem.condition === condition && <CheckCircle size={14} />}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-400 uppercase">Remarks</label>
+                    <div className="relative">
+                      <textarea rows={2} value={newItem.remarks} onChange={(e) => setNewItem({...newItem, remarks: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 pr-10 text-sm text-white resize-none"/>
+                      {newItem.remarks && <button type="button" onClick={() => setNewItem({...newItem, remarks: ""})} className="absolute right-2 top-2 text-gray-500 hover:text-white transition-colors"><X size={16} /></button>}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg">Cancel</button>
+                    <button type="submit" className="flex items-center gap-2 px-6 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"><Save size={16} />{isEditing ? "Update Item" : "Save Item"}</button>
+                  </div>
                </form>
             </motion.div>
           </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles 
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb 
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -107,6 +107,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   const normalizedRole = role ? role.toLowerCase() : "student";
   const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
+  const canViewSuggestions = ["developer", "administrator", "program chair", "faculty"].includes(normalizedRole);
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
@@ -114,6 +115,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
+    ...(canViewSuggestions ? [{ icon: Lightbulb, label: "Suggestions", href: "/dashboard/suggestions" }] : []),
     { icon: Sparkles, label: "Update Logs", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
