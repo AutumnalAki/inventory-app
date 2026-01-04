@@ -49,6 +49,14 @@ export default function Dashboard() {
     return loans;
   }, [loans, isLabRestricted, userLabDbName]);
 
+  // Filter logs based on role
+  const filteredLogs = useMemo(() => {
+    if (isLabRestricted && userLabDbName) {
+      return logs.filter(log => log.location === userLabDbName || log.location === "");
+    }
+    return logs;
+  }, [logs, isLabRestricted, userLabDbName]);
+
   // Stats (now using filtered data)
   const totalItems = filteredInventory.reduce((acc, item) => acc + item.quantity, 0);
   const totalTypes = filteredInventory.length;
@@ -126,7 +134,7 @@ export default function Dashboard() {
             </h3>
           </div>
           <div className="space-y-3 md:space-y-4">
-            {logs.slice(0, 5).map((log) => (
+            {filteredLogs.slice(0, 5).map((log) => (
                <div key={log.id} className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-xl bg-black/20 border border-white/5">
                   <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
                   <div className="min-w-0 flex-1">
@@ -137,7 +145,7 @@ export default function Dashboard() {
                   </div>
                </div>
             ))}
-            {logs.length === 0 && <p className="text-gray-500 italic">No recent activity.</p>}
+            {filteredLogs.length === 0 && <p className="text-gray-500 italic">No recent activity.</p>}
           </div>
         </div>
 

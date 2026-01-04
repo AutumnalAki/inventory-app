@@ -1,0 +1,483 @@
+id,item_name,control_id,quantity,unit,supplier,location,stock_status,condition_status,remarks,laboratory,low_stock_threshold,created_at
+119,21-pc Drive Socket Wrench Set,N/A,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+120,Universal Testing Machine,N/A,1,pcs,Andsons,Civil Engineering Laboratory,In Stock,For Repairs,Equipment under maintenance repair,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+121,Impact Hammer Drill,Makita,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,3,2026-01-04 09:48:02.4158+00
+122,Anemometer,N/A,1,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,,Mechanical Engineering Laboratory,3,2026-01-04 09:48:02.4158+00
+123,Small Angle Grinder,Black Decker,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,For Repairs,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+124,Side Cutting Pliers,Creston,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+125,Long Nose Pliers,Creston,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+126,Combination Pliers,Creston,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+127,Aviation Snip,Creston,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+128,Bomb Calorimeter,Optics Technology,1,pcs,Optics Technology,Mechanical Engineering Laboratory,In Stock,For Repairs,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+129,Digital Bomb Calorimeter,Infitek,1,pcs,Infitek,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+130,Tower Pincer,N/A,5,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,2,2026-01-04 09:48:02.4158+00
+131,34-Piece Combination Tools,Creston CCS 885,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,"2 pcs (ME Laboratory), 6 pcs (Central Storage Room)",Mechanical Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+132,Inert Gas Welding Machine,Kawasaki MTM 300A,2,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+133,C2H2 Gas Tank,N/A,2,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+134,Industrial O2 Gas Tank,N/A,3,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+135,CO2 Gas Tank,N/A,2,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+136,Argon Gas Tank,N/A,2,pcs,N/A,Electrical Engineering Laboratory,In Stock,Available,,Electrical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+137,Argon Gauge Meter,N/A,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+138,Welding and Cutting Tool,Harris BB2001,2,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+139,Flash and Fire Point Apparatus,ASTM D92,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+140,Plastic Toolbox,N/A,8,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,"6 pcs (CSR), 2 pcs (ME Lab)",Mechanical Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+141,Flow Meter,ESSOM HBO16,1,pcs,Andsons,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+142,Pitot Tube Apparatus,HBO16P,1,pcs,Andsons,Mechanical Engineering Laboratory,Low Stock,Available,,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+143,Flue Gas Analyzer,IMR B580B450,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+144,Deadweight Tester,Ravika DW30,2,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,"Serial No.: 21077, 21078",Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+145,Deadweight Calibrator,FM-1849-18,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,Available,Serial No.: 4966-036-02,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+146,Cleveland Flash Tester,N/A,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+147,Vacuum Gauge Tester,Ravika DT55,2,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,"Serial No.: 21079, 21080",Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+148,Saybolt Two-Tube Digital Viscometer,Saybolt,1,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,Serial No.: 22/HRSVC3,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+149,Arc Welding Machine,Makita,4,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+150,Osborne Reynold Apparatus,ESSOM HB024,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+151,Brass Manifold Gauge Meter,N/A,1,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+152,Circular Saw,Schaffen TGS-CS-76304,1,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+153,Finishing Sander,Makita BO4556,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+154,Electric Planer,Stanley STEL630,1,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+155,Mini Multipurpose Machine,N/A,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+156,Refrigerant Tanks,N/A,2,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,1 pc. (2-Kg) and 1 pc. (1-Kg),Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+157,Flue Gas Analyzer,KANE 455,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,For Repairs,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+158,NDT Hardness Tester,N/A,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,Low Stock,Available,,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+159,NDT Ultrasonic Tester,Controls 59-E4810,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+160,Single Stage Air Compressor Test Rig,Puma TH-3135,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+161,Refrigeration Trainer,N/A,1,pcs,Andsons,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+162,Mini Steam Powerplant,N/A,1,pcs,Andsons,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+163,High Precision Lathe Machine,Pro Richyoung Ind. RIC-T130E,2,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+164,Mini Bench Lathe Machine,Sumore SP2102,2,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+165,Deflection of Beam Apparatus,N/A,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+166,Fan and Blower,THR 11A,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+167,Brinell Hardness Tester,N/A,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+168,Single Cylinder Engine Test Bed,ESSOM MT502C,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+169,Vertical Turret Milling Machine,3KVS,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+170,Viscometer,Saybolt SDN-180,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+171,Steel Bar Bender,GW 40,1,pcs,N/A,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+172,CNC Small Lathe Machine,Yornew,1,pcs,Humil International Inc.,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+173,Mini Pelton Tube,N/A,1,pcs,Andsons,Mechanical Engineering Laboratory,In Stock,Available,,Mechanical Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+174,Hydraulic Bench,ESSOM HB100N,1,pcs,N/A,Mechanical Engineering Laboratory,Low Stock,Available,0,Mechanical Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+188,Dell Laptop,"Dell Inspiron 3501, Intel Core i3-1125G4 4GB, 15in",1,pcs,N/A,Computer Laboratory,Low Stock,Available,c/o Sir Tams,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+189,Digital Theory and Experimentation using Integrated Circuits (Book),Levine,7,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+190,Wifi Modem,Tp-Link TL-WR840N,10,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+191,RSLogix,Festo,9,pcs,N/A,Computer Laboratory,In Stock,Available,Missing: 1x CD,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+192,BNC (M) 20 AWG Leads,RANDALL,3,pcs,N/A,Computer Laboratory,Low Stock,Available,N/A,Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+193,BNC (M) 20 AWG Leads,POMONA,8,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+194,BNC (F) 20 AWG Leads,POMONA,8,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+195,USB-Serial Adapter,FTDI CHIP,2,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+196,PC To Micrologic Comms. cable,FESTO,10,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+197,USB-RS232 ADAPTER CABLE,FTDI CHIP,10,pcs,N,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+198,Digital Multimeter with USB,Mastech M8250D,10,pcs,N/A,Computer Laboratory,In Stock,Available,Missing 1PC,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+199,Arduino Components,N/A,15,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+200,Yellow Toolbox,"Contents: 5x4"" phillips screwdriver, 6x4"" flat scr",2,pcs,N/A,Computer Laboratory,Low Stock,Available,N/A,Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+201,45 in 1 Sensor Module Starter Kit,N/A,15,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+202,Arduino Coding Set,BRK-125697,30,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+203,Programmable Logic Controller Basic Programming,"Programmable Logic Controller (AB MicroLogix 1100 ",10,pcs,N/A,Computer Laboratory,In Stock,Available,"Instructor Guide (1st Box 5pcs, 2nd Box 5pcs) 3052288100000\r\n\r\nStudent Guide (1st Box 5pcs, 2nd Box 5pcs) 3052288110000",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+204,Digital Lab Package,@remarks,7,pcs,N/A,Computer Laboratory,In Stock,Available,"Includes: 7x 1box Digital Lab Unit IDL-800A, 25pcs connecting wire, 5pcs 2x pin, power cable, breadboard, 7x 1kit Digital Overlay Learning System manual, IC kit, 6 switches, 2 potentiometer, breadboard, schematic diagrams, stencil, 7x Jump Wire Kit",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+205,System Unit,Deep cool with power cable,10,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+206,Monitor,Phillips with power cable and VGA cable,10,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+207,Mouse and Keyboard,A4Tech,10,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+208,Power Cord,FESTO,10,pcs,N/A,Computer Laboratory,In Stock,Available,N/A,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+209,PIC Microcontroller System Trainer,MTS-887 PIC16F,10,pcs,N/A,Computer Laboratory,In Stock,Available,"Includes: Offline Complete Electronics 3D Circuit Design, Simulation and Circuit Analysis, Matrix Technology Solutions Flowcode 7 (Standard for 8bit PIC User License Software)",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+210,LAN Cable,N/A,0,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+211,Tutor for Arduino,MTS-101 with MS8250D for each piece,3,pcs,N/A,Computer Laboratory,In Stock,Available,Missing: MS8250D 3pcs,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+212,AVR,N/A,5,pcs,N/A,Computer Laboratory,Low Stock,Available,,Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+213,System Unit,N/A,10,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+214,Monitor,N/A,10,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+215,Mouse and Keyboard,N/A,10,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+216,Digital Theory and Experimentation using Integrated Circuits (Book),Levine,7,pcs,N/A,Computer Laboratory,In Stock,Available,Location: Central Storage Room,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+217,Wifi Modem,Tp-Link TL-WR840N,10,pcs,N/A,Computer Laboratory,In Stock,Available,"SN: 2198461017997, 2198461017996, 2198461017224, 2198461018000, 2198461017226, 2198461017221, 2198461017238, 2198461017998, 2198461017999, 2198461017239",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+218,RSLogix,FESTO,9,pcs,N/A,Computer Laboratory,In Stock,Available,"Accessories: CD , activation key, manual|\r\nMissing: 1pc",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+219,BNC (M) 20 AWG Leads,RANDALL,3,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+220,BNC (M) 20 AWG Leads,POMONA,8,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+221,BNC (F) 20 AWG Leads,POMONA,8,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+222,USB-Serial Adapter,FTDI CHIP,2,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+223,PC To Micrologic Comms. cable,FESTO 587566,10,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+224,USB-RS232 ADAPTER CABLE,FTDI CHIP,10,pcs,N/A,Computer Laboratory,In Stock,Available,"SN: 200400425, 200401369, 200504151, 200400493, 200401388, 200400460, 200400420, 200401397, 200400401, 200401390",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+225,Digital Multimeter with USB,Mastech M8250D,10,pcs,N/A,Computer Laboratory,In Stock,Available,Desc: 9V Battery Operated\r\nincluding 3pcs from the Tutor for Arduino Kit,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+226,Digital Multimeter with USB,XL830L,4,pcs,N/A,Computer Laboratory,In Stock,Available,Desc: 9V Battery Operated,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+227,Arduino OCmponents,N/A,15,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+228,Yellow Toolbox,N/A,2,pcs,N/A,Computer Laboratory,In Stock,Available,"Content: 5x4"" Phillips screwdriver, 6x4""flat screwdriver, 5x crimping tool, 54x RJ45, 70x RJ11",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+229,45 in 1 Sensor Module Starter Kit,N/A,15,pcs,N/A,Computer Laboratory,In Stock,Available,"Date Received: January 11, 2023\r\nDN: 2637H",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+230,Arduino Coding Set,Brick 'R' Knowledge,30,pcs,N/A,Computer Laboratory,In Stock,Available,"Date Received: March 18, 2021\r\nDN: 2637 H\r\nBRK-125697",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+231,Programmable Logic Controller Basic Programming (Instructor Guide),FESTo,9,pcs,N/A,Computer Laboratory,In Stock,Available,"Date Received: March 18, 2021\r\nDN: 34V\r\n3052288100000\r\nMissing: 1pc",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+232,Programmable Logic Controller Basic Programming (Student Guide),FESTO,10,pcs,N/A,Computer Laboratory,In Stock,Available,"Date Received: March 18, 2021\r\nDN: 34V\r\n3052288110000",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+233,Programmable Logic Controller Basic Programming,FESTO,10,pcs,N/A,Computer Laboratory,In Stock,Available,"Date Received: March 18, 2021\r\nDN: 34V\r\nAB MicroLogix 1100 with Case",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+234,Digital Lab Package(Unit IDL-800A),N/A,7,pcs,N/A,Computer Laboratory,In Stock,Available,"Date Received: October 1, 2021\r\nDN: 2113 H",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+235,Digital Lab Package (Overlay),N/A,7,pcs,N/A,Computer Laboratory,In Stock,Available,"date Received: October 1, 2021\r\nDN: 2113 H\r\nAccessories: 7x1 Digital Overlay Learning System manual, IC kit, 6 switches, 2 potentiometer, breadboard, schematic diagrams, stencil 7x jump wire kit",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+236,System Unit,Deep cool,10,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+238,Monitor,Phillips,10,pcs,N/A,Computer Laboratory,In Stock,Available,"SN: 2V5A19303004263, 2V5A19303004737, 2V5A1917100522, 2V5A19303004251, 2V5A191700521, 2V5A1917004009, 2V5A1933004312, 2V5A1933004309, 2V5A1933004280, 2V5A1904001055",Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+239,Mouse and Keyboard,A4Tech,10,pcs,N/A,Computer Laboratory,In Stock,Available,"SN: PE1908010570, PE1908010567, PE1908010568, PE1908010560, PE1908010563, PE1908010565, PE1908010569, PE1908010562, PE1908010566, PE1908010564",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+240,Power Cord,FESTO,10,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+241,PIC Microcontroller System Trainer,MTS-887 PIC16F,10,pcs,N/A,Computer Laboratory,In Stock,Available,"SN: C-429845, C-429864, C-429871, C-429848, C-429867, C-429869, C-429868, C-429863, C-429872, C-429870",Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+242,LAN Cable,N/A,10,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,10,2026-01-04 09:48:02.4158+00
+243,Tutor for Arduino,MTS-101,3,pcs,N/A,Computer Laboratory,In Stock,Available,,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+244,Laptop,Samsung R580,1,pcs,N/A,Computer Laboratory,In Stock,Available,i5Core 4abram,Computer Laboratory,1,2026-01-04 09:48:02.4158+00
+245,Thermal Expansion,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,8,2026-01-04 09:48:02.4158+00
+247,Field Mapper Set,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+248,Galvanometer,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+249,Bullet-Shape Metal,N/A,24,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+251,"Metal Ball (1/2"")",N/A,39,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+253,Thread Spool,N/A,10,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+254,Discover Density Set,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+256,Triple Beam Table,N/A,16,pcs,N/A,Physics Laboratory,In Stock,Available,"15pcs (W), 1pc (da)",Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+257,Mechanical Equivalent of Heat,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,0,Physics Laboratory,3,2026-01-04 09:48:02.4158+00
+260,Metal Conductor with Insulated Handle,N/A,4,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+261,Compass Rose,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+262,Spring Balance,N/A,24,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+263,Concave Lens (f= -20 cm),N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+264,Convex Lens,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+265,Atwood's Machine,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+266,Tuning Fork Set,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+267,Micrometer,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+268,"Solenoid, Air Core",N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+269,Tesla Meter,N/A,4,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+270,Support Rod (Short and Copper-Colored),N/A,24,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+272,Basic Coil Set,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+273,Hooke's Law Spring Set (packs),N/A,8,pcs,N/A,Physics Laboratory,Low Stock,Available,0,Physics Laboratory,10,2026-01-04 09:48:02.4158+00
+275,Calorimeter,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+277,Series/Parallel Spring Set,N/A,2,boxes,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,1,2026-01-04 09:48:02.4158+00
+279,wooden plank,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+280,Steam Generator,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+281,Metal Stand with Base,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+282,Universal Clamp,N/A,16,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+284,Free Fall Aparatus,N/A,20,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+285,Slotted Mass Hanger,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+286,Weight Holder,N/A,32,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,10,2026-01-04 09:48:02.4158+00
+287,Hooked Mass Set,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+288,Mass and Hanger Set,N/A,8,pcs,Local,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+289,Mass and Hanger Set,N/A,8,pcs,PASCO ME-8979,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+290,Slotted Mass Set,N/A,8,pcs,PASCO ME-8704A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+291,Slotted Mass Set,N/A,8,pcs,Local,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+293,Horseshoe Magnet,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+294,Pulley,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+295,Opstic Kit,N/A,8,pcs,N/A,Physics Laboratory,In Stock,Available,,Physics Laboratory,4,2026-01-04 09:48:02.4158+00
+297,Burette,"PYREX 2116-50, 50ml with PTFE Stopcock",8,pcs,N/A,Chemistry Laboratory,In Stock,Available,2pcs/spc\r\n2pcs/(da),Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+298,Glass tubing(6mm),N/A,9,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+300,Sterile Hypodermic Syringe,N/A,32,pcs,N/A,Chemistry Laboratory,In Stock,Available,"3ml, Single use|\r\n9pcs",Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+301,Burette Clamp,N/A,8,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+302,Wire Gauze,N/A,11,pcs,N/A,Chemistry Laboratory,In Stock,Available,21 pcs USED,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+303,Evaporating Dish,N/A,7,pcs,N/A,Chemistry Laboratory,In Stock,Available,18pcs,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+304,Petri Dish,PYREX,7,pcs,N/A,Chemistry Laboratory,In Stock,Available,"Missing: 1\r\nBroken cover plate, for replacement: 8pcs",Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+306,Test tubes (25x150mm),PYREX,92,pcs,N/A,Chemistry Laboratory,In Stock,Available,0,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+307,Test tubes (18x150mm),N/A,1,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+308,Test tubes (25x200mm),N/A,4,pcs,N/A,Chemistry Laboratory,In Stock,Available,0,Chemistry Laboratory,2,2026-01-04 09:48:02.4158+00
+309,Test tube Holder,N/A,8,pcs,N/A,Chemistry Laboratory,In Stock,Available,11pcs,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+310,Tripod,N/A,8,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+312,Erlenmyer Flask (250mL),N/A,7,pcs,N/A,Chemistry Laboratory,In Stock,Available,0,Chemistry Laboratory,3,2026-01-04 09:48:02.4158+00
+313,Erlenmyer Flash (500mL),N/A,1,pcs,N/A,Chemistry Laboratory,In Stock,Available,2,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+314,Glass funnel,N/A,8,pcs,N/A,Chemistry Laboratory,In Stock,Available,16pcs (75mm)\r\n2pcs (60mm),Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+315,Beaker (100mL),N/A,7,pcs,N/A,Chemistry Laboratory,In Stock,Available,0,Chemistry Laboratory,3,2026-01-04 09:48:02.4158+00
+316,Beaker (250mL),N/A,7,pcs,N/A,Chemistry Laboratory,In Stock,Available,"Missing 1pc\r\nBroken, for replacement: 7pcs",Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+317,Bunsen Burner Gateway with Rubber Tube,N/A,8,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+318,Analytical Balance`,WANT FA2204E,1,pcs,N/A,Chemistry Laboratory,In Stock,Available,2pcs,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+319,Top Loading Balance,WANT WT20002N,1,pcs,N/A,Chemistry Laboratory,In Stock,Available,3pcs,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+320,Hotplate with magnetic stirrer,BIOHASE MS-H-S,1,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+321,Alcohol Thermometer,N/A,14,pcs,N/A,Chemistry Laboratory,In Stock,Available,"-10deg to 110deg : 7pcs\r\n-20deg to 150deg : 4pcs : Missing 1pc, Separate column, for repair\r\n-20deg to 110deg : 2pcs\r\n-10deg to 250deg : 1pc",Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+322,Dry Heat Oven,FAITHFUL 101-1AB,1,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+323,Lead Acetate,n/a,0,g,n/a,Chemistry Laboratory,In Stock,Available,Missing 50g,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+324,Sodium Hydroxide,N/A,0,g,N/A,Chemistry Laboratory,In Stock,Available,100g,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+325,Benzoic Acid,N/A,0,g,N/A,Chemistry Laboratory,In Stock,Available,100g,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+326,HDPE Bottle,N/A,10,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+327,Petri Dish(s),N/A,2,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+328,erlenmeyer flasks,N/A,24,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+329,Volumetric flask,N/A,31,pcs,N/A,Chemistry Laboratory,In Stock,Available,1pc (da),Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+330,Wire gauge 5x5,N/A,20,pcs,N/A,Chemistry Laboratory,In Stock,Available,0,Chemistry Laboratory,4,2026-01-04 09:48:02.4158+00
+331,Test tube brusk,N/A,12,pcs,N/A,Chemistry Laboratory,In Stock,Available,,Chemistry Laboratory,1,2026-01-04 09:48:02.4158+00
+332,Test tube rack,n/A,10,pcs,N/A,Chemistry Laboratory,In Stock,Available,0,Chemistry Laboratory,2,2026-01-04 09:48:02.4158+00
+333,Sodium Iodide,N/A,0,g,N/A,Chemistry Laboratory,In Stock,Available,50mL,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+334,Methylene Blue,N/A,0,ml,N/A,Chemistry Laboratory,In Stock,Available,250ml,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+335,Glucose,N/A,0,g,N/A,Chemistry Laboratory,In Stock,Available,100g,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+336,Phenolphthalein,N/A,0,ml,N/A,Chemistry Laboratory,In Stock,Available,100mL,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+337,Filter paper (125mm),N/A,0,g,N/A,Chemistry Laboratory,In Stock,Available,~100,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+338,Litmus paper,N/A,0,g,N/A,Chemistry Laboratory,In Stock,Available,Blue and red expired,Chemistry Laboratory,10,2026-01-04 09:48:02.4158+00
+339,"9"" Magnetic Cast Aluminum Torpedo Level","Stanley STHT42465-8, 229mm 9""",5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+340,Steel Measuring Tape (Construction Meter),"Stanley STHT30656-8, 5m/26'",5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+341,Fiber Glass Long Tape Measure,"Stanley 34-263, 50m/165'",5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,1 pc c/o Ma'am Kazel,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+342,Abney Level,Sokkia,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+343,Abney Level,Local,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+344,Electronic Roller Planimeter,Sokkia PLANIX 7 (3651-70),1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+345,Electronic Roller Planimeter,Sokkia PLANIX 6 (3651-61),1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+346,Claw Hammer,"Stanley STHT51071-8, 450g/160z",5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+347,Geological Hammer (Rock Pick),N/A,5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+348,Total Station Theodolite,"TOPCON GM50 series, 5"" Reflectorless Single Displa",3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+349,Theodolite,"Dave White's SitePro DT-05, Accessories: Plumb Bob",3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+350,Automatic Level,"Sokkia B40-35, Accessories: Plumb Bob",3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+351,Range Pole,N/A,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+352,Aluminum Tripod,Sokkia,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,S/N: 200818301138,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+353,Automatic Level,CST/Berger 55-SAL20ND,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+354,Measuring Wheel,Sokkia,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+355,Surveying Prism,Sokkia,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+356,Surveying Prism,Topcon,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+357,Extension Wire (3-gang),N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+358,Heavy Duty Extension Wire,N/A,2,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,Yellow,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+359,Mini Prism System,N/A,2,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+360,Rebound Hammer,Schmidt 32176,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,S/N: 21974,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+361,Sound Level Meter,Wensn WS1361,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+362,Infrared Thermometer,Benetech GM550,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+363,Anemometer,Benetech GM816,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+364,Digital Caliper,Mitutoyo 500-196-30,2,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"S/N: 20058864, 20059114",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+365,Stopwatch,Casio HS-70W,2,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+366,Specific Gravity Frame,Hi-Target,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+367,Density Basket,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+368,Pycnometer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,1000ml,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+369,Sand Cone Apparatus,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Gallon jug, cone, base plate",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+370,Plastic Limit Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Glass plate, evaporating dish, spatula, wash bottle, 6x moisture can",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+371,Liquid Limit Device,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Casagrande, grooving tool",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+372,Shrinkage Limit Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Monel dish, crystallizing dish, shrinkage prong plate, overflow dish, 25ml graduated cylinder, spatula",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+373,Standard Proctor Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Compaction mold (1/30 cu.ft.), compaction rammer (5.5 lbs)",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+374,Modified Proctor Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Compaction mold (1/13.33 cu.ft.), compaction rammer (10 lbs)",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+375,Field Density Test Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Sand cone, density plate, plastic jug",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+376,Hydrometer Analysis Test Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Hydrometer (151H), dispersion cup, stirrer, 1000ml graduated cylinder",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+377,Sieve Shaker,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"8"" diameter",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+378,Sieve,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"8"" diameter, various mesh sizes",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+379,Sample Splitter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"1/2"" chute width",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+380,Sample Splitter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"1"" chute width",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+381,Los Angeles Abrasion Machine,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,12 steel balls,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+382,Slump Test Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Slump cone, base plate, tamping rod, scoop",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+383,Concrete Cylinder Mold,N/A,3,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"6"" x 12""",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+384,Concrete Beam Mold,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"6"" x 6"" x 21""",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+385,Air Entrainment Meter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,Type B,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+386,Concrete Mixer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,1 bagger,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+387,Vicat Apparatus,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Plunger, needle, mold, glass plate",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+388,Gillmore Needle Apparatus,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,Initial and final needles,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+389,Le Chatelier Flask,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+390,Specific Gravity Bottle,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,50ml,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+391,Mortar Mixer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,5 qt.,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+392,Flow Table,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"10""",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+393,Compression Machine,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,2000kN,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+394,Flexural Testing Machine,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,100kN,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+395,CBR Test Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Mold, collar, base plate, spacer disc, surcharge weight, penetration piston",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+396,Direct Shear Test Apparatus,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Shear box, load hanger, weights",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+397,Unconfined Compression Test Apparatus,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Compression machine, proving ring, dial gauge",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+398,Triaxial Test Apparatus,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Triaxial cell, load frame, pressure panel",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+399,Consolidation Test Apparatus,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Consolidometer, load hanger, weights",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+400,Permeability Test Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Permeameter, standpipe",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+401,Dynamic Cone Penetrometer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Hammer, rod, cone",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+402,Plate Load Test Set,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,"Plates, jack, proving ring, dial gauges",Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+403,Schmidt Hammer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,Type N,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+404,Rebar Locator,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+405,Ultrasonic Pulse Velocity Tester,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+406,Corrosion Meter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+407,Resistivity Meter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+408,Ground Penetrating Radar,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+409,Inclinometer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+410,Tiltmeter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+411,Strain Gauge,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+412,Load Cell,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+413,LVDT,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+414,Accelerometer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+415,Data Logger,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+416,Laptop,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+417,Desktop Computer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+418,Printer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+419,Projector,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+420,Whiteboard,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+421,Office Desk,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+422,Office Chair,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+423,File Cabinet,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+424,Bookshelf,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+425,Safety Helmet,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+426,Safety Vest,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+427,Safety Shoes,N/A,10,pairs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+428,Safety Goggles,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+429,Ear Plugs,N/A,10,pairs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+430,Dust Mask,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+431,First Aid Kit,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+432,Fire Extinguisher,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+433,Broom,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+434,Dustpan,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+435,Trash Bin,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+436,Mop,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+437,Bucket,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+438,Cleaning Cloth,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+439,Detergent,N/A,1,bottle,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+440,Disinfectant,N/A,1,bottle,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+441,Hand Soap,N/A,1,bottle,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+442,Paper Towel,N/A,1,roll,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+443,Toilet Paper,N/A,1,roll,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+444,Logbook,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+445,Pen,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+446,Pencil,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+447,Marker,N/A,5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+448,Eraser,N/A,5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+449,Ruler,N/A,5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+450,Calculator,N/A,5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+451,Stapler,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+452,Staple Wires,N/A,1,box,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+453,Paper Clip,N/A,1,box,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+454,Binder Clip,N/A,1,box,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+455,Folder,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+456,Envelope,N/A,10,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,10,2026-01-04 09:48:02.4158+00
+457,Bond Paper,N/A,1,ream,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+458,Tape,N/A,1,roll,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+459,Glue,N/A,1,bottle,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+460,Scissors,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+461,Cutter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+462,Hole Puncher,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+463,Fastener,N/A,1,box,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+464,Rubber Band,N/A,1,box,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+465,Push Pin,N/A,1,box,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+466,Whiteboard Marker,N/A,5,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,5,2026-01-04 09:48:02.4158+00
+467,Whiteboard Eraser,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+468,Chalk,N/A,1,box,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+469,Blackboard Eraser,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+470,Extension Cord,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+471,Flash Drive,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+472,External Hard Drive,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+473,SD Card,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+474,Card Reader,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+475,HDMI Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+476,VGA Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+477,Power Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+478,USB Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+479,Ethernet Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+480,Audio Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+481,Microphone,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+482,Speaker,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+483,Headphone,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+484,Webcam,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+485,Tripod,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+486,Camera,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+487,Lens,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+488,Battery,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+489,Charger,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+490,Memory Card,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+491,Bag,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+492,Case,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+493,Strap,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+494,Filter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+495,Hood,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+496,Cap,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+497,Remote,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+498,Flash,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+499,Light,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+500,Background,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+501,Stand,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+502,Reflector,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+503,Umbrella,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+504,Softbox,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+505,Grid,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+506,Snoot,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+507,Barn Door,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+508,Gel,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+509,Gobo,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+510,Flag,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+511,Scrim,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+512,Silk,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+513,Frame,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+514,Clamp,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+515,Arm,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+516,Boom,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+517,C-Stand,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+518,Roller Stand,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+519,Light Stand,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+520,Background Support,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+521,Sandbag,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+522,Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+523,Adapter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+524,Converter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+525,Splitter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+526,Switch,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+527,Hub,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+528,Router,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+529,Modem,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+530,Access Point,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+531,Antenna,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+532,Repeater,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+533,Bridge,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+534,Gateway,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+535,Firewall,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+536,Server,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+537,Storage,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+538,Backup,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+539,UPS,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+540,PDU,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+541,Rack,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+542,Cabinet,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+543,Cooling,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+544,Monitoring,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+545,Security,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+546,Access Control,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+547,Surveillance,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+548,Alarm,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+549,Sensor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+550,Detector,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+551,Controller,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+552,Actuator,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+553,Motor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+554,Drive,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+555,Pump,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+556,Valve,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+557,Fan,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+558,Blower,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+559,Compressor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+560,Heater,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+561,Chiller,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+562,Boiler,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+563,Heat Exchanger,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+564,Filter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+565,Separator,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+566,Mixer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+567,Agitator,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+568,Reactor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+569,Vessel,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+570,Tank,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+571,Pipe,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+572,Tube,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+573,Hose,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+574,Fitting,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+575,Flange,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+576,Gasket,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+577,Bolt,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+578,Nut,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+579,Washer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+580,Screw,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+581,Nail,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+582,Rivet,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+583,Pin,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+584,Key,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+585,Spring,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+586,Bearing,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+587,Gear,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+588,Belt,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+589,Chain,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+590,Rope,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+591,Wire,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+592,Cable,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+593,Insulator,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+594,Conductor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+595,Semiconductor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+596,Resistor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+597,Capacitor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+598,Inductor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+599,Transformer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+600,Diode,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+601,Transistor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+602,Integrated Circuit,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+603,Microcontroller,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+604,Microprocessor,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+605,Memory,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+606,Display,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+607,Touchscreen,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+608,Keyboard,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+609,Keypad,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+610,Mouse,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+611,Trackball,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+612,Joystick,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+613,Gamepad,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+614,Remote Control,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+615,Scanner,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+616,Camera,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+617,Microphone,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+618,Speaker,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+619,Printer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+620,Plotter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+621,3D Printer,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+622,CNC Machine,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+623,Laser Cutter,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+624,Robot,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+625,Drone,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+626,Vehicle,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+627,Satellite,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+628,Spacecraft,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+629,Telescope,N/A,1,pcs,N/A,Civil Engineering Laboratory,In Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00
+630,Microscope,Micro-001,1,pcs,N/A,Civil Engineering Laboratory,Low Stock,Available,,Civil Engineering Laboratory,1,2026-01-04 09:48:02.4158+00

@@ -47,6 +47,7 @@ export type ActivityLog = {
   action: string;
   item: string;
   time: string;
+  location: string;
 };
 
 // --- CONTEXT INTERFACE ---
@@ -139,7 +140,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         id: l.id, 
         action: l.activity_type, 
         item: l.description, 
-        time: new Date(l.timestamp).toLocaleString()
+        time: new Date(l.timestamp).toLocaleString(),
+        location: l.location || ""
       })));
     }
   };
@@ -179,9 +181,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // 3. ACTIONS
-  const logAction = async (type: string, description: string) => {
+  const logAction = async (type: string, description: string, location: string = "") => {
     await supabase.from('activity_log').insert([{ 
-      activity_type: type, description: description, timestamp: new Date().toISOString()
+      activity_type: type, description: description, timestamp: new Date().toISOString(), location: location
     }]);
   };
 
@@ -192,7 +194,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       condition_status: item.condition, remarks: item.remarks, unit: 'pcs'
     }]);
     if (!error) {
-      await logAction("New Item Added", `Item: ${item.name}`);
+      await logAction("New Item Added", `Item: ${item.name}`, item.location);
       fetchData();
     }
   };
@@ -212,15 +214,19 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     
     const { error } = await supabase.from('inventory').update(payload).eq('id', id);
     if (!error) {
-      await logAction("Item Updated", `Item ID: ${id}`);
+      // Get the item's location for logging
+      const item = inventory.find(i => i.id === id);
+      await logAction("Item Updated", `Item ID: ${id}`, item?.location || updatedItem.location || "");
       fetchData(); 
     }
   };
 
   const deleteItem = async (id: number) => {
+    // Get the item's location before deleting
+    const item = inventory.find(i => i.id === id);
     const { error } = await supabase.from('inventory').delete().eq('id', id);
     if (!error) {
-      await logAction("Item Deleted", `Item ID: ${id}`);
+      await logAction("Item Deleted", `Item ID: ${id}`, item?.location || "");
       fetchData(); 
     }
   };
