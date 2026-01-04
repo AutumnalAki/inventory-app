@@ -193,7 +193,7 @@ export default function Dashboard() {
           </div>
           
           {/* Insights List */}
-          <div className="space-y-2 flex-1 overflow-y-auto max-h-[200px] no-scrollbar">
+          <div className="space-y-2 flex-1 min-h-0 overflow-y-auto no-scrollbar">
             {aiSummary.insights.map((insight, idx) => (
               <InsightCard key={insight.id} insight={insight} onAction={navigateTo} delay={idx * 0.1} />
             ))}
