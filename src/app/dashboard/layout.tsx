@@ -399,11 +399,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   const normalizedRole = role ? role.toLowerCase() : "student";
   const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
+  const canViewSuggestions = ["developer", "administrator", "program chair", "faculty"].includes(normalizedRole);
 
   return (
     <>
       <SidebarContent>{children}</SidebarContent>
-      {isLoaded && <Onboarding isOpen={showOnboarding} onComplete={completeOnboarding} canViewMembers={canViewMembers} />}
+      {isLoaded && <Onboarding isOpen={showOnboarding} onComplete={completeOnboarding} canViewMembers={canViewMembers} canViewSuggestions={canViewSuggestions} />}
     </>
   );
 }

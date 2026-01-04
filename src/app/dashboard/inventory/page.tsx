@@ -271,7 +271,7 @@ function InventoryContent() {
         </div>
 
         {/* MOVED EXPORT BUTTON */}
-        <div className="relative z-30" data-tour="export-btn">
+        <div className="relative z-100" data-tour="export-btn">
             <button onClick={() => setIsExportOpen(!isExportOpen)} className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-black/20">
               <Download size={16} /> Export Data <ChevronDown size={14}/>
             </button>
