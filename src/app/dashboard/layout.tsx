@@ -43,7 +43,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const customBgStyle = isCustomHex ? { backgroundColor: accent } : undefined;
 
   const normalizedRole = role ? role.toLowerCase() : "student";
-  const canViewMembers = ["administrator", "program chair"].includes(normalizedRole);
+  const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
@@ -281,7 +281,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { role } = useRole();
   
   const normalizedRole = role ? role.toLowerCase() : "student";
-  const canViewMembers = ["administrator", "program chair"].includes(normalizedRole);
+  const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
 
   return (
     <>

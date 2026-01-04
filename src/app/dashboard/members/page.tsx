@@ -9,8 +9,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { usePopup } from "@/context/PopupContext";
 
-// Roles List
+// All Roles (for display)
 const ROLES = [
+  "Developer",
   "Administrator",
   "Program Chair",
   "Faculty",
@@ -23,6 +24,9 @@ const ROLES = [
   "EE Lab"
 ];
 
+// Selectable Roles (excludes Developer - exclusive to website creator)
+const SELECTABLE_ROLES = ROLES.filter(role => role !== "Developer");
+
 export default function MembersPage() {
   const { showAlert, showConfirm } = usePopup();
   
@@ -34,7 +38,7 @@ export default function MembersPage() {
   
   // --- STATES FOR GENERATE MODAL ---
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(ROLES[2]); 
+  const [selectedRole, setSelectedRole] = useState(SELECTABLE_ROLES[0]); 
   const [customCode, setCustomCode] = useState("");
   const [generatePassword, setGeneratePassword] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -254,7 +258,7 @@ export default function MembersPage() {
                return (
                 <div key={user.id} className={`flex items-center justify-between p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-colors ${isActive ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-red-900/10 border-red-900/20'}`}>
                   <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                    <div className={`relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ${user.role === 'Administrator' ? 'bg-orange-500 text-white' : 'bg-indigo-600 text-white'}`}>
+                    <div className={`relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ${user.role === 'Developer' ? 'bg-cyan-500 text-white' : user.role === 'Administrator' ? 'bg-orange-500 text-white' : 'bg-indigo-600 text-white'}`}>
                       {user.username?.charAt(0) || "U"}
                       <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full border-2 border-[#111] ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
                     </div>
@@ -356,7 +360,7 @@ export default function MembersPage() {
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold text-gray-400 uppercase">Assign Role</label>
                         <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500">
-                            {ROLES.map(role => <option key={role} value={role} className="bg-gray-900">{role}</option>)}
+                            {SELECTABLE_ROLES.map(role => <option key={role} value={role} className="bg-gray-900">{role}</option>)}
                         </select>
                     </div>
                     <div className="space-y-1.5">
@@ -421,7 +425,7 @@ export default function MembersPage() {
                 
                 {/* User Info */}
                 <div className="flex items-center gap-3 mb-6 p-3 bg-white/5 rounded-xl">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${editingUser.role === 'Administrator' ? 'bg-orange-500' : 'bg-indigo-600'} text-white`}>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${editingUser.role === 'Developer' ? 'bg-cyan-500' : editingUser.role === 'Administrator' ? 'bg-orange-500' : 'bg-indigo-600'} text-white`}>
                     {editingUser.username?.charAt(0) || "U"}
                   </div>
                   <div>
@@ -438,7 +442,7 @@ export default function MembersPage() {
                       onChange={(e) => setEditRole(e.target.value)} 
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500"
                     >
-                      {ROLES.map(role => (
+                      {SELECTABLE_ROLES.map(role => (
                         <option key={role} value={role} className="bg-gray-900">{role}</option>
                       ))}
                     </select>
