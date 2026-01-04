@@ -288,7 +288,7 @@ function InventoryContent() {
       </div>
 
       {/* --- CONTROL BAR --- */}
-      <div className="relative z-20 bg-white/5 border border-white/10 p-3 md:p-4 rounded-2xl backdrop-blur-xl flex flex-col gap-4 w-full">
+      <div className="sticky top-0 z-30 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 p-3 md:p-4 rounded-2xl flex flex-col gap-4 w-full shadow-lg">
         {/* Row 1: Add Button & Search */}
         <div className="flex items-center gap-3 w-full">
            <button onClick={openAddModal} data-tour="add-item-btn" className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap shrink-0">
