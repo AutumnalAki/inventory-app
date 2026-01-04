@@ -2,17 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  User, Lock, Palette, Save, Check, Loader2, Mail, Shield, Bell, Monitor, Moon, Sun
+  User, Lock, Palette, Save, Check, Loader2, Mail, Shield, Bell, Monitor, Moon, Sun, HelpCircle, RotateCcw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/context/ThemeContext";
 import { usePopup } from "@/context/PopupContext";
+import { useRouter } from "next/navigation";
 
 const TABS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "security", label: "Security", icon: Lock },
+  { id: "help", label: "Help", icon: HelpCircle },
 ];
 
 const PRESET_THEMES = [
@@ -34,6 +36,17 @@ export default function SettingsPage() {
   
   // Popup Context
   const { showAlert } = usePopup();
+
+  // Router for navigation
+  const router = useRouter();
+
+  // Function to reset and replay tutorial
+  const handleReplayTutorial = () => {
+    localStorage.removeItem("cdm-labtrack-onboarding-complete");
+    router.push("/dashboard");
+    // Small delay to ensure navigation completes before reload triggers onboarding
+    setTimeout(() => window.location.reload(), 100);
+  };
 
   // User Data State
   const [userId, setUserId] = useState<string | null>(null);
@@ -397,6 +410,73 @@ export default function SettingsPage() {
                       {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                       {loading ? "Updating..." : "Update Password"}
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. HELP TAB */}
+            {activeTab === "help" && (
+              <div className="p-6 md:p-8">
+                <div className="max-w-2xl space-y-8">
+                  <div className="pb-6 border-b border-white/10">
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                        <HelpCircle size={20} />
+                      </div>
+                      Help & Support
+                    </h3>
+                    <p className="text-gray-400 mt-2">Get help with using CDM LabTrack.</p>
+                  </div>
+
+                  {/* Tutorial Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <RotateCcw size={16} className="text-blue-400" /> Getting Started
+                    </h4>
+                    <div className="bg-black/30 border border-white/10 rounded-2xl p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shrink-0">
+                          <HelpCircle size={24} className="text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-bold text-white text-lg">Interactive Tutorial</h5>
+                          <p className="text-gray-400 text-sm mt-1 mb-4">
+                            New to CDM LabTrack? Take a quick tour to learn about all the features and how to use them effectively.
+                          </p>
+                          <button 
+                            onClick={handleReplayTutorial}
+                            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
+                          >
+                            <RotateCcw size={16} />
+                            Replay Tutorial
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Tips */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">Quick Tips</h4>
+                    <div className="grid gap-3">
+                      {[
+                        { title: "Keyboard Shortcuts", desc: "Use arrow keys to navigate the tutorial" },
+                        { title: "Filter Inventory", desc: "Click on status badges in the dashboard to filter items" },
+                        { title: "Batch Actions", desc: "Select multiple items in inventory to delete or update them at once" },
+                        { title: "Export Data", desc: "Generate reports in PDF, Excel, or CSV format" },
+                      ].map((tip, i) => (
+                        <div key={i} className="bg-black/20 border border-white/5 rounded-xl p-4 flex items-start gap-3">
+                          <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
+                            {i + 1}
+                          </div>
+                          <div>
+                            <h5 className="font-semibold text-white text-sm">{tip.title}</h5>
+                            <p className="text-gray-500 text-xs mt-0.5">{tip.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

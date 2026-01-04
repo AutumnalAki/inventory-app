@@ -192,7 +192,7 @@ export default function MembersPage() {
           <h1 className="text-3xl font-bold tracking-tight text-white">Members & Access</h1>
           <p className="text-gray-400 mt-1">Manage users and secure invite codes.</p>
         </div>
-        <button onClick={() => setIsGenerateOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20">
+        <button onClick={() => setIsGenerateOpen(true)} data-tour="generate-code-btn" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20">
           <Key size={18} /> Generate Invite
         </button>
       </div>
@@ -237,7 +237,7 @@ export default function MembersPage() {
                     </span>
 
                     {!isMe && (
-                      <>
+                      <div data-tour="user-actions" className="flex items-center gap-1">
                         <button 
                           onClick={() => handleToggleStatus(user.id, user.status)}
                           title={isActive ? "Deactivate User" : "Activate User"}
@@ -253,7 +253,7 @@ export default function MembersPage() {
                         >
                           <Trash2 size={16} />
                         </button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export default function MembersPage() {
         </div>
 
         {/* RIGHT: Active Invites (Secure View) */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col" data-tour="invite-codes-section">
            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Key size={18} className="text-emerald-400"/> Active Invites
           </h3>

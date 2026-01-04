@@ -191,7 +191,7 @@ function InventoryContent() {
         </div>
 
         {/* MOVED EXPORT BUTTON */}
-        <div className="relative z-30">
+        <div className="relative z-30" data-tour="export-btn">
             <button onClick={() => setIsExportOpen(!isExportOpen)} className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-black/20">
               <Download size={16} /> Export Data <ChevronDown size={14}/>
             </button>
@@ -210,7 +210,7 @@ function InventoryContent() {
       {/* --- CONTROL BAR (Removed Export Button) --- */}
       <div className="relative z-20 bg-white/5 border border-white/10 p-2.5 rounded-2xl backdrop-blur-xl flex flex-col xl:flex-row items-center justify-between gap-4 w-full">
         <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto shrink-0">
-           <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap">
+           <button onClick={openAddModal} data-tour="add-item-btn" className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap">
             <Plus size={16} /> Add Item
           </button>
           
@@ -221,7 +221,7 @@ function InventoryContent() {
         </div>
 
         {/* ... Filters ... */}
-        <div className="flex-1 overflow-x-auto no-scrollbar mask-linear-fade flex justify-center w-full">
+        <div className="flex-1 overflow-x-auto no-scrollbar mask-linear-fade flex justify-center w-full" data-tour="filter-tabs">
             <div className="flex items-center gap-1 min-w-max px-2">
                 {LAB_TABS.map((lab) => (
                 <button key={lab} onClick={() => {setSelectedLab(lab); setCurrentPage(1);}} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap border ${selectedLab === lab ? "bg-white text-black border-white" : "text-gray-400 border-transparent hover:text-white hover:bg-white/5"}`}>{lab}</button>

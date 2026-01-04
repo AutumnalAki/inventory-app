@@ -10,6 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import DashboardBackground from "@/components/DashboardBackground";
+import Onboarding, { useOnboarding } from "@/components/Onboarding";
 import { useRole } from "@/context/RoleContext";
 
 function SidebarContent({ children }: { children: React.ReactNode }) {
@@ -115,7 +116,16 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { showOnboarding, isLoaded, completeOnboarding } = useOnboarding();
+  const { role } = useRole();
+  
+  const normalizedRole = role ? role.toLowerCase() : "student";
+  const canViewMembers = ["administrator", "program chair"].includes(normalizedRole);
+
   return (
-    <SidebarContent>{children}</SidebarContent>
+    <>
+      <SidebarContent>{children}</SidebarContent>
+      {isLoaded && <Onboarding isOpen={showOnboarding} onComplete={completeOnboarding} canViewMembers={canViewMembers} />}
+    </>
   );
 }

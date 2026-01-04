@@ -164,6 +164,7 @@ export default function ItemTrackingPage() {
         {/* Right: Add Button */}
         <button 
           onClick={() => setIsModalOpen(true)}
+          data-tour="add-loan-btn"
           className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 w-full xl:w-auto"
         >
           <Plus size={16} />

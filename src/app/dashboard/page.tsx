@@ -30,7 +30,7 @@ export default function Dashboard() {
         <p className="text-gray-400 mt-1">Overview of your lab inventory and equipment status.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="stat-cards">
         
         {/* Card 1: Total -> Go to Inventory (Clear Filters) */}
         <StatCard 
@@ -77,7 +77,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm" data-tour="activity-log">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold flex items-center gap-2 text-white">
                <Activity className="text-indigo-400" size={20} /> Recent Activity
