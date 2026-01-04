@@ -3,12 +3,14 @@
 import React, { useMemo } from "react";
 import { 
   AlertTriangle, Package, Clock, 
-  TrendingUp, Activity, ArrowRight, Wrench, Lock 
-} from "lucide-react"; // Fixed Wrench import
+  TrendingUp, Activity, ArrowRight, Wrench, Lock,
+  Sparkles, AlertCircle, CheckCircle, Info, TrendingDown, Minus, Zap
+} from "lucide-react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation"; // 1. Import Router
+import { useRouter } from "next/navigation";
 import { useInventory } from "@/context/InventoryContext";
 import { useRole } from "@/context/RoleContext";
+import { generateDashboardSummary, AIInsight } from "@/lib/ai-data-helper";
 
 // Role to Lab Mapping - maps role names to their database location names
 const ROLE_LAB_DB_MAPPING: Record<string, string> = {
@@ -63,6 +65,11 @@ export default function Dashboard() {
   const lowStockItems = filteredInventory.filter(i => i.stock === "Low Stock" || i.stock === "Out of Stock").length;
   const activeLoans = filteredLoans.filter(l => l.status === "Borrowed").length;
   const brokenItems = filteredInventory.filter(i => i.condition === "Broken").length;
+
+  // AI Dashboard Summary
+  const aiSummary = useMemo(() => {
+    return generateDashboardSummary(filteredInventory, filteredLoans, filteredLogs);
+  }, [filteredInventory, filteredLoans, filteredLogs]);
 
   // 3. Navigation Handlers
   const navigateTo = (path: string) => router.push(path);
@@ -149,20 +156,48 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 flex flex-col justify-between">
-            <div>
-              <h3 className="text-base md:text-xl font-bold text-white mb-1 md:mb-2">Quick Actions</h3>
-              <p className="text-indigo-200 text-xs md:text-sm mb-4 md:mb-6">Manage your laboratory efficiently.</p>
-              <div className="space-y-2 md:space-y-3">
-                 <button onClick={() => navigateTo('/dashboard/inventory')} className="w-full bg-white/10 hover:bg-white/20 p-2.5 md:p-3 rounded-xl text-left text-xs md:text-sm font-bold flex items-center justify-between transition-colors text-white">
-                    Add New Equipment <ArrowRight size={14} className="md:w-4 md:h-4" />
-                 </button>
-                 <button onClick={() => navigateTo('/dashboard/tracking')} className="w-full bg-white/10 hover:bg-white/20 p-2.5 md:p-3 rounded-xl text-left text-xs md:text-sm font-bold flex items-center justify-between transition-colors text-white">
-                    Create Loan Record <ArrowRight size={14} className="md:w-4 md:h-4" />
-                 </button>
-              </div>
+        {/* AI Insights Panel */}
+        <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 flex flex-col">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-lg bg-indigo-500/20">
+              <Sparkles size={16} className="text-indigo-400" />
             </div>
+            <h3 className="text-base md:text-lg font-bold text-white">AI Insights</h3>
+          </div>
+          
+          <p className="text-indigo-200 text-xs md:text-sm mb-4 leading-relaxed">{aiSummary.headline}</p>
+          
+          {/* Trend Indicators */}
+          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-white/10">
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+              aiSummary.trends.stockHealth === "good" ? "bg-emerald-500/20 text-emerald-400" :
+              aiSummary.trends.stockHealth === "warning" ? "bg-amber-500/20 text-amber-400" :
+              "bg-red-500/20 text-red-400"
+            }`}>
+              {aiSummary.trends.stockHealth === "good" ? <CheckCircle size={10} /> : <AlertCircle size={10} />}
+              Stock
+            </div>
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+              aiSummary.trends.maintenanceLoad === "low" ? "bg-emerald-500/20 text-emerald-400" :
+              aiSummary.trends.maintenanceLoad === "moderate" ? "bg-amber-500/20 text-amber-400" :
+              "bg-red-500/20 text-red-400"
+            }`}>
+              <Wrench size={10} />
+              {aiSummary.trends.maintenanceLoad === "low" ? "Low" : aiSummary.trends.maintenanceLoad === "moderate" ? "Med" : "High"} Load
+            </div>
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-blue-500/20 text-blue-400`}>
+              {aiSummary.trends.borrowingTrend === "up" ? <TrendingUp size={10} /> : 
+               aiSummary.trends.borrowingTrend === "down" ? <TrendingDown size={10} /> : <Minus size={10} />}
+              Loans
+            </div>
+          </div>
+          
+          {/* Insights List */}
+          <div className="space-y-2 flex-1 overflow-y-auto max-h-[200px] no-scrollbar">
+            {aiSummary.insights.map((insight, idx) => (
+              <InsightCard key={insight.id} insight={insight} onAction={navigateTo} delay={idx * 0.1} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -190,6 +225,50 @@ function StatCard({ title, value, change, icon, alert = false, trend, onClick }:
       <h3 className="text-2xl md:text-4xl font-bold tracking-tighter mb-0.5 md:mb-1 tabular-nums text-white">{value}</h3>
       <p className="text-xs md:text-sm text-gray-400 font-medium">{title}</p>
       <p className={`text-[10px] md:text-xs mt-1 md:mt-2 hidden sm:block ${alert ? "text-red-400" : "text-gray-500"}`}>{change}</p>
+    </motion.div>
+  );
+}
+
+// AI Insight Card Component
+function InsightCard({ insight, onAction, delay }: { insight: AIInsight; onAction: (path: string) => void; delay: number }) {
+  const typeStyles = {
+    success: { bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: <CheckCircle size={14} className="text-emerald-400" /> },
+    warning: { bg: "bg-amber-500/10", border: "border-amber-500/20", icon: <AlertCircle size={14} className="text-amber-400" /> },
+    danger: { bg: "bg-red-500/10", border: "border-red-500/20", icon: <AlertTriangle size={14} className="text-red-400" /> },
+    info: { bg: "bg-blue-500/10", border: "border-blue-500/20", icon: <Info size={14} className="text-blue-400" /> },
+  };
+  
+  const style = typeStyles[insight.type];
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay }}
+      className={`p-2.5 rounded-xl ${style.bg} border ${style.border}`}
+    >
+      <div className="flex items-start gap-2">
+        <div className="shrink-0 mt-0.5">{style.icon}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-white text-xs font-semibold truncate">{insight.title}</p>
+            {insight.metric && (
+              <span className="text-[10px] font-bold text-white bg-white/10 px-1.5 py-0.5 rounded shrink-0">
+                {insight.metric}
+              </span>
+            )}
+          </div>
+          <p className="text-gray-400 text-[10px] mt-0.5 line-clamp-2">{insight.description}</p>
+          {insight.action && insight.actionPath && (
+            <button
+              onClick={() => onAction(insight.actionPath!)}
+              className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold mt-1 flex items-center gap-1"
+            >
+              {insight.action} <ArrowRight size={10} />
+            </button>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }

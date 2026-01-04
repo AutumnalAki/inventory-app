@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, Suspense } from "react";
+import React, { useState, useMemo, useEffect, Suspense, useCallback } from "react";
 import { 
   Plus, Filter, Edit2, Trash2, ChevronDown, ArrowUpDown, CheckCircle, AlertCircle, XCircle, 
-  MapPin, Hash, MoreHorizontal, X, Save, Search, Wrench, Download, CheckSquare, Square, Lock
+  MapPin, Hash, MoreHorizontal, X, Save, Search, Wrench, Download, CheckSquare, Square, Lock,
+  AlertTriangle, Sparkles, Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation"; 
 import { useInventory, Item } from "@/context/InventoryContext";
 import { usePopup } from "@/context/PopupContext";
 import { useRole } from "@/context/RoleContext";
+import { checkForDuplicates, DuplicateCheckResult, getItemNameSuggestions, getSupplierSuggestions, getRemarksSuggestions, RemarkSuggestion, parseNaturalLanguageQuery, ParsedQuery } from "@/lib/ai-data-helper";
 
 // --- EXPORT LIBRARIES ---
 import jsPDF from "jspdf";
@@ -63,6 +65,9 @@ function InventoryContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
+  // AI Natural Language Search State
+  const [nlSearchActive, setNlSearchActive] = useState(false);
+  const parsedQuery = useMemo(() => parseNaturalLanguageQuery(searchTerm), [searchTerm]);
   // Export UI State
   const [isExportOpen, setIsExportOpen] = useState(false);
 
@@ -89,6 +94,59 @@ function InventoryContent() {
   const [modalConditionOpen, setModalConditionOpen] = useState(false);
   const modalLocationRef = React.useRef<HTMLDivElement>(null);
   const modalConditionRef = React.useRef<HTMLDivElement>(null);
+
+  // AI Duplicate Detection State
+  const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheckResult | null>(null);
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
+  const [supplierSuggestions, setSupplierSuggestions] = useState<string[]>([]);
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+  const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
+
+  // Debounced duplicate check
+  useEffect(() => {
+    if (!isModalOpen) {
+      setDuplicateCheck(null);
+      setNameSuggestions([]);
+      setSupplierSuggestions([]);
+      return;
+    }
+    
+    const timeoutId = setTimeout(() => {
+      if (newItem.name.length >= 2 || newItem.controlId.length >= 2) {
+        const result = checkForDuplicates(
+          newItem.name,
+          newItem.controlId,
+          inventory,
+          isEditing ? currentId ?? undefined : undefined
+        );
+        setDuplicateCheck(result);
+      } else {
+        setDuplicateCheck(null);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [newItem.name, newItem.controlId, inventory, isModalOpen, isEditing, currentId]);
+
+  // Item name suggestions
+  useEffect(() => {
+    if (newItem.name.length >= 2 && !isEditing) {
+      const suggestions = getItemNameSuggestions(newItem.name, inventory, 5);
+      setNameSuggestions(suggestions.filter(s => s.toLowerCase() !== newItem.name.toLowerCase()));
+    } else {
+      setNameSuggestions([]);
+    }
+  }, [newItem.name, inventory, isEditing]);
+
+  // Supplier suggestions
+  useEffect(() => {
+    if (newItem.supplier.length >= 2) {
+      const suggestions = getSupplierSuggestions(newItem.supplier, inventory, 5);
+      setSupplierSuggestions(suggestions.filter(s => s.toLowerCase() !== newItem.supplier.toLowerCase()));
+    } else {
+      setSupplierSuggestions([]);
+    }
+  }, [newItem.supplier, inventory]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -139,32 +197,76 @@ function InventoryContent() {
       data = data.filter(item => item.location === dbLocationName);
     }
     
-    if (filterStatus !== "All") {
-      if (filterStatus === "Critical") {
-        data = data.filter(item => item.stock === "Low Stock" || item.stock === "Out of Stock");
-      } else {
-        data = data.filter(item => item.stock === filterStatus);
+    // Check if AI natural language parsing detected filters
+    const hasAIFilters = parsedQuery.filters.location || parsedQuery.filters.status || 
+                         parsedQuery.filters.condition || parsedQuery.sortBy;
+    
+    if (hasAIFilters && nlSearchActive) {
+      // Apply AI-detected location filter
+      if (parsedQuery.filters.location) {
+        data = data.filter(item => 
+          item.location.toLowerCase().includes(parsedQuery.filters.location!.toLowerCase())
+        );
       }
+      // Apply AI-detected status filter
+      if (parsedQuery.filters.status) {
+        data = data.filter(item => 
+          item.stock.toLowerCase().includes(parsedQuery.filters.status!.toLowerCase())
+        );
+      }
+      // Apply AI-detected condition filter
+      if (parsedQuery.filters.condition) {
+        data = data.filter(item => 
+          item.condition.toLowerCase().includes(parsedQuery.filters.condition!.toLowerCase())
+        );
+      }
+      // Apply AI-detected search term
+      if (parsedQuery.filters.searchTerm) {
+        const lowerTerm = parsedQuery.filters.searchTerm.toLowerCase();
+        data = data.filter(item => 
+          item.name.toLowerCase().includes(lowerTerm) || 
+          item.controlId.toLowerCase().includes(lowerTerm)
+        );
+      }
+      // Apply AI-detected sort
+      if (parsedQuery.sortBy) {
+        data.sort((a, b) => {
+          const order = parsedQuery.sortOrder === "desc" ? -1 : 1;
+          if (parsedQuery.sortBy === "name") return order * a.name.localeCompare(b.name);
+          if (parsedQuery.sortBy === "quantity") return order * (a.quantity - b.quantity);
+          if (parsedQuery.sortBy === "date") return order * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          return 0;
+        });
+      }
+    } else {
+      // Traditional filtering
+      if (filterStatus !== "All") {
+        if (filterStatus === "Critical") {
+          data = data.filter(item => item.stock === "Low Stock" || item.stock === "Out of Stock");
+        } else {
+          data = data.filter(item => item.stock === filterStatus);
+        }
+      }
+      if (filterCondition !== "All") {
+        data = data.filter(item => item.condition === filterCondition);
+      }
+      if (searchTerm) {
+        const lowerTerm = searchTerm.toLowerCase();
+        data = data.filter(item => 
+          item.name.toLowerCase().includes(lowerTerm) || 
+          item.controlId.toLowerCase().includes(lowerTerm)
+        );
+      }
+      data.sort((a, b) => {
+        if (sortOption === "Newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        if (sortOption === "Name (A-Z)") return a.name.localeCompare(b.name);
+        if (sortOption === "Qty (High)") return b.quantity - a.quantity;
+        if (sortOption === "Qty (Low)") return a.quantity - b.quantity;
+        return 0;
+      });
     }
-    if (filterCondition !== "All") {
-      data = data.filter(item => item.condition === filterCondition);
-    }
-    if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      data = data.filter(item => 
-        item.name.toLowerCase().includes(lowerTerm) || 
-        item.controlId.toLowerCase().includes(lowerTerm)
-      );
-    }
-    data.sort((a, b) => {
-      if (sortOption === "Newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sortOption === "Name (A-Z)") return a.name.localeCompare(b.name);
-      if (sortOption === "Qty (High)") return b.quantity - a.quantity;
-      if (sortOption === "Qty (Low)") return a.quantity - b.quantity;
-      return 0;
-    });
     return data;
-  }, [inventory, selectedLab, filterStatus, filterCondition, sortOption, searchTerm]);
+  }, [inventory, selectedLab, filterStatus, filterCondition, sortOption, searchTerm, parsedQuery, nlSearchActive]);
 
   const totalItems = processedData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -288,7 +390,7 @@ function InventoryContent() {
       </div>
 
       {/* --- CONTROL BAR --- */}
-      <div className="sticky top-0 z-30 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 p-3 md:p-4 rounded-2xl flex flex-col gap-4 w-full shadow-lg">
+      <div className="sticky top-0 z-30 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 p-3 md:p-4 rounded-2xl flex flex-col gap-3 w-full shadow-lg">
         {/* Row 1: Add Button & Search */}
         <div className="flex items-center gap-3 w-full">
            <button onClick={openAddModal} data-tour="add-item-btn" className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap shrink-0">
@@ -297,9 +399,69 @@ function InventoryContent() {
           
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-            <input type="text" placeholder="Search items..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-500" />
+            <input 
+              type="text" 
+              placeholder={nlSearchActive ? "Try: \"broken items in chemistry lab\" or \"low stock sorted by quantity\"" : "Search items..."} 
+              value={searchTerm} 
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+              className={`w-full bg-white/5 border rounded-xl pl-9 pr-20 py-2.5 text-sm text-white focus:outline-none transition-colors placeholder:text-gray-500 ${nlSearchActive ? 'border-indigo-500/50 focus:border-indigo-500' : 'border-white/10 focus:border-indigo-500'}`} 
+            />
+            {/* AI Toggle Button */}
+            <button 
+              onClick={() => setNlSearchActive(!nlSearchActive)}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-all ${nlSearchActive ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 text-gray-500 hover:text-gray-300 border border-white/10'}`}
+            >
+              <Sparkles size={10} />
+              AI
+            </button>
           </div>
         </div>
+        
+        {/* AI Search Interpretation */}
+        <AnimatePresence>
+          {nlSearchActive && searchTerm && (parsedQuery.filters.location || parsedQuery.filters.status || parsedQuery.filters.condition || parsedQuery.sortBy) && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-start gap-2 p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                <Info size={14} className="text-indigo-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-indigo-300 font-medium mb-1.5">AI Interpreted Your Search:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {parsedQuery.filters.searchTerm && (
+                      <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-300">
+                        Search: <span className="text-white font-medium">{parsedQuery.filters.searchTerm}</span>
+                      </span>
+                    )}
+                    {parsedQuery.filters.location && (
+                      <span className="px-2 py-0.5 bg-blue-500/20 rounded text-[10px] text-blue-300">
+                        Location: <span className="text-blue-200 font-medium">{parsedQuery.filters.location}</span>
+                      </span>
+                    )}
+                    {parsedQuery.filters.status && (
+                      <span className="px-2 py-0.5 bg-amber-500/20 rounded text-[10px] text-amber-300">
+                        Stock: <span className="text-amber-200 font-medium">{parsedQuery.filters.status}</span>
+                      </span>
+                    )}
+                    {parsedQuery.filters.condition && (
+                      <span className="px-2 py-0.5 bg-red-500/20 rounded text-[10px] text-red-300">
+                        Condition: <span className="text-red-200 font-medium">{parsedQuery.filters.condition}</span>
+                      </span>
+                    )}
+                    {parsedQuery.sortBy && (
+                      <span className="px-2 py-0.5 bg-emerald-500/20 rounded text-[10px] text-emerald-300">
+                        Sort: <span className="text-emerald-200 font-medium">{parsedQuery.sortBy} ({parsedQuery.sortOrder})</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Row 2: Lab Tabs & Filters in same row on desktop */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -697,16 +859,93 @@ function InventoryContent() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative bg-[#111] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
-               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5"><h2 className="text-lg font-bold text-white">{isEditing ? "Edit Item" : "Add New Item"}</h2><button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button></div>
-               <form onSubmit={handleSaveItem} className="p-6 space-y-4">
+               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
+                 <div className="flex items-center gap-2">
+                   <h2 className="text-lg font-bold text-white">{isEditing ? "Edit Item" : "Add New Item"}</h2>
+                   {!isEditing && <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-semibold flex items-center gap-1"><Sparkles size={10} /> AI Assist</span>}
+                 </div>
+                 <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+               </div>
+               <form onSubmit={handleSaveItem} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto no-scrollbar">
+                  {/* AI Duplicate Warning */}
+                  <AnimatePresence>
+                    {duplicateCheck && duplicateCheck.hasDuplicates && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-amber-400 text-sm font-semibold">Potential Duplicate Detected</p>
+                            <p className="text-amber-400/70 text-xs mt-1">{duplicateCheck.suggestion}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2 pl-7">
+                          {duplicateCheck.matches.slice(0, 3).map((match, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-black/20 rounded-lg px-3 py-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-xs font-medium truncate">{match.item.name}</p>
+                                <p className="text-gray-500 text-[10px]">ID: {match.item.controlId} • {match.item.location}</p>
+                              </div>
+                              <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                                {Math.round(match.similarity * 100)}% match
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-gray-500 pl-7 flex items-center gap-1">
+                          <Info size={10} /> You can still save if this is a different item
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 relative">
                       <label className="text-xs font-medium text-gray-400 uppercase">Item Name</label>
-                      <input required type="text" value={newItem.name} onChange={(e) => setNewItem({...newItem, name: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                      <input 
+                        required 
+                        type="text" 
+                        value={newItem.name} 
+                        onChange={(e) => { setNewItem({...newItem, name: e.target.value}); setShowNameSuggestions(true); }} 
+                        onFocus={() => setShowNameSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowNameSuggestions(false), 150)}
+                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 transition-colors" 
+                        autoComplete="off"
+                      />
+                      {/* Name Suggestions Dropdown */}
+                      <AnimatePresence>
+                        {showNameSuggestions && nameSuggestions.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 4 }}
+                            className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                          >
+                            <div className="px-3 py-1.5 border-b border-white/5 flex items-center gap-1.5">
+                              <Sparkles size={10} className="text-indigo-400" />
+                              <span className="text-[10px] text-gray-500">Suggestions</span>
+                            </div>
+                            {nameSuggestions.map((suggestion, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onMouseDown={(e) => { e.preventDefault(); setNewItem({...newItem, name: suggestion}); setShowNameSuggestions(false); }}
+                                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-gray-400 uppercase">Control ID</label>
-                      <input required type="text" value={newItem.controlId} onChange={(e) => setNewItem({...newItem, controlId: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                      <input required type="text" value={newItem.controlId} onChange={(e) => setNewItem({...newItem, controlId: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 transition-colors" />
                     </div>
                   </div>
                   
@@ -762,9 +1001,43 @@ function InventoryContent() {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 relative">
                       <label className="text-xs font-medium text-gray-400 uppercase">Supplier</label>
-                      <input type="text" value={newItem.supplier} onChange={(e) => setNewItem({...newItem, supplier: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                      <input 
+                        type="text" 
+                        value={newItem.supplier} 
+                        onChange={(e) => { setNewItem({...newItem, supplier: e.target.value}); setShowSupplierSuggestions(true); }} 
+                        onFocus={() => setShowSupplierSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSupplierSuggestions(false), 150)}
+                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 transition-colors" 
+                        autoComplete="off"
+                      />
+                      {/* Supplier Suggestions Dropdown */}
+                      <AnimatePresence>
+                        {showSupplierSuggestions && supplierSuggestions.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 4 }}
+                            className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                          >
+                            <div className="px-3 py-1.5 border-b border-white/5 flex items-center gap-1.5">
+                              <Sparkles size={10} className="text-indigo-400" />
+                              <span className="text-[10px] text-gray-500">Existing Suppliers</span>
+                            </div>
+                            {supplierSuggestions.map((suggestion, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onMouseDown={(e) => { e.preventDefault(); setNewItem({...newItem, supplier: suggestion}); setShowSupplierSuggestions(false); }}
+                                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-gray-400 uppercase">Condition</label>
@@ -811,9 +1084,30 @@ function InventoryContent() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-gray-400 uppercase">Remarks</label>
                     <div className="relative">
-                      <textarea rows={2} value={newItem.remarks} onChange={(e) => setNewItem({...newItem, remarks: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 pr-10 text-sm text-white resize-none"/>
+                      <textarea rows={2} value={newItem.remarks} onChange={(e) => setNewItem({...newItem, remarks: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 pr-10 text-sm text-white resize-none" placeholder={newItem.condition !== "Available" ? "Describe the issue or status..." : "Optional notes about this item"}/>
                       {newItem.remarks && <button type="button" onClick={() => setNewItem({...newItem, remarks: ""})} className="absolute right-2 top-2 text-gray-500 hover:text-white transition-colors"><X size={16} /></button>}
                     </div>
+                    {/* AI Smart Remarks Suggestions */}
+                    {(newItem.condition === "Broken" || newItem.condition === "For Repairs") && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5 text-[10px] text-indigo-400 font-medium">
+                          <Sparkles size={10} />
+                          <span>AI Suggested Remarks</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {getRemarksSuggestions(newItem.condition).map((suggestion, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setNewItem({...newItem, remarks: newItem.remarks ? `${newItem.remarks}. ${suggestion.text}` : suggestion.text})}
+                              className="px-2 py-1 text-[10px] bg-indigo-500/10 border border-indigo-500/20 rounded-md text-indigo-300 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
+                            >
+                              {suggestion.text}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
