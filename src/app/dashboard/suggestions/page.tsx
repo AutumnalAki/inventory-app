@@ -378,7 +378,6 @@ export default function SuggestionsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          data-tour="submit-suggestion-btn"
           className={`${isDeveloper ? "lg:col-span-1" : "lg:col-span-1"} bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6`}
         >
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">

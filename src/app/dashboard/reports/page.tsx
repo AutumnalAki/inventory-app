@@ -2,13 +2,11 @@
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { 
-  Download, Box, FileText, AlertTriangle, TrendingUp, AlertOctagon, ChevronDown, Lock, CheckCircle,
-  Sparkles, Trophy, Star, AlertCircle, Truck
+  Download, Box, FileText, AlertTriangle, TrendingUp, AlertOctagon, ChevronDown, Lock, CheckCircle 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInventory } from "@/context/InventoryContext";
 import { useRole } from "@/context/RoleContext";
-import { analyzeSupplierReliability, SupplierStats } from "@/lib/ai-data-helper";
 
 // --- EXPORT LIBRARIES ---
 import jsPDF from "jspdf";
@@ -96,11 +94,6 @@ export default function ReportsPage() {
      const counts: Record<string, number> = {};
      filteredInventory.forEach(item => { counts[item.location] = (counts[item.location] || 0) + item.quantity; });
      return Object.entries(counts).map(([label, count]) => ({ label, count }));
-  }, [filteredInventory]);
-
-  // AI Supplier Reliability Analysis
-  const supplierAnalysis = useMemo(() => {
-    return analyzeSupplierReliability(filteredInventory);
   }, [filteredInventory]);
 
   // --- EXPORT HANDLERS ---
@@ -305,72 +298,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* AI Supplier Reliability Analysis */}
-      {supplierAnalysis.suppliers.length > 0 && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm">
-          <div className="p-4 md:p-6 border-b border-white/10 bg-gradient-to-r from-indigo-500/10 to-purple-500/10">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-indigo-500/20">
-                  <Sparkles size={20} className="text-indigo-400" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-white text-sm md:text-base">AI Supplier Reliability Analysis</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Based on equipment condition and maintenance history</p>
-                </div>
-              </div>
-              <span className="bg-indigo-500/20 text-indigo-400 text-[10px] md:text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                <Truck size={12} /> {supplierAnalysis.suppliers.filter(s => s.reliabilityGrade !== "N/A").length} Suppliers
-              </span>
-            </div>
-            
-            {/* Insights */}
-            {supplierAnalysis.insights.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {supplierAnalysis.insights.map((insight, idx) => (
-                  <span key={idx} className="text-[10px] md:text-xs bg-black/20 text-gray-300 px-3 py-1.5 rounded-lg">
-                    {insight}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* Items without supplier warning */}
-          {(() => {
-            const itemsWithoutSupplier = filteredInventory.filter(i => !i.supplier || i.supplier.trim() === "").length;
-            if (itemsWithoutSupplier > 0) {
-              return (
-                <div className="px-4 md:px-6 py-3 bg-amber-500/5 border-b border-white/5 flex items-center gap-2">
-                  <AlertCircle size={14} className="text-amber-400 shrink-0" />
-                  <span className="text-xs text-amber-400">
-                    <strong>{itemsWithoutSupplier} item{itemsWithoutSupplier > 1 ? "s" : ""}</strong> {itemsWithoutSupplier > 1 ? "have" : "has"} no supplier input
-                  </span>
-                </div>
-              );
-            }
-            return null;
-          })()}
-          
-          {/* Supplier Grid - Only show rated suppliers (exclude N/A) */}
-          {supplierAnalysis.suppliers.filter(s => s.reliabilityGrade !== "N/A").length > 0 ? (
-            <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-              {supplierAnalysis.suppliers
-                .filter(s => s.reliabilityGrade !== "N/A")
-                .map((supplier, idx) => (
-                  <SupplierCard key={supplier.supplier} supplier={supplier} rank={idx + 1} />
-                ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center">
-              <Truck size={32} className="text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No suppliers with enough data to analyze</p>
-              <p className="text-gray-600 text-xs mt-1">Add supplier information to at least 3 items to see reliability analysis</p>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Broken Items Table - Desktop */}
       <div className="hidden md:grid grid-cols-1 gap-6">
         <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm">
@@ -446,91 +373,4 @@ function StatCard({ title, value, icon: Icon, color }: any) {
         <div className="min-w-0"><p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase truncate">{title}</p><h3 className="text-xl md:text-2xl font-bold text-white">{value}</h3></div>
         <div className={`p-2 md:p-3 rounded-lg md:rounded-xl shrink-0 ${color}`}><Icon size={16} className="md:w-5 md:h-5" /></div>
     </div>;
-}
-
-function SupplierCard({ supplier, rank }: { supplier: SupplierStats; rank: number }) {
-  const gradeColors: Record<string, { bg: string; text: string; border: string }> = {
-    "Excellent": { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
-    "Good": { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
-    "Average": { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" },
-    "Poor": { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20" },
-    "N/A": { bg: "bg-gray-500/10", text: "text-gray-400", border: "border-gray-500/20" },
-  };
-  
-  const gradeIcons: Record<string, React.ReactNode> = {
-    "Excellent": <Trophy size={14} />,
-    "Good": <Star size={14} />,
-    "Average": <AlertCircle size={14} />,
-    "Poor": <AlertTriangle size={14} />,
-    "N/A": <Box size={14} />,
-  };
-  
-  const colors = gradeColors[supplier.reliabilityGrade] || gradeColors["N/A"];
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: rank * 0.05 }}
-      className={`p-4 rounded-xl border ${colors.border} ${colors.bg} relative overflow-hidden`}
-    >
-      {/* Rank Badge for top 3 */}
-      {rank <= 3 && supplier.reliabilityGrade !== "N/A" && (
-        <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-          rank === 1 ? "bg-amber-500 text-black" : rank === 2 ? "bg-gray-400 text-black" : "bg-orange-700 text-white"
-        }`}>
-          #{rank}
-        </div>
-      )}
-      
-      <div className="flex items-start gap-3">
-        <div className={`p-2 rounded-lg ${colors.bg}`}>
-          {gradeIcons[supplier.reliabilityGrade]}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-white text-sm truncate pr-6">{supplier.supplier}</h4>
-          <p className="text-[10px] text-gray-500 mt-0.5">{supplier.totalItems} items tracked</p>
-        </div>
-      </div>
-      
-      {/* Stats */}
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="bg-black/20 rounded-lg py-1.5 px-1">
-          <p className="text-emerald-400 font-bold text-sm">{supplier.availableItems}</p>
-          <p className="text-[9px] text-gray-500 uppercase">Good</p>
-        </div>
-        <div className="bg-black/20 rounded-lg py-1.5 px-1">
-          <p className="text-amber-400 font-bold text-sm">{supplier.forRepairsItems}</p>
-          <p className="text-[9px] text-gray-500 uppercase">Repairs</p>
-        </div>
-        <div className="bg-black/20 rounded-lg py-1.5 px-1">
-          <p className="text-red-400 font-bold text-sm">{supplier.brokenItems}</p>
-          <p className="text-[9px] text-gray-500 uppercase">Broken</p>
-        </div>
-      </div>
-      
-      {/* Reliability Score */}
-      <div className="mt-3 flex items-center justify-between">
-        <span className={`text-xs font-bold ${colors.text} flex items-center gap-1`}>
-          {gradeIcons[supplier.reliabilityGrade]}
-          {supplier.reliabilityGrade}
-        </span>
-        <div className="flex items-center gap-2">
-          <div className="w-16 h-1.5 bg-black/30 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full ${
-                supplier.reliabilityScore >= 75 ? "bg-emerald-500" : 
-                supplier.reliabilityScore >= 50 ? "bg-amber-500" : "bg-red-500"
-              }`}
-              style={{ width: `${supplier.reliabilityScore}%` }}
-            />
-          </div>
-          <span className="text-[10px] text-gray-400 font-mono">{supplier.reliabilityScore}%</span>
-        </div>
-      </div>
-      
-      {/* Recommendation on hover */}
-      <p className="mt-2 text-[10px] text-gray-500 line-clamp-2">{supplier.recommendation}</p>
-    </motion.div>
-  );
 }

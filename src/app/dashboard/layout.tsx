@@ -11,7 +11,6 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import DashboardBackground from "@/components/DashboardBackground";
 import Onboarding, { useOnboarding } from "@/components/Onboarding";
-import ChatBot from "@/components/ChatBot";
 import { useRole } from "@/context/RoleContext";
 import { useTheme } from "@/context/ThemeContext";
 import { supabase } from "@/lib/supabase";
@@ -406,7 +405,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <>
       <SidebarContent>{children}</SidebarContent>
       {isLoaded && <Onboarding isOpen={showOnboarding} onComplete={completeOnboarding} canViewMembers={canViewMembers} canViewSuggestions={canViewSuggestions} />}
-      <ChatBot />
     </>
   );
 }

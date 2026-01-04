@@ -7,8 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, ChevronRight, ChevronLeft, Package, ClipboardList, 
   LayoutDashboard, FileText, Settings, Sparkles, CheckCircle, Users,
-  MousePointer, Download, UserPlus, Eye, Edit2, Trash2, Key, BarChart3,
-  Lightbulb, Send, History
+  MousePointer, Download, UserPlus, Eye, Edit2, Trash2, Key, BarChart3
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -178,41 +177,9 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     waitForElement: true,
   },
 
-  // === SUGGESTIONS (Conditional - shown only if user has access) ===
-  {
-    id: 16,
-    title: "Suggestions Box",
-    description: "Have ideas to improve CDM LabTrack? The Suggestions page lets you submit feature requests, report bugs, and share feedback with the development team.",
-    icon: <Lightbulb className="text-amber-500" size={28} />,
-    selector: '[href="/dashboard/suggestions"]',
-    position: "right",
-    route: "/dashboard/suggestions",
-  },
-  {
-    id: 17,
-    title: "Submit Suggestions",
-    description: "Click here to submit a new suggestion. Choose a category, write a clear title and description, and your feedback will be reviewed by the development team.",
-    icon: <Send className="text-blue-500" size={28} />,
-    selector: '[data-tour="submit-suggestion-btn"]',
-    position: "bottom",
-    route: "/dashboard/suggestions",
-    waitForElement: true,
-  },
-
-  // === UPDATE LOGS ===
-  {
-    id: 18,
-    title: "Update Logs",
-    description: "Stay informed about what's new! The Update Logs page shows all the latest features, improvements, and bug fixes added to CDM LabTrack.",
-    icon: <History className="text-purple-500" size={28} />,
-    selector: '[href="/dashboard/updates"]',
-    position: "right",
-    route: "/dashboard/updates",
-  },
-
   // === SETTINGS ===
   {
-    id: 19,
+    id: 16,
     title: "Personalize Settings",
     description: "Make CDM LabTrack yours! Change your accent color theme in Appearance, update your password in Security, and replay this tutorial anytime from the Help tab.",
     icon: <Settings className="text-gray-400" size={28} />,
@@ -223,7 +190,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 
   // === FINISH ===
   {
-    id: 20,
+    id: 17,
     title: "You're All Set! 🎉",
     description: "You now know how to use CDM LabTrack! Start managing your laboratory inventory like a pro. Need help? Go to Settings → Help to replay this tutorial.",
     icon: <CheckCircle className="text-emerald-500" size={28} />,
@@ -235,7 +202,6 @@ interface OnboardingProps {
   onComplete: () => void;
   isOpen: boolean;
   canViewMembers?: boolean;
-  canViewSuggestions?: boolean;
 }
 
 interface HighlightRect {
@@ -245,7 +211,7 @@ interface HighlightRect {
   height: number;
 }
 
-export default function Onboarding({ onComplete, isOpen, canViewMembers = false, canViewSuggestions = false }: OnboardingProps) {
+export default function Onboarding({ onComplete, isOpen, canViewMembers = false }: OnboardingProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [currentStep, setCurrentStep] = useState(0);
@@ -258,25 +224,16 @@ export default function Onboarding({ onComplete, isOpen, canViewMembers = false,
   // Filter steps based on user role (e.g., Members page only for admins/program chairs)
   useEffect(() => {
     if (isOpen) {
-      let filteredSteps = ONBOARDING_STEPS;
-      
-      // Filter out members-related steps for non-admin users
-      if (!canViewMembers) {
-        filteredSteps = filteredSteps.filter(s => 
+      if (canViewMembers) {
+        setAvailableSteps(ONBOARDING_STEPS);
+      } else {
+        // Filter out members-related steps for non-admin users
+        setAvailableSteps(ONBOARDING_STEPS.filter(s => 
           !s.route?.includes("/members") && !s.selector?.includes("members")
-        );
+        ));
       }
-      
-      // Filter out suggestions-related steps for users without access
-      if (!canViewSuggestions) {
-        filteredSteps = filteredSteps.filter(s => 
-          !s.route?.includes("/suggestions") && !s.selector?.includes("suggestions")
-        );
-      }
-      
-      setAvailableSteps(filteredSteps);
     }
-  }, [isOpen, canViewMembers, canViewSuggestions]);
+  }, [isOpen, canViewMembers]);
 
   const step = availableSteps[currentStep] || ONBOARDING_STEPS[0];
   const isFirstStep = currentStep === 0;
