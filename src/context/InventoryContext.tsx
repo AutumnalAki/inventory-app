@@ -48,6 +48,7 @@ export type ActivityLog = {
   item: string;
   time: string;
   location: string;
+  user_id?: string | null;
 };
 
 // --- CONTEXT INTERFACE ---
@@ -137,11 +138,12 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const { data: logsData } = await supabase.from('activity_log').select('*').order('timestamp', { ascending: false }).limit(20);
     if (logsData) {
       setLogs(logsData.map((l: any) => ({
-        id: l.id, 
-        action: l.activity_type, 
-        item: l.description, 
+        id: l.id,
+        action: l.activity_type,
+        item: l.description,
         time: new Date(l.timestamp).toLocaleString(),
-        location: l.location || ""
+        location: l.location || "",
+        user_id: l.user_id || null
       })));
     }
   };
@@ -181,9 +183,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // 3. ACTIONS
-  const logAction = async (type: string, description: string, location: string = "") => {
+  const logAction = async (type: string, description: string, location: string = "", userId?: string | null) => {
     await supabase.from('activity_log').insert([{ 
-      activity_type: type, description: description, timestamp: new Date().toISOString(), location: location
+      activity_type: type, description: description, timestamp: new Date().toISOString(), location: location, user_id: userId || null
     }]);
   };
 
@@ -194,7 +196,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       condition_status: item.condition, remarks: item.remarks, unit: 'pcs'
     }]);
     if (!error) {
-      await logAction("New Item Added", `Item: ${item.name}`, item.location);
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("New Item Added", `Item: ${item.name}`, item.location, session?.user?.id);
       fetchData();
     }
   };
@@ -216,8 +219,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (!error) {
       // Get the item's location for logging
       const item = inventory.find(i => i.id === id);
-      await logAction("Item Updated", `Item ID: ${id}`, item?.location || updatedItem.location || "");
-      fetchData(); 
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("Item Updated", `Item ID: ${id}`, item?.location || updatedItem.location || "", session?.user?.id);
+      fetchData();
     }
   };
 
@@ -226,8 +230,9 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const item = inventory.find(i => i.id === id);
     const { error } = await supabase.from('inventory').delete().eq('id', id);
     if (!error) {
-      await logAction("Item Deleted", `Item ID: ${id}`, item?.location || "");
-      fetchData(); 
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("Item Deleted", `Item ID: ${id}`, item?.location || "", session?.user?.id);
+      fetchData();
     }
   };
 
@@ -235,7 +240,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const deleteItems = async (ids: number[]) => {
     const { error } = await supabase.from('inventory').delete().in('id', ids);
     if (!error) {
-      await logAction("Batch Delete", `Deleted ${ids.length} items`);
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("Batch Delete", `Deleted ${ids.length} items`, "", session?.user?.id);
       fetchData();
     }
   };
@@ -250,7 +256,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
     const { error } = await supabase.from('inventory').update(payload).in('id', ids);
     if (!error) {
-      await logAction("Batch Update", `Updated ${ids.length} items`);
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("Batch Update", `Updated ${ids.length} items`, "", session?.user?.id);
       fetchData();
     }
   };
@@ -277,7 +284,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         username: user.name, email: user.email, role: user.role, status: user.status.toLowerCase(),
     }]);
     if (!error) {
-      await logAction("User Created", `User: ${user.name}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("User Created", `User: ${user.name}`, "", session?.user?.id);
       fetchData();
     }
   };
@@ -291,7 +299,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     
     const { error } = await supabase.from('users').update(payload).eq('id', id);
     if (!error) {
-      await logAction("User Updated", `User ID: ${id}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("User Updated", `User ID: ${id}`, "", session?.user?.id);
       fetchData();
     }
   };
@@ -316,7 +325,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     // Delete from users table
     const { error } = await supabase.from('users').delete().eq('id', id);
     if (!error) {
-      await logAction("User Deleted", `User ID: ${id}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("User Deleted", `User ID: ${id}`, "", session?.user?.id);
       fetchData();
     }
   };

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle 
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle, Activity 
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -136,6 +136,10 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
   const canViewSuggestions = ["developer", "administrator", "program chair", "faculty"].includes(normalizedRole);
 
+
+  // Faculty and up can view Activity Log
+  const canViewActivityLog = ["developer", "administrator", "program chair", "faculty"].includes(normalizedRole);
+
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
@@ -143,6 +147,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
     ...(canViewSuggestions ? [{ icon: Lightbulb, label: "Suggestions", href: "/dashboard/suggestions" }] : []),
+    ...(canViewActivityLog ? [{ icon: Activity, label: "Activity Log", href: "/dashboard/activity-log" }] : []),
     // Developer-only Chatbot (Experimental) link
     ...(["developer"].includes(normalizedRole) ? [{ icon: Sparkles, label: "Chatbot (Experimental)", href: "/chatbot-experimental" }] : []),
     { icon: Sparkles, label: "Update Logs", href: "/dashboard/updates", isNew: hasNewUpdates },
