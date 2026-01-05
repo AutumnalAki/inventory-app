@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb 
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle 
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -34,7 +34,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { role, setRole } = useRole();
+  const { role, setRole, previewRole, setPreviewRole } = useRole();
   const { accent } = useTheme();
   
   // Determine if using custom hex or preset color
@@ -45,6 +45,32 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   // Track if there are new updates since last visit
   const [hasNewUpdates, setHasNewUpdates] = useState(false);
+
+  // --- Tester Role Selector ---
+  // Only show for Tester
+  const isTester = role === "Tester";
+  // Use previewRole for UI if set (for Testers)
+  const effectiveRole = isTester && previewRole ? previewRole : role;
+  // Roles Tester can switch to (all except Developer)
+  const testerSwitchableRoles = [
+    "Tester",
+    "Administrator",
+    "Program Chair",
+    "Faculty",
+    "ME Lab",
+    "CE Lab",
+    "ECE Lab",
+    "CPE Lab",
+    "CHEM Lab",
+    "PHYS Lab",
+    "EE Lab"
+  ];
+  const [testerRoleDropdown, setTesterRoleDropdown] = useState(false);
+  const handleTesterRoleSwitch = (newRole: string) => {
+    if (newRole === effectiveRole) return;
+    setPreviewRole(newRole);
+    setTesterRoleDropdown(false);
+  };
   
   useEffect(() => {
     // If we're on the updates page, no animation needed
@@ -105,7 +131,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     };
   }, [pathname]);
 
-  const normalizedRole = role ? role.toLowerCase() : "student";
+  // Use previewRole for sidebar and permissions if Tester is previewing
+  const normalizedRole = effectiveRole ? effectiveRole.toLowerCase() : "student";
   const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
   const canViewSuggestions = ["developer", "administrator", "program chair", "faculty"].includes(normalizedRole);
 
@@ -176,6 +203,49 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
+        {/* Tester Role Selector */}
+        {isTester && !isCollapsed && (
+          <div className="mb-4 px-2">
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Preview As</label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setTesterRoleDropdown((v) => !v)}
+                className="w-full flex items-center justify-between bg-white/10 border border-white/10 rounded-xl px-4 py-2 text-white text-sm hover:border-white/20 transition-colors"
+              >
+                <span>{effectiveRole}</span>
+                <ChevronDown size={16} className={`text-gray-500 transition-transform ${testerRoleDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence>
+                {testerRoleDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[99999] overflow-visible max-h-96 overflow-y-auto no-scrollbar min-w-[220px] p-2"
+                  >
+                    {testerSwitchableRoles.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => handleTesterRoleSwitch(r)}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                          effectiveRole === r
+                            ? 'bg-indigo-500/20 text-indigo-400'
+                            : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        {r}
+                        {effectiveRole === r && <CheckCircle size={14} />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
         <nav className="flex-1 px-4 space-y-2 mt-4">
           {sidebarItems.map((item) => {
             const isActive = pathname === item.href;
@@ -399,9 +469,10 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { showOnboarding, isLoaded, completeOnboarding } = useOnboarding();
-  const { role } = useRole();
-  
-  const normalizedRole = role ? role.toLowerCase() : "student";
+  const { role, previewRole } = useRole();
+  // isTester logic must be duplicated here for context
+  const isTester = role === "Tester";
+  const normalizedRole = (isTester && previewRole ? previewRole : role) ? (isTester && previewRole ? previewRole : role).toLowerCase() : "student";
   const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
 
   return (

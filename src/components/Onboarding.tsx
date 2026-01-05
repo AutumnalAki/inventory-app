@@ -181,7 +181,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 16,
     title: "Personalize Settings",
-    description: "Make CDM LabTrack yours! Change your accent color theme in Appearance, update your password in Security, and replay this tutorial anytime from the Help tab.",
+    description: "Visit Settings to customize your experience: choose an accent color in Appearance, change your password in Security, and replay this tutorial anytime from the Help tab.",
     icon: <Settings className="text-gray-400" size={28} />,
     selector: '[href="/dashboard/settings"]',
     position: "right",

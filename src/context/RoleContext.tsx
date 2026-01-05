@@ -7,6 +7,7 @@ const RoleContext = createContext<any>(null);
 
 export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState("Student");
+  const [previewRole, setPreviewRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <RoleContext.Provider value={{ role, setRole, loading }}>
+    <RoleContext.Provider value={{ role, setRole, previewRole, setPreviewRole, loading }}>
       {children}
     </RoleContext.Provider>
   );

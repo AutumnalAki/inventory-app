@@ -12,6 +12,7 @@ import { usePopup } from "@/context/PopupContext";
 // All Roles (for display)
 const ROLES = [
   "Developer",
+  "Tester",
   "Administrator",
   "Program Chair",
   "Faculty",
@@ -27,6 +28,7 @@ const ROLES = [
 // Role Hierarchy Levels (higher number = higher authority)
 const ROLE_HIERARCHY: Record<string, number> = {
   "Developer": 100,      // Apex - cannot be touched
+  "Tester": 90,          // Special role, managed by Developer only
   "Administrator": 80,   // Second
   "Program Chair": 60,   // Third
   "Faculty": 60,         // Third (same level as Program Chair)
@@ -54,8 +56,13 @@ const canManageUser = (currentUserRole: string, targetUserRole: string): boolean
   return currentLevel > targetLevel;
 };
 
-// Selectable Roles (excludes Developer - exclusive to website creator)
-const SELECTABLE_ROLES = ROLES.filter(role => role !== "Developer");
+// Selectable Roles: Only Developer can assign Tester, others can't see or assign Tester
+const SELECTABLE_ROLES = (currentUserRole?: string) => {
+  if (currentUserRole === "Developer") {
+    return ROLES.filter(role => role !== "Developer"); // Developer can assign Tester
+  }
+  return ROLES.filter(role => role !== "Developer" && role !== "Tester");
+};
 
 export default function MembersPage() {
   const { showAlert, showConfirm } = usePopup();
@@ -69,7 +76,7 @@ export default function MembersPage() {
   
   // --- STATES FOR GENERATE MODAL ---
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(SELECTABLE_ROLES[0]); 
+  const [selectedRole, setSelectedRole] = useState(SELECTABLE_ROLES(currentUserRole)[0]); 
   const [customCode, setCustomCode] = useState("");
   const [generatePassword, setGeneratePassword] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -358,6 +365,7 @@ export default function MembersPage() {
           <div className="overflow-y-auto flex-1 pr-1 md:pr-2 space-y-2 no-scrollbar">
             {users
               .filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase()))
+              .filter(u => currentUserRole === 'Developer' || u.role !== 'Tester')
               .sort((a, b) => getRoleLevel(b.role) - getRoleLevel(a.role))
               .map((user) => {
                const isActive = user.status === 'active';
@@ -367,11 +375,13 @@ export default function MembersPage() {
                const isAdmin = user.role === 'Administrator';
                const isProgramChair = user.role === 'Program Chair';
                const isFaculty = user.role === 'Faculty';
+               const isTester = user.role === 'Tester';
 
                // Get row background based on role and status
                const getRowStyle = () => {
                  if (!isActive) return 'bg-red-900/10 border-red-900/20';
                  if (isDeveloper) return 'bg-cyan-500/5 border-cyan-500/20';
+                 if (isTester) return 'bg-yellow-500/5 border-yellow-500/20';
                  if (isAdmin) return 'bg-orange-500/5 border-orange-500/20';
                  if (isProgramChair) return 'bg-purple-500/5 border-purple-500/20';
                  if (isFaculty) return 'bg-pink-500/5 border-pink-500/20';
@@ -383,6 +393,7 @@ export default function MembersPage() {
                   <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                     <div className={`relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ${
                       user.role === 'Developer' ? 'bg-cyan-500 text-white' : 
+                      user.role === 'Tester' ? 'bg-yellow-500 text-white' :
                       user.role === 'Administrator' ? 'bg-orange-500 text-white' : 
                       user.role === 'Program Chair' ? 'bg-purple-500 text-white' :
                       user.role === 'Faculty' ? 'bg-pink-500 text-white' :
@@ -395,6 +406,7 @@ export default function MembersPage() {
                       <div className="flex items-center gap-2">
                          <p className={`font-bold text-xs md:text-sm truncate ${isActive ? 'text-white' : 'text-gray-400 line-through'}`}>{user.username}</p>
                          {isDeveloper && <span title="Protected Account"><Shield size={12} className="text-cyan-400 shrink-0" /></span>}
+                         {isTester && <span title="Tester Account"><Shield size={12} className="text-yellow-400 shrink-0" /></span>}
                          {!isActive && <span className="text-[9px] md:text-[10px] bg-red-500/20 text-red-400 px-1 md:px-1.5 py-0.5 rounded uppercase font-bold shrink-0">Inactive</span>}
                       </div>
                       <p className="text-[10px] md:text-xs text-gray-400 truncate">{user.email}</p>
@@ -404,6 +416,7 @@ export default function MembersPage() {
                   <div className="flex items-center gap-1 md:gap-2 shrink-0">
                     <span className={`hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md border font-medium mr-1 md:mr-2 ${
                       isDeveloper ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
+                      isTester ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
                       user.role === 'Administrator' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
                       user.role === 'Program Chair' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
                       user.role === 'Faculty' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' :
@@ -506,7 +519,7 @@ export default function MembersPage() {
       <AnimatePresence>
         {isGenerateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full min-w-[480px] max-w-3xl overflow-visible shadow-2xl z-[1200] p-10">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-white">Create Invite Code</h2>
@@ -533,7 +546,7 @@ export default function MembersPage() {
                                 transition={{ duration: 0.15 }}
                                 className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto no-scrollbar"
                               >
-                                {SELECTABLE_ROLES.map((role) => (
+                                {SELECTABLE_ROLES(currentUserRole).map((role) => (
                                   <button
                                     key={role}
                                     type="button"
@@ -643,9 +656,9 @@ export default function MembersPage() {
                             animate={{ opacity: 1, y: 0, scale: 1 }} 
                             exit={{ opacity: 0, y: 8, scale: 0.96 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto no-scrollbar"
+                            className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[99999] overflow-visible max-h-96 overflow-y-auto no-scrollbar min-w-[320px] p-2"
                           >
-                            {SELECTABLE_ROLES.map((role) => (
+                            {SELECTABLE_ROLES(currentUserRole).map((role) => (
                               <button
                                 key={role}
                                 type="button"
