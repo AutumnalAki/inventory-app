@@ -33,7 +33,7 @@ export default function ActivityLogPage() {
     // Build a map of userId to username for display
     const map: Record<string, string> = {};
     users.forEach(u => {
-      map[u.id] = u.name || u.email || u.id;
+      map[String(u.id)] = u.name || u.email || String(u.id);
     });
     setUserMap(map);
   }, [users]);
