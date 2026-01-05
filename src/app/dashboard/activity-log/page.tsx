@@ -79,7 +79,7 @@ export default function ActivityLogPage() {
             {logs.map(log => (
               <tr key={log.id} className="border-t border-white/5 hover:bg-white/10 transition-colors">
                 <td className="px-4 py-2 whitespace-nowrap">{log.time}</td>
-                <td className="px-4 py-2 whitespace-nowrap">{userMap[log.user_id] || "-"}</td>
+                <td className="px-4 py-2 whitespace-nowrap">{userMap[String(log.user_id ?? "")] || "-"}</td>
                 <td className="px-4 py-2">{log.action}</td>
                 <td className="px-4 py-2">{log.item}</td>
                 <td className="px-4 py-2">{log.location}</td>
