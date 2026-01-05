@@ -519,7 +519,7 @@ export default function MembersPage() {
       <AnimatePresence>
         {isGenerateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full min-w-[480px] max-w-3xl overflow-visible shadow-2xl z-[1200] p-10">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full min-w-[480px] max-w-3xl h-[480px] overflow-visible shadow-2xl z-[1200] p-10">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-white">Create Invite Code</h2>
@@ -656,7 +656,7 @@ export default function MembersPage() {
                             animate={{ opacity: 1, y: 0, scale: 1 }} 
                             exit={{ opacity: 0, y: 8, scale: 0.96 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[99999] overflow-visible max-h-96 overflow-y-auto no-scrollbar min-w-[320px] p-2"
+                            className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[120000] backdrop-blur-lg overflow-visible max-h-96 overflow-y-auto no-scrollbar min-w-[320px] p-2"
                           >
                             {SELECTABLE_ROLES(currentUserRole).map((role) => (
                               <button
