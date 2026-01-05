@@ -1,3 +1,62 @@
+/* --- Invite Modal Improvements --- */
+.invite-modal-content {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.invite-modal-section {
+  margin-bottom: 1.25rem;
+}
+.invite-modal-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #a3a3a3;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.04em;
+}
+.invite-exp-btns {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+.invite-exp-btn {
+  min-width: 100px;
+  padding: 0.5rem 1.1rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1.5px solid #232323;
+  background: #18181b;
+  color: #a3a3a3;
+  transition: all 0.15s;
+}
+.invite-exp-btn.selected {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+.invite-modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  align-items: center;
+}
+.invite-modal-footer button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.invite-security-panel {
+  background: #1a1a1a !important;
+  border-radius: 0.75rem !important;
+  border: 1.5px solid #ef4444 !important;
+  padding: 1rem !important;
+  margin-top: 1.5rem;
+}
+@media (max-width: 640px) {
+  .invite-modal-footer { flex-direction: column-reverse; gap: 0.5rem; }
+  .invite-exp-btn { min-width: 100%; }
+}
 @import "tailwindcss";
 
 /* Removed invalid @theme at-rule */

@@ -32,15 +32,25 @@ export default function SignUp() {
     }
 
     try {
+
       // 1. Validate Access Code (Use correct table 'access_codes')
       const { data: codeData, error: codeError } = await supabase
         .from('access_codes')
-        .select('role')
+        .select('role, expires_at')
         .eq('code', formData.accessCode)
         .single();
 
       if (codeError || !codeData) {
         throw new Error("Invalid Invite Code.");
+      }
+
+      // Check expiration
+      if (codeData.expires_at) {
+        const now = new Date();
+        const expires = new Date(codeData.expires_at);
+        if (now > expires) {
+          throw new Error("Invite Code has expired.");
+        }
       }
 
       const assignedRole = codeData.role;

@@ -1,4 +1,39 @@
+
 "use client";
+
+// Timer component for invite expiration, updates status to 'expired' when timer ends
+function InviteTimer({ expiresAt, codeId }: { expiresAt: string, codeId: string }) {
+  const [timer, setTimer] = React.useState("");
+  React.useEffect(() => {
+    if (!expiresAt) return;
+    let interval: NodeJS.Timeout;
+    const updateTimer = async () => {
+      const now = Date.now();
+      const exp = new Date(expiresAt).getTime();
+      const diff = exp - now;
+      if (diff <= 0) {
+        setTimer("Expired");
+        // Mark as expired in DB
+        await supabase.from('access_codes').update({ status: 'expired' }).eq('id', codeId);
+        return;
+      }
+      const hours = Math.floor(diff / 1000 / 60 / 60);
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+      const secs = Math.floor((diff / 1000) % 60);
+      setTimer(
+        hours > 0
+          ? `${hours}h ${mins}m ${secs}s`
+          : mins > 0
+            ? `${mins}m ${secs}s`
+            : `${secs}s`
+      );
+    };
+    updateTimer();
+    interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt, codeId]);
+  return <span>{timer}</span>;
+}
 
 import React, { useState, useEffect, useRef } from "react";
 import { 
@@ -82,6 +117,17 @@ export default function MembersPage() {
   const [generating, setGenerating] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const roleDropdownRef = useRef<HTMLDivElement>(null);
+  // Expiration selection state
+  const EXPIRATION_OPTIONS = [
+    { label: "2 Hours", value: 2 },
+    { label: "4 Hours", value: 4 },
+    { label: "8 Hours", value: 8 },
+    { label: "12 Hours", value: 12 },
+    { label: "No Expiration", value: null },
+  ];
+  const [expirationHours, setExpirationHours] = useState<number|null>(2);
+  const [customHours, setCustomHours] = useState<string>("");
+  const [customMinutes, setCustomMinutes] = useState<string>("");
 
   // --- STATES FOR REVEAL SECURITY ---
   const [isRevealOpen, setIsRevealOpen] = useState(false);
@@ -140,18 +186,29 @@ export default function MembersPage() {
       .order('created_at', { ascending: false });
     if (userData) setUsers(userData);
 
-    // Fetch Invite Codes
+    // Delete codes with status 'expired'
+    await supabase.from('access_codes').delete().eq('status', 'expired');
+    // Fetch only active codes
     const { data: codeData } = await supabase
       .from('access_codes')
       .select('*')
+      .eq('status', 'active')
       .order('created_at', { ascending: false });
     if (codeData) setActiveCodes(codeData);
-    
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
+    // Real-time subscription for access_codes
+    const channel = supabase.channel('realtime-access-codes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'access_codes' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // --- MEMBER ACTIONS ---
@@ -299,12 +356,38 @@ export default function MembersPage() {
         return; 
       }
       
+
       const finalCode = customCode.trim() || `${selectedRole.toUpperCase().replace(/\s/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const { error: dbError } = await supabase.from('access_codes').insert([{ code: finalCode, role: selectedRole, created_by: user.id }]);
+      // Calculate expiration timestamp
+      let expires_at: string | null = null;
+      let totalMinutes = null;
+      // Use Philippine Time (UTC+8)
+      const getPHTime = (date: Date) => {
+        // Convert to UTC+8 by adding 8 hours in ms
+        return new Date(date.getTime() + (8 * 60 * 60 * 1000));
+      };
+      if ((customHours && parseInt(customHours) > 0) || (customMinutes && parseInt(customMinutes) > 0)) {
+        const hours = parseInt(customHours) || 0;
+        const minutes = parseInt(customMinutes) || 0;
+        totalMinutes = hours * 60 + minutes;
+        if (totalMinutes < 1 || totalMinutes > 168 * 60) throw new Error("Custom duration must be between 1 minute and 168 hours (7 days).");
+        const now = new Date();
+        const phTime = getPHTime(now);
+        phTime.setMinutes(phTime.getMinutes() + totalMinutes);
+        expires_at = phTime.toISOString();
+      } else if (expirationHours && typeof expirationHours === 'number') {
+        const now = new Date();
+        const phTime = getPHTime(now);
+        phTime.setHours(phTime.getHours() + expirationHours);
+        expires_at = phTime.toISOString();
+      }
+      const { error: dbError } = await supabase.from('access_codes').insert([
+        { code: finalCode, role: selectedRole, created_by: user.id, expires_at }
+      ]);
       if (dbError) throw dbError;
 
       showAlert({ title: "Code Generated", message: `Invite Code: ${finalCode}`, variant: "success" });
-      setIsGenerateOpen(false); setGeneratePassword(""); fetchData();
+      setIsGenerateOpen(false); setGeneratePassword(""); setCustomHours(""); setCustomMinutes(""); fetchData();
     } catch (err: any) { 
       showAlert({ title: "Error", message: err.message, variant: "error" });
     } finally { 
@@ -507,7 +590,12 @@ export default function MembersPage() {
                         </>
                       )}
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-2 text-right">Created {new Date(invite.created_at).toLocaleDateString()}</p>
+                  <div className="flex justify-between items-end mt-2">
+                    <p className="text-[10px] text-gray-500">Created {new Date(invite.created_at).toLocaleDateString()}</p>
+                    {invite.expires_at && (
+                      <p className={`text-[10px] font-bold`}><InviteTimer expiresAt={invite.expires_at} codeId={invite.id} /></p>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -519,69 +607,110 @@ export default function MembersPage() {
       <AnimatePresence>
         {isGenerateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full min-w-[480px] max-w-3xl h-[480px] overflow-visible shadow-2xl z-[1200] p-10">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-white">Create Invite Code</h2>
-                  <button onClick={() => setIsGenerateOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full min-w-[380px] max-w-lg md:max-w-2xl shadow-2xl z-[1200] p-0 invite-modal-content">
+              <div className="p-8 md:p-10">
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-2xl font-bold text-white">Create Invite Code</h2>
+                  <button onClick={() => setIsGenerateOpen(false)} className="text-gray-400 hover:text-white"><X size={22} /></button>
                 </div>
-                <form onSubmit={handleGenerateCode} className="space-y-4">
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-gray-400 uppercase">Assign Role</label>
-                        <div className="relative" ref={roleDropdownRef}>
-                          <button 
-                            type="button"
-                            onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                            className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm hover:border-white/20 transition-colors"
+                <form onSubmit={handleGenerateCode}>
+                  <div className="invite-modal-section">
+                    <label className="invite-modal-label">Assign Role</label>
+                    <div className="relative" ref={roleDropdownRef}>
+                      <button 
+                        type="button"
+                        onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                        className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm hover:border-white/20 transition-colors"
+                      >
+                        <span>{selectedRole}</span>
+                        <ChevronDown size={16} className={`text-gray-500 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      <AnimatePresence>
+                        {roleDropdownOpen && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 8, scale: 0.96 }} 
+                            animate={{ opacity: 1, y: 0, scale: 1 }} 
+                            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto no-scrollbar"
                           >
-                            <span>{selectedRole}</span>
-                            <ChevronDown size={16} className={`text-gray-500 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                          <AnimatePresence>
-                            {roleDropdownOpen && (
-                              <motion.div 
-                                initial={{ opacity: 0, y: 8, scale: 0.96 }} 
-                                animate={{ opacity: 1, y: 0, scale: 1 }} 
-                                exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto no-scrollbar"
+                            {SELECTABLE_ROLES(currentUserRole).map((role) => (
+                              <button
+                                key={role}
+                                type="button"
+                                onClick={() => { setSelectedRole(role); setRoleDropdownOpen(false); }}
+                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                                  selectedRole === role 
+                                    ? 'bg-indigo-500/20 text-indigo-400' 
+                                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                }`}
                               >
-                                {SELECTABLE_ROLES(currentUserRole).map((role) => (
-                                  <button
-                                    key={role}
-                                    type="button"
-                                    onClick={() => { setSelectedRole(role); setRoleDropdownOpen(false); }}
-                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
-                                      selectedRole === role 
-                                        ? 'bg-indigo-500/20 text-indigo-400' 
-                                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                                    }`}
-                                  >
-                                    {role}
-                                    {selectedRole === role && <CheckCircle size={14} />}
-                                  </button>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                                {role}
+                                {selectedRole === role && <CheckCircle size={14} />}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-gray-400 uppercase">Custom Code (Optional)</label>
-                        <input type="text" placeholder="Leave empty to auto-generate" value={customCode} onChange={(e) => setCustomCode(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 placeholder:text-gray-600" />
-                    </div>
-                    <div className="my-4 border-t border-white/10" />
-                    <div className="space-y-1.5 bg-red-900/10 p-3 rounded-xl border border-red-500/20">
-                        <label className="text-xs font-bold text-red-400 uppercase flex items-center gap-2"><Shield size={12}/> Security Verification</label>
-                        <p className="text-[10px] text-gray-400 mb-2">Enter your admin password to generate this code.</p>
-                        <input required type="password" placeholder="Admin Password" value={generatePassword} onChange={(e) => setGeneratePassword(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500" />
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                        <button type="button" onClick={() => setIsGenerateOpen(false)} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-bold text-gray-300 transition-colors">Cancel</button>
-                        <button type="submit" disabled={generating} className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-bold text-white transition-colors flex justify-center items-center gap-2 disabled:opacity-50">
-                            {generating ? <Loader2 className="animate-spin" size={16} /> : "Generate Code"}
+                  </div>
+                  <div className="invite-modal-section">
+                    <label className="invite-modal-label">Custom Code (Optional)</label>
+                    <input type="text" placeholder="Leave empty to auto-generate" value={customCode} onChange={(e) => setCustomCode(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 placeholder:text-gray-600" />
+                  </div>
+                  <div className="invite-modal-section">
+                    <label className="invite-modal-label">Expiration</label>
+                    <div className="invite-exp-btns mb-2">
+                      {EXPIRATION_OPTIONS.map(opt => (
+                        <button
+                          type="button"
+                          key={opt.label}
+                          onClick={() => { setExpirationHours(opt.value); setCustomHours(""); setCustomMinutes(""); }}
+                          className={`invite-exp-btn ${expirationHours === opt.value && !customHours && !customMinutes ? 'selected' : ''}`}
+                        >
+                          {opt.label}
                         </button>
+                      ))}
                     </div>
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max="168"
+                        placeholder="Hours"
+                        value={customHours}
+                        onChange={e => {
+                          setCustomHours(e.target.value);
+                          setExpirationHours(null);
+                        }}
+                        className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 placeholder:text-gray-600"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        placeholder="Minutes"
+                        value={customMinutes}
+                        onChange={e => {
+                          setCustomMinutes(e.target.value);
+                          setExpirationHours(null);
+                        }}
+                        className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 placeholder:text-gray-600"
+                      />
+                    </div>
+                    <span className="block text-xs text-gray-500 mt-1">Leave both blank to use a preset above. Max 168 hours (7 days), 0-59 minutes.</span>
+                  </div>
+                  <div className="invite-security-panel">
+                    <label className="text-xs font-bold text-red-400 uppercase flex items-center gap-2"><Shield size={12}/> Security Verification</label>
+                    <p className="text-[10px] text-gray-400 mb-2">Enter your admin password to generate this code.</p>
+                    <input required type="password" placeholder="Admin Password" value={generatePassword} onChange={(e) => setGeneratePassword(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500" />
+                  </div>
+                  <div className="invite-modal-footer">
+                    <button type="button" onClick={() => setIsGenerateOpen(false)} className="py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-bold text-gray-300 transition-colors">Cancel</button>
+                    <button type="submit" disabled={generating} className="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-bold text-white transition-colors flex justify-center items-center gap-2 disabled:opacity-50">
+                      {generating ? <Loader2 className="animate-spin" size={16} /> : "Generate Code"}
+                    </button>
+                  </div>
                 </form>
               </div>
             </motion.div>
