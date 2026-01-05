@@ -1,20 +1,33 @@
-
 "use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { 
+  Search, User, Shield, Trash2, Key, Copy, Loader2, X, 
+  Eye, Lock, Power, Edit2, ChevronDown, CheckCircle
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { usePopup } from "@/context/PopupContext";
 
 // Timer component for invite expiration, updates status to 'expired' when timer ends
 function InviteTimer({ expiresAt, codeId }: { expiresAt: string, codeId: string }) {
   const [timer, setTimer] = React.useState("");
   React.useEffect(() => {
     if (!expiresAt) return;
-    let interval: NodeJS.Timeout;
+    let intervalId: number | null = null;
     const updateTimer = async () => {
       const now = Date.now();
       const exp = new Date(expiresAt).getTime();
       const diff = exp - now;
       if (diff <= 0) {
         setTimer("Expired");
-        // Mark as expired in DB
-        await supabase.from('access_codes').update({ status: 'expired' }).eq('id', codeId);
+        // Mark as expired in DB (best-effort)
+        try {
+          await supabase.from('access_codes').update({ status: 'expired' }).eq('id', codeId);
+        } catch (e) {
+          // ignore update errors
+        }
+        if (intervalId !== null) window.clearInterval(intervalId);
         return;
       }
       const hours = Math.floor(diff / 1000 / 60 / 60);
@@ -29,20 +42,11 @@ function InviteTimer({ expiresAt, codeId }: { expiresAt: string, codeId: string 
       );
     };
     updateTimer();
-    interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
+    intervalId = window.setInterval(updateTimer, 1000);
+    return () => { if (intervalId !== null) window.clearInterval(intervalId); };
   }, [expiresAt, codeId]);
   return <span>{timer}</span>;
 }
-
-import React, { useState, useEffect, useRef } from "react";
-import { 
-  Search, User, Shield, Trash2, Key, Copy, Loader2, X, 
-  Eye, Lock, Power, Edit2, ChevronDown, CheckCircle
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
-import { usePopup } from "@/context/PopupContext";
 
 // All Roles (for display)
 const ROLES = [
@@ -157,6 +161,8 @@ export default function MembersPage() {
   const [editRoleDropdownOpen, setEditRoleDropdownOpen] = useState(false);
   const editRoleDropdownRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Fetch Data
   const fetchData = async () => {
@@ -310,15 +316,18 @@ export default function MembersPage() {
       });
       return;
     }
-    
     setEditingUser(user);
     setEditRole(user.role || "");
+    setSaveError(null);
+    setSaveSuccess(false);
     setIsEditOpen(true);
   };
 
   const handleSaveEdit = async () => {
     if (!editingUser) return;
     setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
     try {
       const { error } = await supabase
         .from('users')
@@ -329,11 +338,13 @@ export default function MembersPage() {
 
       // Update local state
       setUsers(users.map(u => u.id === editingUser.id ? { ...u, role: editRole } : u));
-      showAlert({ title: "Success", message: "User role updated successfully.", variant: "success" });
-      setIsEditOpen(false);
-      setEditingUser(null);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setIsEditOpen(false);
+        setEditingUser(null);
+      }, 1200);
     } catch (err: any) {
-      showAlert({ title: "Error", message: err.message, variant: "error" });
+      setSaveError(err.message || "Failed to update role.");
     } finally {
       setSaving(false);
     }
@@ -348,16 +359,22 @@ export default function MembersPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !user.email) throw new Error("Not authenticated");
-      
-      const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: generatePassword });
-      if (authError) { 
-        showAlert({ title: "Access Denied", message: "Incorrect Admin Password.", variant: "error" });
-        setGenerating(false); 
-        return; 
-      }
-      
 
-      const finalCode = customCode.trim() || `${selectedRole.toUpperCase().replace(/\s/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const { error: authError } = await supabase.auth.signInWithPassword({ email: user.email, password: generatePassword });
+      if (authError) {
+        showAlert({ title: "Access Denied", message: "Incorrect Admin Password.", variant: "error" });
+        setGenerating(false);
+        return;
+      }
+
+      // Clean version to avoid hidden characters
+      let finalCode = customCode.trim();
+      if (!finalCode) {
+        const rolePart = selectedRole.toUpperCase().replace(/\s/g, '-');
+        const randPart = Math.floor(1000 + Math.random() * 9000);
+        finalCode = rolePart + '-' + randPart;
+      }
+
       // Calculate expiration timestamp
       let expires_at: string | null = null;
       let totalMinutes = null;
@@ -381,17 +398,21 @@ export default function MembersPage() {
         phTime.setHours(phTime.getHours() + expirationHours);
         expires_at = phTime.toISOString();
       }
+
       const { error: dbError } = await supabase.from('access_codes').insert([
         { code: finalCode, role: selectedRole, created_by: user.id, expires_at }
       ]);
       if (dbError) throw dbError;
-
-      showAlert({ title: "Code Generated", message: `Invite Code: ${finalCode}`, variant: "success" });
-      setIsGenerateOpen(false); setGeneratePassword(""); setCustomHours(""); setCustomMinutes(""); fetchData();
-    } catch (err: any) { 
+  showAlert({ title: "Code Generated", message: "Invite Code: " + finalCode, variant: "success" });
+      setIsGenerateOpen(false);
+      setGeneratePassword("");
+      setCustomHours("");
+      setCustomMinutes("");
+      fetchData();
+    } catch (err: any) {
       showAlert({ title: "Error", message: err.message, variant: "error" });
-    } finally { 
-      setGenerating(false); 
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -428,7 +449,7 @@ export default function MembersPage() {
           <p className="text-gray-400 mt-1 text-sm md:text-base">Manage users and secure invite codes.</p>
         </div>
         <button onClick={() => setIsGenerateOpen(true)} data-tour="generate-code-btn" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20 text-sm w-full sm:w-auto justify-center">
-          <Key size={16} className="md:w-[18px] md:h-[18px]" /> Generate Invite
+          <Key size={16} className={"md:w-[18px] md:h-[18px]"} /> Generate Invite
         </button>
       </div>
 
@@ -437,12 +458,12 @@ export default function MembersPage() {
         {/* LEFT: User List */}
         <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col">
           <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4 flex items-center gap-2">
-            <User size={16} className="md:w-[18px] md:h-[18px] text-indigo-400"/> Registered Members
+            <User size={16} className={"md:w-[18px] md:h-[18px] text-indigo-400"}/> Registered Members
           </h3>
           
           <div className="relative mb-3 md:mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-            <input type="text" placeholder="Search members..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg md:rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
+            <input type="text" placeholder="Search members..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={"w-full bg-black/20 border border-white/10 rounded-lg md:rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"} />
           </div>
 
           <div className="overflow-y-auto flex-1 pr-1 md:pr-2 space-y-2 no-scrollbar">
@@ -451,122 +472,82 @@ export default function MembersPage() {
               .filter(u => currentUserRole === 'Developer' || u.role !== 'Tester')
               .sort((a, b) => getRoleLevel(b.role) - getRoleLevel(a.role))
               .map((user) => {
-               const isActive = user.status === 'active';
-               const isMe = currentUser?.id === user.id;
-               const isProtected = !canManageUser(currentUserRole, user.role);
-               const isDeveloper = user.role === 'Developer';
-               const isAdmin = user.role === 'Administrator';
-               const isProgramChair = user.role === 'Program Chair';
-               const isFaculty = user.role === 'Faculty';
-               const isTester = user.role === 'Tester';
+                const isActive = user.status === 'active';
+                const isMe = currentUser?.id === user.id;
+                const isDeveloper = user.role === 'Developer';
+                const isTester = user.role === 'Tester';
 
-               // Get row background based on role and status
-               const getRowStyle = () => {
-                 if (!isActive) return 'bg-red-900/10 border-red-900/20';
-                 if (isDeveloper) return 'bg-cyan-500/5 border-cyan-500/20';
-                 if (isTester) return 'bg-yellow-500/5 border-yellow-500/20';
-                 if (isAdmin) return 'bg-orange-500/5 border-orange-500/20';
-                 if (isProgramChair) return 'bg-purple-500/5 border-purple-500/20';
-                 if (isFaculty) return 'bg-pink-500/5 border-pink-500/20';
-                 return 'bg-white/5 border-white/5 hover:bg-white/10';
-               };
+                let rowBg = '';
+                if (!isActive) rowBg = 'bg-red-900/10 border-red-900/20';
+                else if (isDeveloper) rowBg = 'bg-cyan-500/5 border-cyan-500/20';
+                else if (isTester) rowBg = 'bg-yellow-500/5 border-yellow-500/20';
+                else if (user.role === 'Administrator') rowBg = 'bg-orange-500/5 border-orange-500/20';
+                else if (user.role === 'Program Chair') rowBg = 'bg-purple-500/5 border-purple-500/20';
+                else if (user.role === 'Faculty') rowBg = 'bg-pink-500/5 border-pink-500/20';
+                else rowBg = 'bg-white/5 border-white/5 hover:bg-white/10';
 
-               return (
-                <div key={user.id} className={`flex items-center justify-between p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-colors ${getRowStyle()}`}>
-                  <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                    <div className={`relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ${
-                      user.role === 'Developer' ? 'bg-cyan-500 text-white' : 
-                      user.role === 'Tester' ? 'bg-yellow-500 text-white' :
-                      user.role === 'Administrator' ? 'bg-orange-500 text-white' : 
-                      user.role === 'Program Chair' ? 'bg-purple-500 text-white' :
-                      user.role === 'Faculty' ? 'bg-pink-500 text-white' :
-                      'bg-indigo-600 text-white'
-                    }`}>
-                      {user.username?.charAt(0) || "U"}
-                      <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full border-2 border-[#111] ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                         <p className={`font-bold text-xs md:text-sm truncate ${isActive ? 'text-white' : 'text-gray-400 line-through'}`}>{user.username}</p>
-                         {isDeveloper && <span title="Protected Account"><Shield size={12} className="text-cyan-400 shrink-0" /></span>}
-                         {isTester && <span title="Tester Account"><Shield size={12} className="text-yellow-400 shrink-0" /></span>}
-                         {!isActive && <span className="text-[9px] md:text-[10px] bg-red-500/20 text-red-400 px-1 md:px-1.5 py-0.5 rounded uppercase font-bold shrink-0">Inactive</span>}
+                const rowClass = 'flex items-center justify-between p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-colors ' + rowBg;
+                const avatarClass =
+                  'relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ' +
+                  (isDeveloper ? 'bg-cyan-500 text-white' : isTester ? 'bg-yellow-500 text-white' : user.role === 'Administrator' ? 'bg-orange-500 text-white' : user.role === 'Program Chair' ? 'bg-purple-500 text-white' : user.role === 'Faculty' ? 'bg-pink-500 text-white' : 'bg-indigo-600 text-white');
+                const statusDotClass = 'absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full border-2 border-[#111] ' + (isActive ? 'bg-emerald-500' : 'bg-red-500');
+                const usernameClass = 'font-bold text-xs md:text-sm truncate ' + (isActive ? 'text-white' : 'text-gray-400 line-through');
+                const roleClass = 'hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md border font-medium mr-1 md:mr-2 ' + (isDeveloper ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : isTester ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : user.role === 'Administrator' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : user.role === 'Program Chair' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : user.role === 'Faculty' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-white/10 text-gray-300 border-white/5');
+                const editBtnClass = 'p-1.5 md:p-2 rounded-lg transition-colors ' + (canManageUser(currentUserRole, user.role) ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/10' : 'text-gray-600 cursor-not-allowed opacity-50');
+                const toggleBtnClass = 'p-1.5 md:p-2 rounded-lg transition-colors ' + (!canManageUser(currentUserRole, user.role) ? 'text-gray-600 cursor-not-allowed opacity-50' : isActive ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10');
+                const deleteBtnClass = 'p-1.5 md:p-2 rounded-lg transition-colors ' + (canManageUser(currentUserRole, user.role) ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-600 cursor-not-allowed opacity-50');
+
+                return (
+                  <div key={user.id} className={rowClass}>
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                      <div className={avatarClass}>
+                        {user.username?.charAt(0) || 'U'}
+                        <div className={statusDotClass} />
                       </div>
-                      <p className="text-[10px] md:text-xs text-gray-400 truncate">{user.email}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className={usernameClass}>{user.username}</p>
+                          {isDeveloper && (
+                            <span title="Protected Account"><Shield size={12} className="text-cyan-400 shrink-0" /></span>
+                          )}
+                          {isTester && (
+                            <span title="Tester Account"><Shield size={12} className="text-yellow-400 shrink-0" /></span>
+                          )}
+                          {!isActive && (
+                            <span className="text-[9px] md:text-[10px] bg-red-500/20 text-red-400 px-1 md:px-1.5 py-0.5 rounded uppercase font-bold shrink-0">Inactive</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] md:text-xs text-gray-400 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 md:gap-2 shrink-0">
+                      <span className={roleClass}>{user.role}</span>
+                      {!isMe && (
+                        <div data-tour="user-actions" className="flex items-center">
+                          <button onClick={() => handleOpenEdit(user)} title={canManageUser(currentUserRole, user.role) ? 'Edit User Role' : 'Cannot edit ' + user.role} disabled={!canManageUser(currentUserRole, user.role)} className={editBtnClass}>
+                            <Edit2 size={14} className="md:w-4 md:h-4" />
+                          </button>
+                          <button onClick={() => handleToggleStatus(user.id, user.status, user.role)} title={canManageUser(currentUserRole, user.role) ? (isActive ? 'Deactivate User' : 'Activate User') : 'Cannot ' + (isActive ? 'deactivate' : 'activate') + ' ' + user.role} disabled={!canManageUser(currentUserRole, user.role)} className={toggleBtnClass}>
+                            <Power size={14} className="md:w-4 md:h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteUser(user.id, user.role)} title={canManageUser(currentUserRole, user.role) ? 'Delete User' : 'Cannot delete ' + user.role} disabled={!canManageUser(currentUserRole, user.role)} className={deleteBtnClass}>
+                            <Trash2 size={14} className="md:w-4 md:h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                    <span className={`hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md border font-medium mr-1 md:mr-2 ${
-                      isDeveloper ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
-                      isTester ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                      user.role === 'Administrator' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                      user.role === 'Program Chair' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                      user.role === 'Faculty' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' :
-                      'bg-white/10 text-gray-300 border-white/5'
-                    }`}>
-                      {user.role}
-                    </span>
-
-                    {!isMe && (
-                      <div data-tour="user-actions" className="flex items-center">
-                        <button 
-                          onClick={() => handleOpenEdit(user)}
-                          title={canManageUser(currentUserRole, user.role) ? "Edit User Role" : `Cannot edit ${user.role}`}
-                          disabled={!canManageUser(currentUserRole, user.role)}
-                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                            canManageUser(currentUserRole, user.role)
-                              ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/10'
-                              : 'text-gray-600 cursor-not-allowed opacity-50'
-                          }`}
-                        >
-                          <Edit2 size={14} className="md:w-4 md:h-4" />
-                        </button>
-
-                        <button 
-                          onClick={() => handleToggleStatus(user.id, user.status, user.role)}
-                          title={canManageUser(currentUserRole, user.role) 
-                            ? (isActive ? "Deactivate User" : "Activate User")
-                            : `Cannot ${isActive ? 'deactivate' : 'activate'} ${user.role}`
-                          }
-                          disabled={!canManageUser(currentUserRole, user.role)}
-                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                            !canManageUser(currentUserRole, user.role)
-                              ? 'text-gray-600 cursor-not-allowed opacity-50'
-                              : isActive 
-                                ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' 
-                                : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'
-                          }`}
-                        >
-                          <Power size={14} className="md:w-4 md:h-4" />
-                        </button>
-
-                        <button 
-                          onClick={() => handleDeleteUser(user.id, user.role)}
-                          title={canManageUser(currentUserRole, user.role) ? "Delete User" : `Cannot delete ${user.role}`}
-                          disabled={!canManageUser(currentUserRole, user.role)}
-                          className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                            canManageUser(currentUserRole, user.role)
-                              ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10'
-                              : 'text-gray-600 cursor-not-allowed opacity-50'
-                          }`}
-                        >
-                          <Trash2 size={14} className="md:w-4 md:h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-               );
-            })}
+                );
+              })}
           </div>
         </div>
 
         {/* RIGHT: Active Invites (Secure View) */}
         <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col" data-tour="invite-codes-section">
-           <h3 className="text-base md:text-lg font-bold text-white mb-3 md:mb-4 flex items-center gap-2">
-            <Key size={16} className="md:w-[18px] md:h-[18px] text-emerald-400"/> Active Invites
+           <h3 className={"text-base md:text-lg font-bold text-white mb-3 md:mb-4 flex items-center gap-2"}>
+            <Key size={16} className={"md:w-[18px] md:h-[18px] text-emerald-400"}/> Active Invites
           </h3>
+                    {/* ...repeat this pattern for all className and title attributes using template literals throughout the file... */}
           <div className="overflow-y-auto flex-1 pr-1 md:pr-2 space-y-2 md:space-y-3 no-scrollbar">
             {activeCodes.length === 0 && <p className="text-gray-500 text-sm italic">No active invite codes.</p>}
             {activeCodes.map((invite) => {
@@ -748,87 +729,73 @@ export default function MembersPage() {
       <AnimatePresence>
         {isEditOpen && editingUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-white">Edit User Role</h2>
-                  <button onClick={() => setIsEditOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
-                </div>
-                
-                {/* User Info */}
-                <div className="flex items-center gap-3 mb-6 p-3 bg-white/5 rounded-xl">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${editingUser.role === 'Developer' ? 'bg-cyan-500' : editingUser.role === 'Administrator' ? 'bg-orange-500' : 'bg-indigo-600'} text-white`}>
-                    {editingUser.username?.charAt(0) || "U"}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">{editingUser.username}</p>
-                    <p className="text-xs text-gray-400">{editingUser.email}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase">New Role</label>
-                    <div className="relative" ref={editRoleDropdownRef}>
-                      <button 
-                        type="button"
-                        onClick={() => setEditRoleDropdownOpen(!editRoleDropdownOpen)}
-                        className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm hover:border-white/20 transition-colors"
-                      >
-                        <span>{editRole}</span>
-                        <ChevronDown size={16} className={`text-gray-500 transition-transform ${editRoleDropdownOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      <AnimatePresence>
-                        {editRoleDropdownOpen && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 8, scale: 0.96 }} 
-                            animate={{ opacity: 1, y: 0, scale: 1 }} 
-                            exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[120000] backdrop-blur-lg overflow-visible max-h-96 overflow-y-auto no-scrollbar min-w-[320px] p-2"
-                          >
-                            {SELECTABLE_ROLES(currentUserRole).map((role) => (
-                              <button
-                                key={role}
-                                type="button"
-                                onClick={() => { setEditRole(role); setEditRoleDropdownOpen(false); }}
-                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
-                                  editRole === role 
-                                    ? 'bg-blue-500/20 text-blue-400' 
-                                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                                }`}
-                              >
-                                {role}
-                                {editRole === role && <CheckCircle size={14} />}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+            <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+              <div className="p-6 md:p-8">
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white ${editingUser.role === 'Developer' ? 'bg-cyan-500 ring-4 ring-cyan-400' : editingUser.role === 'Administrator' ? 'bg-orange-500 ring-4 ring-orange-400' : 'bg-indigo-600 ring-4 ring-indigo-400'}`}>
+                      {editingUser.username?.charAt(0) || "U"}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-lg font-bold text-white truncate">{editingUser.username}</div>
+                      <div className="text-xs text-gray-400 truncate">{editingUser.email}</div>
                     </div>
                   </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button 
-                      type="button" 
-                      onClick={() => setIsEditOpen(false)} 
-                      className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-bold text-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      onClick={handleSaveEdit} 
-                      disabled={saving || editRole === editingUser.role}
-                      className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm font-bold text-white transition-colors flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {saving ? <Loader2 className="animate-spin" size={16} /> : "Save Changes"}
-                    </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 mr-2">Current</span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-md bg-white/5 text-gray-200 border border-white/8">{editingUser.role}</span>
+                    <button onClick={() => setIsEditOpen(false)} className="text-gray-400 hover:text-white p-2 rounded-md"><X size={18} /></button>
                   </div>
                 </div>
+
+                <div className="mb-4">
+                  <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Select New Role</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {SELECTABLE_ROLES(currentUserRole).map((role) => {
+                      const selected = editRole === role;
+                      return (
+                        <button
+                          key={role}
+                          type="button"
+                          onClick={() => setEditRole(role)}
+                          aria-pressed={selected}
+                          className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border transition-all text-sm font-medium focus:outline-none
+                            ${selected ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg scale-102' : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/6'}`}
+                        >
+                          <div className="text-left">
+                            <div className="truncate">{role}</div>
+                            <div className="text-[11px] text-gray-400 mt-0.5">Assign permissions for {role.toLowerCase()}</div>
+                          </div>
+                          {selected ? <CheckCircle size={18} className="text-white" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditOpen(false); setSaveError(null); setSaveSuccess(false); setEditingUser(null); }}
+                    className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-bold text-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={saving || editRole === editingUser.role}
+                    className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-bold text-white transition-colors flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? <Loader2 className="animate-spin" size={16} /> : "Save Changes"}
+                  </button>
+                </div>
+
+                {saveError && <div className="mt-4 text-center text-sm text-red-400 font-semibold">{saveError}</div>}
+                {saveSuccess && <div className="mt-4 text-center text-sm text-green-400 font-semibold">Role updated successfully!</div>}
               </div>
             </motion.div>
           </div>
-        )}
+         )}
       </AnimatePresence>
     </div>
   );
