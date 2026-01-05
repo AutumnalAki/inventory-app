@@ -139,7 +139,11 @@ export default function Dashboard() {
                   <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs md:text-sm text-gray-200 truncate">
-                      {log.action}: <span className="text-white font-bold">{log.item}</span>
+                      {log.action}: <span className="text-white font-bold">{
+                        log.item?.startsWith('Item:')
+                          ? log.item.replace('Item: ', '')
+                          : log.item
+                      }</span>
                     </p>
                     <p className="text-[10px] md:text-xs text-gray-500">{log.time}</p>
                   </div>
