@@ -136,13 +136,27 @@ export default function Dashboard() {
           <div className="space-y-3 md:space-y-4">
             {filteredLogs.slice(0, 5).map((log) => (
                <div key={log.id} className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-xl bg-black/20 border border-white/5">
-                  <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                  {/* Color logic for status/condition */}
+                  {(() => {
+                    let color = 'bg-orange-500';
+                    const txt = log.item?.toLowerCase() || '';
+                    if (txt.includes('available')) color = 'bg-green-500';
+                    else if (txt.includes('broken')) color = 'bg-red-500';
+                    else if (txt.includes('repair')) color = 'bg-yellow-400';
+                    else if (txt.includes('low stock')) color = 'bg-yellow-500';
+                    else if (txt.includes('out of stock')) color = 'bg-gray-500';
+                    return <div className={`w-2 h-2 rounded-full ${color} shrink-0`} />;
+                  })()}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs md:text-sm text-gray-200 truncate">
                       {log.action}: <span className="text-white font-bold">{
-                        log.item?.startsWith('Item:')
-                          ? log.item.replace('Item: ', '')
-                          : log.item
+                        (() => {
+                          if (log.item?.startsWith('Item:')) {
+                            const [itemPart, changesPart] = log.item.split(' | Changes: ');
+                            return itemPart.replace('Item: ', '') + (changesPart ? ` — ${changesPart}` : '');
+                          }
+                          return log.item;
+                        })()
                       }</span>
                     </p>
                     <p className="text-[10px] md:text-xs text-gray-500">{log.time}</p>

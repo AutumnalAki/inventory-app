@@ -197,30 +197,56 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }]);
     if (!error) {
       const { data: { session } } = await supabase.auth.getSession();
-      await logAction("New Item Added", `Item: ${item.name}`, item.location, session?.user?.id);
+      await logAction("New Item Added", `New Item Added: ${item.name}`, item.location, session?.user?.id);
       fetchData();
     }
   };
 
   const updateItem = async (id: number, updatedItem: Partial<Item>) => {
     const payload: any = {};
-    if (updatedItem.name) payload.item_name = updatedItem.name;
-    if (updatedItem.quantity !== undefined) payload.quantity = updatedItem.quantity;
-    if (updatedItem.stock) payload.stock_status = updatedItem.stock;
-    if (updatedItem.condition) payload.condition_status = updatedItem.condition;
-    if (updatedItem.remarks !== undefined) payload.remarks = updatedItem.remarks;
-    
-    // --- FIX: Added these two lines ---
-    if (updatedItem.controlId) payload.control_id = updatedItem.controlId;
-    if (updatedItem.supplier) payload.supplier = updatedItem.supplier;
-    // ----------------------------------
-    
+    let changes: string[] = [];
+    const item = inventory.find(i => i.id === id);
+    if (updatedItem.name && updatedItem.name !== item?.name) {
+      payload.item_name = updatedItem.name;
+      changes.push(`${item?.name ?? "Item"} name changed to ${updatedItem.name}`);
+    }
+    if (updatedItem.quantity !== undefined && updatedItem.quantity !== item?.quantity) {
+      payload.quantity = updatedItem.quantity;
+      changes.push(`${item?.name ?? "Item"} quantity changed to ${updatedItem.quantity}`);
+    }
+    if (updatedItem.stock && updatedItem.stock !== item?.stock) {
+      payload.stock_status = updatedItem.stock;
+      changes.push(`${item?.name ?? "Item"} status changed to ${updatedItem.stock}`);
+    }
+    if (updatedItem.condition && updatedItem.condition !== item?.condition) {
+      payload.condition_status = updatedItem.condition;
+      changes.push(`${item?.name ?? "Item"} condition changed to ${updatedItem.condition}`);
+    }
+    if (updatedItem.remarks !== undefined && updatedItem.remarks !== item?.remarks) {
+      payload.remarks = updatedItem.remarks;
+      changes.push(`${item?.name ?? "Item"} remarks changed to ${updatedItem.remarks}`);
+    }
+    if (updatedItem.controlId && updatedItem.controlId !== item?.controlId) {
+      payload.control_id = updatedItem.controlId;
+      changes.push(`${item?.name ?? "Item"} control ID changed to ${updatedItem.controlId}`);
+    }
+    if (updatedItem.supplier && updatedItem.supplier !== item?.supplier) {
+      payload.supplier = updatedItem.supplier;
+      changes.push(`${item?.name ?? "Item"} supplier changed to ${updatedItem.supplier}`);
+    }
     const { error } = await supabase.from('inventory').update(payload).eq('id', id);
     if (!error) {
       // Get the item's location for logging
       const item = inventory.find(i => i.id === id);
       const { data: { session } } = await supabase.auth.getSession();
-      await logAction("Item Updated", `Item ID: ${id}`, item?.location || updatedItem.location || "", session?.user?.id);
+      // If no changes, just log item updated
+      if (changes.length === 0) {
+        await logAction("Item Updated", `${item?.name ?? "Item"} updated.`, item?.location || updatedItem.location || "", session?.user?.id);
+      } else {
+        for (const change of changes) {
+          await logAction("Item Updated", change, item?.location || updatedItem.location || "", session?.user?.id);
+        }
+      }
       fetchData();
     }
   };
@@ -231,7 +257,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.from('inventory').delete().eq('id', id);
     if (!error) {
       const { data: { session } } = await supabase.auth.getSession();
-      await logAction("Item Deleted", `Item ID: ${id}`, item?.location || "", session?.user?.id);
+      await logAction("Item Deleted", `Item: ${item?.name ?? "Unknown"}`, item?.location || "", session?.user?.id);
       fetchData();
     }
   };
