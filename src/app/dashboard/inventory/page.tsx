@@ -271,16 +271,16 @@ function InventoryContent() {
         </div>
 
         {/* MOVED EXPORT BUTTON */}
-        <div className="relative z-30" data-tour="export-btn">
+        <div className="relative z-100" data-tour="export-btn">
             <button onClick={() => setIsExportOpen(!isExportOpen)} className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-black/20">
               <Download size={16} /> Export Data <ChevronDown size={14}/>
             </button>
             <AnimatePresence>
               {isExportOpen && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 top-12 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 w-48 overflow-hidden ring-1 ring-white/5">
-                      <button onClick={exportPDF} className="w-full text-left px-4 py-3 hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors border-b border-white/5">Export as PDF</button>
-                      <button onClick={exportExcel} className="w-full text-left px-4 py-3 hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors border-b border-white/5">Export as Excel</button>
-                      <button onClick={exportCSV} className="w-full text-left px-4 py-3 hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors">Export as CSV</button>
+                      <button onClick={exportPDF} className="w-full text-left px-4 py-3 z-100 hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors border-b border-white/5">Export as PDF</button>
+                      <button onClick={exportExcel} className="w-full text-left px-4 py-3 z-100 hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors border-b border-white/5">Export as Excel</button>
+                      <button onClick={exportCSV} className="w-full text-left px-4 py-3 z-100 hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors">Export as CSV</button>
                   </motion.div>
               )}
             </AnimatePresence>
