@@ -490,7 +490,7 @@ export default function ItemTrackingPage() {
                   <div className="min-w-0">
                     <p className="font-bold text-white text-sm truncate">{loan.itemName}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-gray-400 font-mono">{loan.controlId}</span>
+                      <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-gray-400 font-mono z-100">{loan.controlId}</span>
                       <span className="text-[10px] text-gray-500">Qty: {loan.qty}</span>
                     </div>
                   </div>
@@ -610,7 +610,7 @@ export default function ItemTrackingPage() {
                             <button 
                               type="button"
                               onClick={() => setModalLocationOpen(!modalLocationOpen)}
-                              className="w-full flex items-center justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
+                              className="w-full flex items-center z-100 justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
                             >
                               <span>{newLoan.location}</span>
                               <ChevronDown size={14} className={`text-gray-500 transition-transform ${modalLocationOpen ? 'rotate-180' : ''}`} />
@@ -622,14 +622,14 @@ export default function ItemTrackingPage() {
                                   animate={{ opacity: 1, y: 0, scale: 1 }} 
                                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
                                   transition={{ duration: 0.15 }}
-                                  className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto no-scrollbar"
+                                  className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-100 overflow-hidden max-h-48 overflow-y-auto no-scrollbar"
                                 >
                                   {LABS.filter(l => l !== "All Labs").map((lab) => (
                                     <button
                                       key={lab}
                                       type="button"
                                       onClick={() => { setNewLoan({...newLoan, location: lab}); setModalLocationOpen(false); }}
-                                      className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                                      className={`w-full text-left z-100 px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
                                         newLoan.location === lab 
                                           ? 'bg-indigo-500/20 text-indigo-400' 
                                           : 'text-gray-300 hover:bg-white/5 hover:text-white'
