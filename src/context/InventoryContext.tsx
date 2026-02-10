@@ -51,12 +51,32 @@ export type ActivityLog = {
   user_id?: string | null;
 };
 
+export type Reservation = {
+  id: number;
+  itemId: number | null;
+  itemName: string;
+  controlId: string;
+  quantity: number;
+  location: string;
+  reservedBy: string | null;
+  reservedByName: string;
+  purpose: string;
+  reservationDate: string;
+  neededDate: string;
+  returnDate: string;
+  status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
+  approvedBy: string | null;
+  notes: string;
+  createdAt: string;
+};
+
 // --- CONTEXT INTERFACE ---
 interface InventoryContextType {
   inventory: Item[];
   loans: Loan[];
   users: User[];
   logs: ActivityLog[];
+  reservations: Reservation[];
   addItem: (item: Omit<Item, "id">) => Promise<void>;
   updateItem: (id: number, updatedItem: Partial<Item>) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
@@ -70,6 +90,11 @@ interface InventoryContextType {
   addUser: (user: Omit<User, "id" | "joined">, password?: string) => Promise<void>;
   updateUser: (id: number, data: Partial<User>) => Promise<void>;
   deleteUser: (id: number) => Promise<void>;
+  // -- RESERVATIONS --
+  addReservation: (reservation: Omit<Reservation, "id" | "reservationDate" | "status" | "approvedBy" | "createdAt">) => Promise<void>;
+  updateReservationStatus: (id: number, status: Reservation["status"], approvedBy?: string) => Promise<void>;
+  cancelReservation: (id: number) => Promise<void>;
+  deleteReservation: (id: number) => Promise<void>;
   refreshData: () => void;
 }
 
@@ -81,6 +106,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   // 1. FETCH DATA FUNCTION
   const fetchData = async () => {
@@ -146,6 +172,29 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         user_id: l.user_id || null
       })));
     }
+
+    // E. Reservations
+    const { data: reservationsData } = await supabase.from('reservations').select('*').order('created_at', { ascending: false });
+    if (reservationsData) {
+      setReservations(reservationsData.map((r: any) => ({
+        id: r.id,
+        itemId: r.item_id,
+        itemName: r.item_name,
+        controlId: r.control_id || "",
+        quantity: r.quantity,
+        location: r.location || "",
+        reservedBy: r.reserved_by,
+        reservedByName: r.reserved_by_name,
+        purpose: r.purpose || "",
+        reservationDate: new Date(r.reservation_date).toLocaleString(),
+        neededDate: r.needed_date,
+        returnDate: r.return_date || "",
+        status: r.status,
+        approvedBy: r.approved_by,
+        notes: r.notes || "",
+        createdAt: r.created_at
+      })));
+    }
   };
 
   // 2. REALTIME SUBSCRIPTION
@@ -168,6 +217,10 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
         console.log("Realtime: Logs updated");
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => {
+        console.log("Realtime: Reservations updated");
         fetchData();
       })
       .subscribe((status) => {
@@ -341,6 +394,55 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // --- RESERVATION ACTIONS ---
+  const addReservation = async (reservation: Omit<Reservation, "id" | "reservationDate" | "status" | "approvedBy" | "createdAt">) => {
+    const { error } = await supabase.from('reservations').insert([{
+      item_id: reservation.itemId,
+      item_name: reservation.itemName,
+      control_id: reservation.controlId,
+      quantity: reservation.quantity,
+      location: reservation.location,
+      reserved_by: reservation.reservedBy,
+      reserved_by_name: reservation.reservedByName,
+      purpose: reservation.purpose,
+      needed_date: reservation.neededDate,
+      return_date: reservation.returnDate || null,
+      notes: reservation.notes,
+      status: 'pending'
+    }]);
+    if (!error) {
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("Reservation Created", `Reservation for ${reservation.itemName} by ${reservation.reservedByName}`, reservation.location, session?.user?.id);
+      fetchData();
+    }
+  };
+
+  const updateReservationStatus = async (id: number, status: Reservation["status"], approvedBy?: string) => {
+    const payload: any = { status };
+    if (approvedBy) payload.approved_by = approvedBy;
+    const { error } = await supabase.from('reservations').update(payload).eq('id', id);
+    if (!error) {
+      const res = reservations.find(r => r.id === id);
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction(`Reservation ${status.charAt(0).toUpperCase() + status.slice(1)}`, `Reservation #${id} for ${res?.itemName ?? "Item"} ${status}`, res?.location || "", session?.user?.id);
+      fetchData();
+    }
+  };
+
+  const cancelReservation = async (id: number) => {
+    await updateReservationStatus(id, 'cancelled');
+  };
+
+  const deleteReservation = async (id: number) => {
+    const res = reservations.find(r => r.id === id);
+    const { error } = await supabase.from('reservations').delete().eq('id', id);
+    if (!error) {
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("Reservation Deleted", `Reservation #${id} for ${res?.itemName ?? "Item"} deleted`, res?.location || "", session?.user?.id);
+      fetchData();
+    }
+  };
+
   const deleteUser = async (id: number) => {
     // First get the user's auth id (UUID) from the users table
     const { data: userData } = await supabase.from('users').select('id').eq('id', id).single();
@@ -369,11 +471,12 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <InventoryContext.Provider value={{ 
-      inventory, loans, users, logs, 
+      inventory, loans, users, logs, reservations,
       addItem, updateItem, deleteItem, 
       deleteItems, updateItems, 
       addLoan, returnLoan, deleteLoan,
       addUser, updateUser, deleteUser,
+      addReservation, updateReservationStatus, cancelReservation, deleteReservation,
       refreshData: fetchData 
     }}>
       {children}
