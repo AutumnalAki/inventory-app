@@ -234,17 +234,27 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       payload.supplier = updatedItem.supplier;
       changes.push(`${item?.name ?? "Item"} supplier changed to ${updatedItem.supplier}`);
     }
+    // Support updating location and category which were previously ignored
+    if (updatedItem.location && updatedItem.location !== item?.location) {
+      payload.location = updatedItem.location;
+      changes.push(`${item?.name ?? "Item"} location changed to ${updatedItem.location}`);
+    }
+    // (category not stored in DB currently) -- skip category update
+    // If no payload to update, skip DB call but still record an update log (if desired)
+    if (Object.keys(payload).length === 0) {
+      const { data: { session } } = await supabase.auth.getSession();
+      await logAction("Item Updated", `${item?.name ?? "Item"} updated.`, item?.location || (updatedItem.location as string) || "", session?.user?.id);
+      return;
+    }
+
     const { error } = await supabase.from('inventory').update(payload).eq('id', id);
     if (!error) {
-      // Get the item's location for logging
-      const item = inventory.find(i => i.id === id);
       const { data: { session } } = await supabase.auth.getSession();
-      // If no changes, just log item updated
       if (changes.length === 0) {
-        await logAction("Item Updated", `${item?.name ?? "Item"} updated.`, item?.location || updatedItem.location || "", session?.user?.id);
+        await logAction("Item Updated", `${item?.name ?? "Item"} updated.`, item?.location || (updatedItem.location as string) || "", session?.user?.id);
       } else {
         for (const change of changes) {
-          await logAction("Item Updated", change, item?.location || updatedItem.location || "", session?.user?.id);
+          await logAction("Item Updated", change, item?.location || (updatedItem.location as string) || "", session?.user?.id);
         }
       }
       fetchData();
