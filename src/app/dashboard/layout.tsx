@@ -29,6 +29,13 @@ const accentColorMap: Record<string, { text: string; textDark: string; hover: st
 const isHexColor = (color: string) => /^#([0-9A-F]{3}){1,2}$/i.test(color);
 
 function SidebarContent({ children }: { children: React.ReactNode }) {
+    useEffect(() => {
+      // Prevent dashboard access if not signed in
+      const userId = typeof window !== "undefined" ? localStorage.getItem("labTrack_userid") : null;
+      if (!userId) {
+        window.location.href = "/";
+      }
+    }, []);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
