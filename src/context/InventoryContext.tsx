@@ -16,6 +16,7 @@ export type Item = {
   remarks: string;
   category: string;
   created_at: string;
+  low_stock_threshold: number;
 };
 
 export type Loan = {
@@ -124,7 +125,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         condition: i.condition_status, 
         remarks: i.remarks || "", 
         category: "General",
-        created_at: i.created_at
+        created_at: i.created_at,
+        low_stock_threshold: i.low_stock_threshold ?? 5
       })));
     }
 
@@ -246,7 +248,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.from('inventory').insert([{
       item_name: item.name, control_id: item.controlId, quantity: item.quantity,
       location: item.location, supplier: item.supplier, stock_status: item.stock,
-      condition_status: item.condition, remarks: item.remarks, unit: 'pcs'
+      condition_status: item.condition, remarks: item.remarks, unit: 'pcs',
+      low_stock_threshold: item.low_stock_threshold ?? 5
     }]);
     if (!error) {
       const { data: { session } } = await supabase.auth.getSession();
@@ -291,6 +294,10 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (updatedItem.location && updatedItem.location !== item?.location) {
       payload.location = updatedItem.location;
       changes.push(`${item?.name ?? "Item"} location changed to ${updatedItem.location}`);
+    }
+    if (updatedItem.low_stock_threshold !== undefined && updatedItem.low_stock_threshold !== item?.low_stock_threshold) {
+      payload.low_stock_threshold = updatedItem.low_stock_threshold;
+      changes.push(`${item?.name ?? "Item"} low stock threshold changed to ${updatedItem.low_stock_threshold}`);
     }
     // (category not stored in DB currently) -- skip category update
     // If no payload to update, skip DB call but still record an update log (if desired)
@@ -340,7 +347,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (data.stock) payload.stock_status = data.stock;
     if (data.condition) payload.condition_status = data.condition;
     if (data.location) payload.location = data.location;
-    
+    if (data.low_stock_threshold !== undefined) payload.low_stock_threshold = data.low_stock_threshold;
     if (Object.keys(payload).length === 0) return;
 
     const { error } = await supabase.from('inventory').update(payload).in('id', ids);

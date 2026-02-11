@@ -81,7 +81,7 @@ function InventoryContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [newItem, setNewItem] = useState({
-    name: "", controlId: "", quantity: 0, location: "", supplier: "", stock: "In Stock", condition: "Available", remarks: ""
+    name: "", controlId: "", quantity: 0, location: "", supplier: "", stock: "In Stock", condition: "Available", remarks: "", low_stock_threshold: 5
   });
   
   // Modal dropdown states
@@ -254,11 +254,18 @@ function InventoryContent() {
     setCurrentId(null); 
     // Auto-set location for lab-restricted users
     const defaultLocation = isLabRestricted && userLabDbName ? userLabDbName : "";
-    setNewItem({ name: "", controlId: "", quantity: 0, location: defaultLocation, supplier: "", stock: "In Stock", condition: "Available", remarks: "" }); 
+    setNewItem({ name: "", controlId: "", quantity: 0, location: defaultLocation, supplier: "", stock: "In Stock", condition: "Available", remarks: "", low_stock_threshold: 5 }); 
     setIsModalOpen(true); 
   };
-  const openEditModal = (item: Item) => { setIsEditing(true); setCurrentId(item.id); setNewItem({ ...item } as any); setIsModalOpen(true); };
-  const handleSaveItem = (e: React.FormEvent) => { e.preventDefault(); const calculatedStock = newItem.quantity === 0 ? "Out of Stock" : (newItem.quantity <= 5 ? "Low Stock" : "In Stock"); const itemToSave = { ...newItem, stock: calculatedStock }; isEditing && currentId !== null ? updateItem(currentId, itemToSave as any) : addItem(itemToSave as any); setIsModalOpen(false); };
+  const openEditModal = (item: Item) => { setIsEditing(true); setCurrentId(item.id); setNewItem({ ...item, low_stock_threshold: item.low_stock_threshold ?? 5 } as any); setIsModalOpen(true); };
+  const handleSaveItem = (e: React.FormEvent) => { 
+    e.preventDefault(); 
+    const threshold = newItem.low_stock_threshold ?? 5;
+    const calculatedStock = newItem.quantity === 0 ? "Out of Stock" : (newItem.quantity <= threshold ? "Low Stock" : "In Stock"); 
+    const itemToSave = { ...newItem, stock: calculatedStock, low_stock_threshold: threshold }; 
+    isEditing && currentId !== null ? updateItem(currentId, itemToSave as any) : addItem(itemToSave as any); 
+    setIsModalOpen(false); 
+  };
 
   return (
     <div className="space-y-6 h-full flex flex-col relative pb-20">
@@ -714,6 +721,10 @@ function InventoryContent() {
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-gray-400 uppercase">Quantity</label>
                       <input required type="number" min="0" value={newItem.quantity} onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">Low Stock Threshold</label>
+                      <input required type="number" min="1" value={newItem.low_stock_threshold} onChange={(e) => setNewItem({...newItem, low_stock_threshold: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
                     </div>
                     <div className="space-y-1.5 col-span-2">
                       <label className="text-xs font-medium text-gray-400 uppercase flex items-center gap-1.5">Location {isLabRestricted && <Lock size={10} className="text-gray-500" />}</label>

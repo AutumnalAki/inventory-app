@@ -25,9 +25,10 @@ function canAccessActivityLog(role: string) {
 }
 
 export default function ActivityLogPage() {
-  const { logs, users } = useInventory();
+  const { logs, users, refreshData } = useInventory();
   const { role, loading } = useRole();
   const [userMap, setUserMap] = useState<Record<string, string>>({});
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     // Build a map of userId to username for display
@@ -56,9 +57,45 @@ export default function ActivityLogPage() {
     );
   }
 
+  // Export logs to CSV
+  const handleExport = () => {
+    if (logs.length === 0) return;
+    const headers = ["Date & Time", "User", "Action", "Details", "Location"];
+    const rows = logs.map(log => [
+      log.time,
+      userMap[String(log.user_id ?? "")] || "-",
+      log.action,
+      log.item,
+      log.location
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Activity_Log.csv";
+    link.click();
+  };
+
+  // Clear all logs
+  const handleClear = async () => {
+    if (!window.confirm("Are you sure you want to clear all activity logs? This cannot be undone.")) return;
+    setClearing(true);
+    // Use Supabase directly to delete all logs
+    const { supabase } = await import("@/lib/supabase");
+    await supabase.from("activity_log").delete().neq("id", 0); // delete all
+    setClearing(false);
+    refreshData();
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Activity Log</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <h1 className="text-2xl font-bold">Activity Log</h1>
+        <div className="flex gap-2">
+          <button onClick={handleExport} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">Export CSV</button>
+          <button onClick={handleClear} disabled={clearing} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold disabled:opacity-50">{clearing ? "Clearing..." : "Clear Log"}</button>
+        </div>
+      </div>
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5 backdrop-blur-md">
         <table className="min-w-full text-sm text-left">
           <thead className="bg-black/10">
