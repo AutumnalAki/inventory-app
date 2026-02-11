@@ -134,36 +134,58 @@ export default function Dashboard() {
             </h3>
           </div>
           <div className="space-y-3 md:space-y-4">
-            {filteredLogs.slice(0, 5).map((log) => (
-               <div key={log.id} className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-xl bg-black/20 border border-white/5">
-                  {/* Color logic for status/condition */}
-                  {(() => {
-                    let color = 'bg-orange-500';
-                    const txt = log.item?.toLowerCase() || '';
-                    if (txt.includes('available')) color = 'bg-green-500';
-                    else if (txt.includes('broken')) color = 'bg-red-500';
-                    else if (txt.includes('repair')) color = 'bg-yellow-400';
-                    else if (txt.includes('low stock')) color = 'bg-yellow-500';
-                    else if (txt.includes('out of stock')) color = 'bg-gray-500';
-                    return <div className={`w-2 h-2 rounded-full ${color} shrink-0`} />;
-                  })()}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs md:text-sm text-gray-200 truncate">
-                      {log.action}: <span className="text-white font-bold">{
-                        (() => {
-                          if (log.item?.startsWith('Item:')) {
-                            const [itemPart, changesPart] = log.item.split(' | Changes: ');
-                            return itemPart.replace('Item: ', '') + (changesPart ? ` — ${changesPart}` : '');
-                          }
-                          return log.item;
-                        })()
-                      }</span>
-                    </p>
-                    <p className="text-[10px] md:text-xs text-gray-500">{log.time}</p>
-                  </div>
-               </div>
-            ))}
-            {filteredLogs.length === 0 && <p className="text-gray-500 italic">No recent activity.</p>}
+            {/* Group logs by date */}
+            {(() => {
+              const logsByDate = {};
+              filteredLogs.slice(0, 20).forEach(log => {
+                let dateStr = "Unknown";
+                if (log.time) {
+                  const d = new Date(log.time);
+                  if (!isNaN(d.getTime())) {
+                    dateStr = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+                  } else {
+                    dateStr = String(log.time).split(' ')[0];
+                  }
+                }
+                if (!logsByDate[dateStr]) logsByDate[dateStr] = [];
+                logsByDate[dateStr].push(log);
+              });
+              const sortedDates = Object.keys(logsByDate).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+              if (filteredLogs.length === 0) return <p className="text-gray-500 italic">No recent activity.</p>;
+              return sortedDates.map(date => (
+                <div key={date}>
+                  <div className="text-xs font-bold text-white/80 mb-1 mt-2">{date}</div>
+                  {logsByDate[date].slice(0, 5).map((log) => (
+                    <div key={log.id} className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-xl bg-black/20 border border-white/5">
+                      {(() => {
+                        let color = 'bg-orange-500';
+                        const txt = log.item?.toLowerCase() || '';
+                        if (txt.includes('available')) color = 'bg-green-500';
+                        else if (txt.includes('broken')) color = 'bg-red-500';
+                        else if (txt.includes('repair')) color = 'bg-yellow-400';
+                        else if (txt.includes('low stock')) color = 'bg-yellow-500';
+                        else if (txt.includes('out of stock')) color = 'bg-gray-500';
+                        return <div className={`w-2 h-2 rounded-full ${color} shrink-0`} />;
+                      })()}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs md:text-sm text-gray-200 truncate">
+                          {log.action}: <span className="text-white font-bold">{
+                            (() => {
+                              if (log.item?.startsWith('Item:')) {
+                                const [itemPart, changesPart] = log.item.split(' | Changes: ');
+                                return itemPart.replace('Item: ', '') + (changesPart ? ` — ${changesPart}` : '');
+                              }
+                              return log.item;
+                            })()
+                          }</span>
+                        </p>
+                        <p className="text-[10px] md:text-xs text-gray-500">{log.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ));
+            })()}
           </div>
         </div>
 

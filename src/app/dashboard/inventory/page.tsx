@@ -25,7 +25,8 @@ const LAB_MAPPING: Record<string, string> = {
   "EE Lab": "Electrical Engineering Laboratory",
   "ME Lab": "Mechanical Engineering Laboratory",
   "ECE Lab": "ECE Laboratory",
-  "CPE Lab": "CPE Laboratory"
+  "CPE Lab": "CPE Laboratory",
+  "CSR (Central Storage Room)": "Central Storage Room"
 };
 const LAB_TABS = Object.keys(LAB_MAPPING);
 

@@ -87,6 +87,25 @@ export default function ActivityLogPage() {
     refreshData();
   };
 
+  // Group logs by date (YYYY-MM-DD)
+  const logsByDate: Record<string, typeof logs> = {};
+  logs.forEach(log => {
+    // Try to extract date in YYYY-MM-DD from log.time
+    let dateStr = "Unknown";
+    if (log.time) {
+      const d = new Date(log.time);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      } else {
+        // fallback: try splitting by space or T
+        dateStr = String(log.time).split(' ')[0];
+      }
+    }
+    if (!logsByDate[dateStr]) logsByDate[dateStr] = [];
+    logsByDate[dateStr].push(log);
+  });
+  const sortedDates = Object.keys(logsByDate).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -97,33 +116,37 @@ export default function ActivityLogPage() {
         </div>
       </div>
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5 backdrop-blur-md">
-        <table className="min-w-full text-sm text-left">
-          <thead className="bg-black/10">
-            <tr>
-              <th className="px-4 py-2 font-semibold">Date & Time</th>
-              <th className="px-4 py-2 font-semibold">User</th>
-              <th className="px-4 py-2 font-semibold">Action</th>
-              <th className="px-4 py-2 font-semibold">Details</th>
-              <th className="px-4 py-2 font-semibold">Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center py-6 text-gray-500">No activity logs found.</td>
-              </tr>
-            )}
-            {logs.map(log => (
-              <tr key={log.id} className="border-t border-white/5 hover:bg-white/10 transition-colors">
-                <td className="px-4 py-2 whitespace-nowrap">{log.time}</td>
-                <td className="px-4 py-2 whitespace-nowrap">{userMap[String(log.user_id ?? "")] || "-"}</td>
-                <td className="px-4 py-2">{log.action}</td>
-                <td className="px-4 py-2">{log.item}</td>
-                <td className="px-4 py-2">{log.location}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {logs.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">No activity logs found.</div>
+        ) : (
+          sortedDates.map(date => (
+            <div key={date} className="mb-6">
+              <div className="bg-black/20 px-4 py-2 font-bold text-white rounded-t-lg border-b border-white/10 text-sm sticky top-0 z-10">{date}</div>
+              <table className="min-w-full text-sm text-left">
+                <thead className="bg-black/10">
+                  <tr>
+                    <th className="px-4 py-2 font-semibold">Date & Time</th>
+                    <th className="px-4 py-2 font-semibold">User</th>
+                    <th className="px-4 py-2 font-semibold">Action</th>
+                    <th className="px-4 py-2 font-semibold">Details</th>
+                    <th className="px-4 py-2 font-semibold">Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logsByDate[date].map(log => (
+                    <tr key={log.id} className="border-t border-white/5 hover:bg-white/10 transition-colors">
+                      <td className="px-4 py-2 whitespace-nowrap">{log.time}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">{userMap[String(log.user_id ?? "")] || "-"}</td>
+                      <td className="px-4 py-2">{log.action}</td>
+                      <td className="px-4 py-2">{log.item}</td>
+                      <td className="px-4 py-2">{log.location}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
