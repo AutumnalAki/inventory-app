@@ -136,8 +136,8 @@ export default function Dashboard() {
           <div className="space-y-3 md:space-y-4">
             {/* Group logs by date */}
             {(() => {
-              const logsByDate = {};
-              filteredLogs.slice(0, 20).forEach(log => {
+              const logsByDate: Record<string, typeof filteredLogs> = {};
+              filteredLogs.slice(0, 20).forEach((log: any) => {
                 let dateStr = "Unknown";
                 if (log.time) {
                   const d = new Date(log.time);
@@ -155,7 +155,7 @@ export default function Dashboard() {
               return sortedDates.map(date => (
                 <div key={date}>
                   <div className="text-xs font-bold text-white/80 mb-1 mt-2">{date}</div>
-                  {logsByDate[date].slice(0, 5).map((log) => (
+                  {logsByDate[date].slice(0, 5).map((log: any) => (
                     <div key={log.id} className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-xl bg-black/20 border border-white/5">
                       {(() => {
                         let color = 'bg-orange-500';
