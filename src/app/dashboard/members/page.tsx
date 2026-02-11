@@ -79,7 +79,7 @@ const ROLE_HIERARCHY: Record<string, number> = {
   "CHEM Lab": 40,
   "PHYS Lab": 40,
   "EE Lab": 40,
-  "CSR Location": 40,
+  "Central Storage Room": 40,
 };
 
 // Get role level (default to lowest if unknown)
