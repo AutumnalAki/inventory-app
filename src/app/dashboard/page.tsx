@@ -18,7 +18,8 @@ const ROLE_LAB_DB_MAPPING: Record<string, string> = {
   "CPE Lab": "Computer Laboratory",
   "CHEM Lab": "Chemistry Laboratory",
   "PHYS Lab": "Physics Laboratory",
-  "EE Lab": "Electrical Engineering Laboratory"
+  "EE Lab": "Electrical Engineering Laboratory",
+  "CSR Location": "CSR Location"
 };
 
 // Roles with full access to all labs

@@ -11,24 +11,32 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check active session on load
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    };
+    // 1. Check localStorage for persisted session
+    const persistedUserId = localStorage.getItem("labTrack_userid");
+    if (persistedUserId) {
+      fetchUserRole(persistedUserId);
+    } else {
+      // 2. Check active session on load
+      const checkUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          localStorage.setItem("labTrack_userid", session.user.id);
+          fetchUserRole(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      };
+      checkUser();
+    }
 
-    checkUser();
-
-    // 2. Listen for login/logout events automatically
+    // 3. Listen for login/logout events automatically
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
+        localStorage.setItem("labTrack_userid", session.user.id);
         fetchUserRole(session.user.id);
       } else {
         setRole("Student");
+        localStorage.removeItem("labTrack_userid");
         setLoading(false);
       }
     });

@@ -61,7 +61,8 @@ const ROLES = [
   "CPE Lab",
   "CHEM Lab",
   "PHYS Lab",
-  "EE Lab"
+  "EE Lab",
+  "Central Storage Room"
 ];
 
 // Role Hierarchy Levels (higher number = higher authority)
@@ -78,6 +79,7 @@ const ROLE_HIERARCHY: Record<string, number> = {
   "CHEM Lab": 40,
   "PHYS Lab": 40,
   "EE Lab": 40,
+  "CSR Location": 40,
 };
 
 // Get role level (default to lowest if unknown)
