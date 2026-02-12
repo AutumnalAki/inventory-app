@@ -29,18 +29,26 @@ const accentColorMap: Record<string, { text: string; textDark: string; hover: st
 const isHexColor = (color: string) => /^#([0-9A-F]{3}){1,2}$/i.test(color);
 
 function SidebarContent({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
     useEffect(() => {
-      // Prevent dashboard access if not signed in
-      const userId = typeof window !== "undefined" ? localStorage.getItem("labTrack_userid") : null;
-      if (!userId) {
-        window.location.href = "/";
-      }
+      // Prevent dashboard access if not signed in — check Supabase session instead of localStorage
+      const checkSession = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) {
+            router.push('/');
+          }
+        } catch (err) {
+          console.error('Session check failed', err);
+          router.push('/');
+        }
+      };
+      checkSession();
     }, []);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
   const { role, setRole, previewRole, setPreviewRole } = useRole();
   const { accent } = useTheme();
   
