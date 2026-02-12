@@ -169,6 +169,34 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Real-time notifications subscription: prepend new update_logs entries
+  useEffect(() => {
+    const channel = supabase
+      .channel('notifications_update_logs')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'update_logs' },
+        (payload) => {
+          try {
+            const newRow = payload.new as any;
+            setNotifications((prev) => {
+              const next = [newRow, ...(prev || [])];
+              return next.slice(0, 50);
+            });
+            // If not on the updates page, mark as new
+            if (pathname !== '/dashboard/updates') setHasNewUpdates(true);
+          } catch (err) {
+            console.debug('Realtime notification handler error', err);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pathname]);
+
   const openNotifications = async () => {
     setShowNotifications(true);
     await fetchNotifications();

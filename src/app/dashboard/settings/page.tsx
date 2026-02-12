@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   User, Lock, Palette, Save, Check, Loader2, Mail, Shield, HelpCircle, RotateCcw,
-  ChevronRight, Sparkles, KeyRound, Info, Lightbulb, BookOpen, Zap
+  ChevronRight, Sparkles, KeyRound, Info, Lightbulb, BookOpen, Zap, Bell
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -15,6 +15,7 @@ const TABS = [
   { id: "profile", label: "Profile", icon: User, description: "Your personal information" },
   { id: "appearance", label: "Appearance", icon: Palette, description: "Customize your workspace" },
   { id: "security", label: "Security", icon: Lock, description: "Password & protection" },
+  { id: "notifications", label: "Notifications", icon: Bell, description: "Notification preferences" },
   { id: "help", label: "Help", icon: HelpCircle, description: "Tutorials & support" },
 ];
 
@@ -56,6 +57,9 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({ firstName: "", lastName: "", email: "", role: "" });
   const [passwordData, setPasswordData] = useState({ new: "", confirm: "" });
+  // Notification settings state (per-user stored in app_settings)
+  const [notifSettings, setNotifSettings] = useState({ inApp: true, email: false, sound: true, digest: 'immediate' as 'immediate'|'daily'|'weekly'|'off' });
+  const [savingNotif, setSavingNotif] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -84,6 +88,17 @@ export default function SettingsPage() {
             email: data.email || user.email || "",
             role: data.role || ""
           });
+          // try fetching notification settings from app_settings for this user
+          try {
+            const key = `notifications_user_${user.id}`;
+            const { data: appRow, error: appErr } = await supabase.from('app_settings').select('value').eq('key', key).single();
+            if (!appErr && appRow && appRow.value) {
+              const parsed = typeof appRow.value === 'string' ? JSON.parse(appRow.value) : appRow.value;
+              setNotifSettings((prev) => ({ ...prev, ...(parsed || {}) }));
+            }
+          } catch (e) {
+            // ignore
+          }
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -288,6 +303,73 @@ export default function SettingsPage() {
                       >
                         {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                         {loading ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* NOTIFICATIONS TAB */}
+            {activeTab === "notifications" && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border border-white/10 rounded-2xl p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-xl text-white">
+                      <Bell size={24} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Notification Settings</h2>
+                      <p className="text-gray-400 text-sm">Control how you receive notifications</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Preferences</h3>
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-gray-300">In-app notifications</span>
+                      <input type="checkbox" checked={notifSettings.inApp} onChange={(e) => setNotifSettings(s => ({ ...s, inApp: e.target.checked }))} />
+                    </label>
+
+                    <label className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-gray-300">Email notifications</span>
+                      <input type="checkbox" checked={notifSettings.email} onChange={(e) => setNotifSettings(s => ({ ...s, email: e.target.checked }))} />
+                    </label>
+
+                    <label className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-gray-300">Play sound for in-app alerts</span>
+                      <input type="checkbox" checked={notifSettings.sound} onChange={(e) => setNotifSettings(s => ({ ...s, sound: e.target.checked }))} />
+                    </label>
+
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Digest frequency</label>
+                      <select value={notifSettings.digest} onChange={(e) => setNotifSettings(s => ({ ...s, digest: e.target.value as any }))} className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-white">
+                        <option value="immediate">Immediately</option>
+                        <option value="daily">Daily summary</option>
+                        <option value="weekly">Weekly summary</option>
+                        <option value="off">Off</option>
+                      </select>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/10">
+                      <button onClick={async () => {
+                        if (!userId) return;
+                        setSavingNotif(true);
+                        try {
+                          const key = `notifications_user_${userId}`;
+                          const { error } = await supabase.from('app_settings').upsert({ key, value: JSON.stringify(notifSettings) }, { onConflict: 'key' });
+                          if (error) throw error;
+                          showAlert({ title: 'Saved', message: 'Notification preferences saved.', variant: 'success' });
+                        } catch (err) {
+                          console.error('Failed to save notification settings', err);
+                          showAlert({ title: 'Error', message: 'Failed to save notification preferences.', variant: 'error' });
+                        } finally {
+                          setSavingNotif(false);
+                        }
+                      }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl inline-flex items-center gap-2">
+                        <Save size={16} /> {savingNotif ? 'Saving...' : 'Save Preferences'}
                       </button>
                     </div>
                   </div>
