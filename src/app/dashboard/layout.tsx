@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle, Activity, CalendarClock 
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle, Activity, CalendarClock, Bell 
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -60,6 +60,10 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   // Track if there are new updates since last visit
   const [hasNewUpdates, setHasNewUpdates] = useState(false);
+  // Notifications modal state and list
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
   // App version fetched from DB (key: 'app_version' in `app_settings` table)
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
@@ -148,6 +152,30 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     };
   }, [pathname]);
 
+  // Fetch notification entries (update_logs) when opening notifications
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true);
+    try {
+      const { data, error } = await supabase
+        .from('update_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (!error && data) setNotifications(data as any[]);
+    } catch (e) {
+      console.error('Failed to fetch notifications', e);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const openNotifications = async () => {
+    setShowNotifications(true);
+    await fetchNotifications();
+    // mark as seen
+    try { localStorage.setItem('labTrack_lastSeenUpdate', new Date().toISOString()); setHasNewUpdates(false); } catch (e) { }
+  };
+
   // Fetch app version from `app_settings` table if available
   useEffect(() => {
     let mounted = true;
@@ -230,6 +258,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     ...(canViewActivityLog ? [{ icon: Activity, label: "Activity Log", href: "/dashboard/activity-log" }] : []),
     // Developer-only Chatbot removed
     { icon: Sparkles, label: "Update Logs", href: "/dashboard/updates", isNew: hasNewUpdates },
+    ...(normalizedRole === 'developer' ? [{ icon: Bell, label: "Push Notifications", href: "/dashboard/push-notifications" }] : []),
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
 
@@ -379,14 +408,44 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-200 dark:border-white/10">
-          <button 
-            onClick={handleSignOut} 
-            className="flex items-center gap-3 w-full px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-          >
-            <LogOut size={20} />
-            {!isCollapsed && <span>Sign Out</span>}
+        <div className="p-4 border-t border-gray-200 dark:border-white/10 flex items-center gap-3 relative">
+          <button onClick={() => { if (showNotifications) setShowNotifications(false); else openNotifications(); }} title="Notifications" className="relative p-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-colors">
+            <Bell size={18} />
+            {hasNewUpdates && <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">•</span>}
           </button>
+          <div className="flex-1">
+            <button 
+              onClick={handleSignOut} 
+              className="flex items-center gap-3 w-full px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+            >
+              <LogOut size={20} />
+              {!isCollapsed && <span>Sign Out</span>}
+            </button>
+          </div>
+
+          {/* notifications popover (small, anchored to bell) */}
+          {showNotifications && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="absolute left-4 bottom-16 w-80 bg-[#111] border border-white/10 rounded-xl shadow-2xl p-3 z-50">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-bold">Notifications</h4>
+                <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-white"><X size={16} /></button>
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {loadingNotifications ? (
+                  <div className="text-gray-400">Loading...</div>
+                ) : notifications.length === 0 ? (
+                  <div className="text-gray-500">No notifications.</div>
+                ) : (
+                  notifications.map((n: any) => (
+                    <div key={n.id} className="p-2 rounded-md bg-white/5 border border-white/5">
+                      <div className="text-[11px] text-gray-400">{n.created_at ? new Date(n.created_at).toLocaleString() : ''}</div>
+                      <div className="text-sm text-white">{n.title || n.message || JSON.stringify(n)}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         <button 
@@ -396,6 +455,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </motion.aside>
+
+      
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/10 flex items-center justify-between px-4">

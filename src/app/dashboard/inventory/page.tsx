@@ -61,7 +61,8 @@ function InventoryContent() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterCondition, setFilterCondition] = useState("All");
   const [sortOption, setSortOption] = useState("Newest");
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  // View selection: default 50 entries. Options: 25,50,75,100,All
+  const [viewSelection, setViewSelection] = useState<string>("50");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
@@ -169,9 +170,10 @@ function InventoryContent() {
   }, [inventory, selectedLab, filterStatus, filterCondition, sortOption, searchTerm]);
 
   const totalItems = processedData.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentItems = processedData.slice(startIndex, startIndex + itemsPerPage);
+  const effectiveItemsPerPage = viewSelection === 'All' ? (totalItems || 1) : parseInt(viewSelection || '50', 10);
+  const totalPages = effectiveItemsPerPage > 0 ? Math.ceil(totalItems / effectiveItemsPerPage) : 1;
+  const startIndex = (currentPage - 1) * effectiveItemsPerPage;
+  const currentItems = effectiveItemsPerPage > 0 ? processedData.slice(startIndex, startIndex + effectiveItemsPerPage) : processedData.slice(0);
 
   // --- EXPORT HANDLERS ---
   const getExportData = () => {
@@ -307,6 +309,18 @@ function InventoryContent() {
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
             <input type="text" placeholder="Search items..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-500" />
+          </div>
+          
+          {/* View selection dropdown */}
+          <div className="ml-2 flex items-center">
+            <label className="hidden md:inline-block text-xs text-gray-300 mr-2">View</label>
+            <select value={viewSelection} onChange={(e) => { setViewSelection(e.target.value); setCurrentPage(1); }} className="bg-white/5 border border-white/10 text-white text-xs rounded-lg px-3 py-2 outline-none">
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="75">75</option>
+              <option value="100">100</option>
+              <option value="All">All</option>
+            </select>
           </div>
         </div>
 
@@ -499,7 +513,7 @@ function InventoryContent() {
           </table>
         </div>
         <div className="mt-auto p-4 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-          <span>Showing {totalItems === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} items</span>
+          <span>Showing {totalItems === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + effectiveItemsPerPage, totalItems)} of {totalItems} items</span>
           <div className="flex gap-2"><button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg disabled:opacity-30">Previous</button><button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg disabled:opacity-30">Next</button></div>
         </div>
       </div>
@@ -604,7 +618,7 @@ function InventoryContent() {
 
         {/* Mobile Pagination */}
         <div className="pt-3 border-t border-white/10 flex justify-between items-center text-xs text-gray-500">
-          <span>{startIndex + 1}-{Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems}</span>
+          <span>{startIndex + 1}-{Math.min(startIndex + effectiveItemsPerPage, totalItems)} of {totalItems}</span>
           <div className="flex gap-2">
             <button 
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
