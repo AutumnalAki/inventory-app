@@ -22,6 +22,8 @@ const ROLE_LAB_DB_MAPPING: Record<string, string> = {
   "CHEM Lab": "Chemistry Laboratory",
   "PHYS Lab": "Physics Laboratory",
   "EE Lab": "Electrical Engineering Laboratory"
+  ,
+  "Central Storage Room": "Central Storage Room"
 };
 
 // Roles with full access to all labs

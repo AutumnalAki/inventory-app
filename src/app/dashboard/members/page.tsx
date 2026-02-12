@@ -122,6 +122,10 @@ export default function MembersPage() {
   const [generatePassword, setGeneratePassword] = useState("");
   const [generating, setGenerating] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  // --- STATES FOR PREVIEW ACCOUNT GENERATOR (Developer-only) ---
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewRole, setPreviewRole] = useState<string>(SELECTABLE_ROLES(currentUserRole)[0] || 'Faculty');
+  const [generatingPreview, setGeneratingPreview] = useState(false);
   const roleDropdownRef = useRef<HTMLDivElement>(null);
   // Expiration selection state
   const EXPIRATION_OPTIONS = [
@@ -450,9 +454,16 @@ export default function MembersPage() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Members & Access</h1>
           <p className="text-gray-400 mt-1 text-sm md:text-base">Manage users and secure invite codes.</p>
         </div>
-        <button onClick={() => setIsGenerateOpen(true)} data-tour="generate-code-btn" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20 text-sm w-full sm:w-auto justify-center">
+        <div className="flex items-center gap-2">
+          {currentUserRole === 'Developer' && (
+            <button onClick={() => setIsPreviewOpen(true)} className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-amber-900/20 text-sm">
+              <Shield size={14} /> Generate Preview Account
+            </button>
+          )}
+          <button onClick={() => setIsGenerateOpen(true)} data-tour="generate-code-btn" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20 text-sm w-full sm:w-auto justify-center">
           <Key size={16} className={"md:w-[18px] md:h-[18px]"} /> Generate Invite
-        </button>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 flex-1 min-h-0">
@@ -585,6 +596,62 @@ export default function MembersPage() {
           </div>
         </div>
       </div>
+
+      {/* --- MODAL: PREVIEW ACCOUNT GENERATOR (Developer-only) --- */}
+      <AnimatePresence>
+        {isPreviewOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl z-[1200] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Generate Preview Account</h3>
+                <button onClick={() => setIsPreviewOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              </div>
+              <p className="text-sm text-gray-400 mb-4">Create a temporary demo account and automatically sign in as that role. Visible only to Developers.</p>
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-gray-400 uppercase">Select Role</label>
+                <div className="relative">
+                  <select value={previewRole} onChange={(e) => setPreviewRole(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">
+                    {ROLES.filter(r => r !== 'Developer').map(r => (
+                      <option key={r} value={r} className="text-black">{r}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <button onClick={() => setIsPreviewOpen(false)} className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm">Cancel</button>
+                  <button onClick={async () => {
+                    try {
+                      setGeneratingPreview(true);
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.access_token) throw new Error('Missing access token');
+
+                      const resp = await fetch('/api/dev/generate-demo-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                        body: JSON.stringify({ role: previewRole })
+                      });
+
+                      const json = await resp.json();
+                      if (!resp.ok) throw new Error(json?.error || 'Failed to generate demo user');
+
+                      // Sign in with returned credentials
+                      const { email, password } = json;
+                      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+                      if (signInError) throw signInError;
+
+                      // Redirect to dashboard as the preview user
+                      window.location.href = '/dashboard';
+                    } catch (e: any) {
+                      showAlert({ title: 'Error', message: e.message || String(e), variant: 'error' });
+                    } finally {
+                      setGeneratingPreview(false);
+                    }
+                  }} disabled={generatingPreview} className="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold">{generatingPreview ? 'Generating...' : 'Generate & Sign In'}</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* --- MODAL 1: GENERATE CODE --- */}
       <AnimatePresence>

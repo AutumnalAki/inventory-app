@@ -55,9 +55,28 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
       
       if (data) {
-        // Capitalize for UI consistency
-        const cleanRole = data.role.charAt(0).toUpperCase() + data.role.slice(1);
-        setRole(cleanRole);
+        // Normalize role to Title Case for consistent matching across the app
+        const raw = String(data.role || "").trim();
+        const titleCase = raw
+          .split(/\s+/)
+          .filter(Boolean)
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+
+        // Map common aliases to canonical role names (especially CSR)
+        const aliasMap: Record<string, string> = {
+          'csr': 'Central Storage Room',
+          'csr (central storage room)': 'Central Storage Room',
+          'central storage': 'Central Storage Room',
+          'central storageroom': 'Central Storage Room',
+          'centralstorageroom': 'Central Storage Room'
+        };
+        const lookup = raw.toLowerCase();
+        if (aliasMap[lookup]) {
+          setRole(aliasMap[lookup]);
+        } else {
+          setRole(titleCase || raw);
+        }
       }
     } catch (error) {
       console.error("Error fetching role:", error);
