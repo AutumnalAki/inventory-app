@@ -33,6 +33,9 @@ export default function UpdateLogsPage() {
   
   const [updates, setUpdates] = useState<UpdateLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [isEditingAppVersion, setIsEditingAppVersion] = useState(false);
+  const [appVersionDraft, setAppVersionDraft] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   
   // Edit/Add Modal State
@@ -74,9 +77,29 @@ export default function UpdateLogsPage() {
     }
   };
 
+  // Fetch current app version (if app_settings table exists)
+  const fetchAppVersion = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'app_version')
+        .single();
+
+      if (error || !data) return;
+      if (data && typeof data.value === 'string') {
+        setAppVersion(data.value);
+      }
+    } catch (err) {
+      // ignore if table missing
+      console.debug('Could not fetch app version', err);
+    }
+  };
+
   // Fetch data on mount
   useEffect(() => {
     fetchUpdates();
+    fetchAppVersion();
   }, []);
 
   // Real-time subscription
@@ -251,18 +274,82 @@ export default function UpdateLogsPage() {
             See what's new in CDM LabTrack
           </p>
         </div>
-        
-        {isDeveloper && (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAddNew}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-shadow"
-          >
-            <Plus size={18} />
-            Add Update
-          </motion.button>
-        )}
+        <div className="flex items-center gap-2">
+          {isDeveloper && (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">App version:</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{appVersion || '—'}</span>
+                {isEditingAppVersion ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={appVersionDraft}
+                      onChange={(e) => setAppVersionDraft(e.target.value)}
+                      className="px-2 py-1 text-sm rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111] text-black dark:text-white"
+                      placeholder="1.0.0"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!appVersionDraft) {
+                          showAlert({ title: 'Error', message: 'Version cannot be empty', variant: 'error' });
+                          return;
+                        }
+
+                        try {
+                          // Try upsert with onConflict (safer if `key` is unique)
+                          let res = await supabase
+                            .from('app_settings')
+                            .upsert({ key: 'app_version', value: appVersionDraft }, { onConflict: 'key' });
+
+                          // If upsert returned an error, try update fallback
+                          if (res.error) {
+                            console.debug('Upsert error, attempting update fallback', res.error);
+                            const updateRes = await supabase
+                              .from('app_settings')
+                              .update({ value: appVersionDraft })
+                              .eq('key', 'app_version');
+
+                            if (updateRes.error) {
+                              throw updateRes.error;
+                            }
+                          }
+
+                          setAppVersion(appVersionDraft);
+                          setIsEditingAppVersion(false);
+                          showAlert({ title: 'Saved', message: 'App version updated.', variant: 'success' });
+                        } catch (err: any) {
+                          // Provide more detailed feedback in console and to user
+                          console.error('Failed saving app version', err);
+                          const msg = err?.message || JSON.stringify(err) || 'Unknown error';
+                          showAlert({ title: 'Error', message: `Failed to save app version: ${msg}`, variant: 'error' });
+                        }
+                      }}
+                      className="px-3 py-1 text-sm bg-cyan-500 text-white rounded-md"
+                    >Save</button>
+                    <button onClick={() => setIsEditingAppVersion(false)} className="px-2 py-1 text-sm text-gray-500">Cancel</button>
+                  </div>
+                ) : (
+                  <>
+                    <button onClick={() => { setAppVersionDraft(appVersion || ''); setIsEditingAppVersion(true); }} className="px-2 py-1 text-sm border rounded-md border-gray-200 dark:border-white/10">Edit Version</button>
+                  </>
+                )}
+              </div>
+              <div className="w-px h-6 bg-gray-200 dark:bg-white/5 mx-2" />
+            </>
+          )}
+
+          {isDeveloper && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleAddNew}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-shadow"
+            >
+              <Plus size={18} />
+              Add Update
+            </motion.button>
+          )}
+        </div>
       </div>
 
       {/* Updates List */}

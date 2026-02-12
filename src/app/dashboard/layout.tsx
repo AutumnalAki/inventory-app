@@ -60,6 +60,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   // Track if there are new updates since last visit
   const [hasNewUpdates, setHasNewUpdates] = useState(false);
+  // App version fetched from DB (key: 'app_version' in `app_settings` table)
+  const [appVersion, setAppVersion] = useState<string | null>(null);
 
   // --- Tester Role Selector ---
   // Only show for Tester
@@ -146,6 +148,65 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     };
   }, [pathname]);
 
+  // Fetch app version from `app_settings` table if available
+  useEffect(() => {
+    let mounted = true;
+    const fetchVersion = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'app_version')
+          .single();
+
+        if (!mounted) return;
+        if (error) {
+          // table might not exist yet or no value set; ignore silently
+          return;
+        }
+
+        if (data && typeof data.value === 'string') {
+          setAppVersion(data.value);
+        }
+      } catch (err) {
+        // ignore errors (settings table may be absent)
+        console.debug('Could not fetch app version', err);
+      }
+    };
+
+    fetchVersion();
+    // Subscribe to realtime changes on app_settings so the UI updates immediately
+    const channel = supabase
+      .channel('layout_app_settings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings' },
+        (payload) => {
+          try {
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const newRow = payload.new as any;
+              if (newRow?.key === 'app_version') {
+                setAppVersion(newRow.value);
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const oldRow = payload.old as any;
+              if (oldRow?.key === 'app_version') {
+                setAppVersion(null);
+              }
+            }
+          } catch (e) {
+            console.debug('Error handling app_settings realtime payload', e);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Use previewRole for sidebar and permissions if Tester is previewing
   const normalizedRole = effectiveRole ? effectiveRole.toLowerCase() : "student";
   const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
@@ -224,6 +285,9 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 className={!isCustomHex ? `${accentColors?.text} ${accentColors?.textDark}` : undefined}
                 style={customColorStyle}
               >LabTrack</span>
+              {appVersion && (
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 font-medium">v{appVersion}</span>
+              )}
             </motion.span>
           )}
         </div>
@@ -339,12 +403,15 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/10 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Image src="/favicon.ico" alt="Logo" width={28} height={28} className="rounded-sm" />
-          <span className="font-bold text-lg">
-            CDM <span 
-              className={!isCustomHex ? `${accentColors?.text} ${accentColors?.textDark}` : undefined}
-              style={customColorStyle}
-            >LabTrack</span>
-          </span>
+            <span className="font-bold text-lg">
+              CDM <span 
+                className={!isCustomHex ? `${accentColors?.text} ${accentColors?.textDark}` : undefined}
+                style={customColorStyle}
+              >LabTrack</span>
+              {appVersion && (
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 font-medium">v{appVersion}</span>
+              )}
+            </span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
