@@ -322,23 +322,86 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteItem = async (id: number) => {
-    // Get the item's location before deleting
+    // Get the item's details before deleting
     const item = inventory.find(i => i.id === id);
-    const { error } = await supabase.from('inventory').delete().eq('id', id);
-    if (!error) {
-      const { data: { session } } = await supabase.auth.getSession();
-      await logAction("Item Deleted", `Item: ${item?.name ?? "Unknown"}`, item?.location || "", session?.user?.id);
-      fetchData();
+    try {
+      const { error } = await supabase.from('inventory').delete().eq('id', id);
+      if (!error) {
+        const { data: { session } } = await supabase.auth.getSession();
+        await logAction("Item Deleted", `Item: ${item?.name ?? "Unknown"}`, item?.location || "", session?.user?.id);
+        fetchData();
+        return;
+      }
+
+      // If deletion failed (likely FK constraint), attempt to remove dependents then retry
+      console.warn('deleteItem initial delete error:', error.message || error.details || error);
+
+      // Delete reservations referencing this item
+      await supabase.from('reservations').delete().eq('item_id', id);
+
+      // Delete kit_items referencing this inventory item (if kits feature exists)
+      await supabase.from('kit_items').delete().eq('item_id', id);
+
+      // If controlId exists, delete related equipment_tracking rows
+      if (item?.controlId) {
+        await supabase.from('equipment_tracking').delete().eq('control_id', item.controlId);
+      }
+
+      // Retry deleting the inventory item
+      const { error: retryErr } = await supabase.from('inventory').delete().eq('id', id);
+      if (!retryErr) {
+        const { data: { session } } = await supabase.auth.getSession();
+        await logAction("Item Deleted", `Item: ${item?.name ?? "Unknown"} (after removing dependents)`, item?.location || "", session?.user?.id);
+        fetchData();
+        return;
+      }
+
+      console.error('deleteItem failed after removing dependents:', retryErr.message || retryErr.details || retryErr);
+    } catch (err) {
+      console.error('Unexpected error in deleteItem:', err);
     }
   };
 
   // --- BATCH ACTIONS ---
   const deleteItems = async (ids: number[]) => {
-    const { error } = await supabase.from('inventory').delete().in('id', ids);
-    if (!error) {
-      const { data: { session } } = await supabase.auth.getSession();
-      await logAction("Batch Delete", `Deleted ${ids.length} items`, "", session?.user?.id);
-      fetchData();
+    try {
+      const { error } = await supabase.from('inventory').delete().in('id', ids);
+      if (!error) {
+        const { data: { session } } = await supabase.auth.getSession();
+        await logAction("Batch Delete", `Deleted ${ids.length} items`, "", session?.user?.id);
+        fetchData();
+        return;
+      }
+
+      console.warn('deleteItems initial delete error:', error.message || error.details || error);
+
+      // Remove dependent reservations for these items
+      await supabase.from('reservations').delete().in('item_id', ids);
+
+      // Remove kit_items referencing these inventory items (if present)
+      await supabase.from('kit_items').delete().in('item_id', ids);
+
+      // Attempt to find control_ids for items and delete matching tracking rows
+      const { data: itemsData } = await supabase.from('inventory').select('control_id').in('id', ids);
+      if (itemsData) {
+        const controlIds = itemsData.map((i: any) => i.control_id).filter(Boolean);
+        if (controlIds.length) {
+          await supabase.from('equipment_tracking').delete().in('control_id', controlIds);
+        }
+      }
+
+      // Retry deletion
+      const { error: retryErr } = await supabase.from('inventory').delete().in('id', ids);
+      if (!retryErr) {
+        const { data: { session } } = await supabase.auth.getSession();
+        await logAction("Batch Delete", `Deleted ${ids.length} items (after removing dependents)`, "", session?.user?.id);
+        fetchData();
+        return;
+      }
+
+      console.error('deleteItems failed after removing dependents:', retryErr.message || retryErr.details || retryErr);
+    } catch (err) {
+      console.error('Unexpected error in deleteItems:', err);
     }
   };
 

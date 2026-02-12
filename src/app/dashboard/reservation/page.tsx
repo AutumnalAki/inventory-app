@@ -24,7 +24,8 @@ const LAB_MAPPING: Record<string, string> = {
   "EE Lab": "Electrical Engineering Laboratory",
   "ME Lab": "Mechanical Engineering Laboratory",
   "ECE Lab": "ECE Laboratory",
-  "CPE Lab": "CPE Laboratory"
+  "CPE Lab": "CPE Laboratory",
+  "CSR (Central Storage Room)": "Central Storage Room"
 };
 
 const ROLE_LAB_MAPPING: Record<string, string> = {
@@ -34,7 +35,8 @@ const ROLE_LAB_MAPPING: Record<string, string> = {
   "CPE Lab": "Computer Laboratory",
   "CHEM Lab": "Chemistry Laboratory",
   "PHYS Lab": "Physics Laboratory",
-  "EE Lab": "Electrical Engineering Laboratory"
+  "EE Lab": "Electrical Engineering Laboratory",
+  "Central Storage Room": "Central Storage Room"
 };
 const FULL_ACCESS_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
 

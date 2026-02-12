@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useInventory } from "@/context/InventoryContext";
 import { useRole } from "@/context/RoleContext";
 
-const LABS = ["All Labs", "Computer Lab", "Physics Lab", "Chem Lab", "ECE Lab", "ME Lab", "EE Lab", "CE Lab"];
+const LABS = ["All Labs", "Computer Lab", "Physics Lab", "Chem Lab", "ECE Lab", "ME Lab", "EE Lab", "CE Lab", "CSR (Central Storage Room)"];
 
 // Role to Lab Mapping - maps role names to their lab filter value
 const ROLE_LAB_MAPPING: Record<string, string> = {
@@ -21,6 +21,7 @@ const ROLE_LAB_MAPPING: Record<string, string> = {
   "CHEM Lab": "Chem Lab",
   "PHYS Lab": "Physics Lab",
   "EE Lab": "EE Lab"
+  ,"Central Storage Room": "CSR (Central Storage Room)"
 };
 
 // Roles with full access to all labs
