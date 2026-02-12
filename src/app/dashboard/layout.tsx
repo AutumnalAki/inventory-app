@@ -209,15 +209,15 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   // Use previewRole for sidebar and permissions if Tester is previewing
   const normalizedRole = effectiveRole ? effectiveRole.toLowerCase() : "student";
-  const canViewMembers = ["developer", "administrator", "program chair"].includes(normalizedRole);
-  const canViewSuggestions = ["developer", "administrator", "program chair", "faculty"].includes(normalizedRole);
+  const canViewMembers = ["developer", "superadmin", "administrator", "program chair"].includes(normalizedRole);
+  const canViewSuggestions = ["developer", "superadmin", "administrator", "program chair", "faculty"].includes(normalizedRole);
 
 
   // Faculty and up can view Activity Log
-  const canViewActivityLog = ["developer", "administrator", "program chair", "faculty"].includes(normalizedRole);
+  const canViewActivityLog = ["developer", "superadmin", "administrator", "program chair", "faculty"].includes(normalizedRole);
 
   // Faculty + Lab roles can view Reservations
-  const canViewReservations = ["developer", "administrator", "program chair", "faculty", "me lab", "ce lab", "ece lab", "cpe lab", "chem lab", "phys lab", "ee lab"].includes(normalizedRole);
+  const canViewReservations = ["developer", "superadmin", "administrator", "program chair", "faculty", "me lab", "ce lab", "ece lab", "cpe lab", "chem lab", "phys lab", "ee lab"].includes(normalizedRole);
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },

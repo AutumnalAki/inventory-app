@@ -7,6 +7,7 @@ import { useRole } from "@/context/RoleContext";
 
 const ROLE_LEVELS: Record<string, number> = {
   "Developer": 100,
+  "SuperAdmin": 85,
   "Administrator": 80,
   "Program Chair": 60,
   "Faculty": 60,

@@ -25,7 +25,7 @@ const ROLE_LAB_MAPPING: Record<string, string> = {
 };
 
 // Roles with full access to all labs
-const FULL_ACCESS_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
+const FULL_ACCESS_ROLES = ["Developer", "SuperAdmin", "Administrator", "Program Chair", "Faculty"];
 
 export default function ItemTrackingPage() {
   // 2. Use Global State

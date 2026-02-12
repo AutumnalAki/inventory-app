@@ -12,7 +12,7 @@ import { useRole } from "@/context/RoleContext";
 import { supabase } from "@/lib/supabase";
 
 // Roles that can approve / reject reservations
-const APPROVER_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
+const APPROVER_ROLES = ["Developer", "SuperAdmin", "Administrator", "Program Chair", "Faculty"];
 
 // Lab mapping (mirrors inventory page)
 const LAB_MAPPING: Record<string, string> = {
@@ -38,7 +38,7 @@ const ROLE_LAB_MAPPING: Record<string, string> = {
   "EE Lab": "Electrical Engineering Laboratory",
   "Central Storage Room": "Central Storage Room"
 };
-const FULL_ACCESS_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
+const FULL_ACCESS_ROLES = ["Developer", "SuperAdmin", "Administrator", "Program Chair", "Faculty"];
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",

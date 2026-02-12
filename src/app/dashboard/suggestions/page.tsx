@@ -28,7 +28,7 @@ import { usePopup } from "@/context/PopupContext";
 import { useRouter } from "next/navigation";
 
 // Allowed roles that can access this page
-const ALLOWED_ROLES = ["Developer", "Administrator", "Program Chair", "Faculty"];
+const ALLOWED_ROLES = ["Developer", "SuperAdmin", "Administrator", "Program Chair", "Faculty"];
 
 // Category options for suggestions
 const CATEGORIES = [

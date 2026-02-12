@@ -28,14 +28,15 @@ export async function POST(req: Request) {
 
     const service = createClient(SUPABASE_URL, SUPABASE_SERVICE);
 
-    // Check users table for developer role
+    // Check users table for developer or superadmin role
     const { data: profile, error: profileErr } = await service
       .from('users')
       .select('role')
       .eq('id', userResp.user.id)
       .single();
 
-    if (profileErr || !profile || profile.role?.toLowerCase() !== 'developer') {
+    const roleLower = String(profile?.role || '').toLowerCase();
+    if (profileErr || !profile || (roleLower !== 'developer' && roleLower !== 'superadmin')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

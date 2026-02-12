@@ -51,6 +51,7 @@ function InviteTimer({ expiresAt, codeId }: { expiresAt: string, codeId: string 
 // All Roles (for display)
 const ROLES = [
   "Developer",
+  "SuperAdmin",
   "Tester",
   "Administrator",
   "Program Chair",
@@ -68,6 +69,7 @@ const ROLES = [
 // Role Hierarchy Levels (higher number = higher authority)
 const ROLE_HIERARCHY: Record<string, number> = {
   "Developer": 100,      // Apex - cannot be touched
+  "SuperAdmin": 85,      // SuperAdmins: can manage fellow SuperAdmins and roles below
   "Tester": 90,          // Special role, managed by Developer only
   "Administrator": 80,   // Second
   "Program Chair": 60,   // Third
@@ -92,7 +94,9 @@ const canManageUser = (currentUserRole: string, targetUserRole: string): boolean
   
   // Developer cannot be managed by anyone
   if (targetUserRole === "Developer") return false;
-  
+  // Only Developer can manage SuperAdmin accounts
+  if (targetUserRole === 'SuperAdmin') return currentUserRole === 'Developer';
+
   // Can only manage users with strictly lower role level
   return currentLevel > targetLevel;
 };
@@ -102,7 +106,8 @@ const SELECTABLE_ROLES = (currentUserRole?: string) => {
   if (currentUserRole === "Developer") {
     return ROLES.filter(role => role !== "Developer"); // Developer can assign Tester
   }
-  return ROLES.filter(role => role !== "Developer" && role !== "Tester");
+  // Non-Developer accounts (including SuperAdmin) should not be able to assign Developer, Tester or SuperAdmin
+  return ROLES.filter(role => role !== "Developer" && role !== "Tester" && role !== "SuperAdmin");
 };
 
 export default function MembersPage() {
@@ -455,7 +460,7 @@ export default function MembersPage() {
           <p className="text-gray-400 mt-1 text-sm md:text-base">Manage users and secure invite codes.</p>
         </div>
         <div className="flex items-center gap-2">
-          {currentUserRole === 'Developer' && (
+          {(currentUserRole === 'Developer' || currentUserRole === 'SuperAdmin') && (
             <button onClick={() => setIsPreviewOpen(true)} className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-amber-900/20 text-sm">
               <Shield size={14} /> Generate Preview Account
             </button>
@@ -482,17 +487,19 @@ export default function MembersPage() {
           <div className="overflow-y-auto flex-1 pr-1 md:pr-2 space-y-2 no-scrollbar">
             {users
               .filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase()))
-              .filter(u => currentUserRole === 'Developer' || u.role !== 'Tester')
+              .filter(u => currentUserRole === 'Developer' || currentUserRole === 'SuperAdmin' || u.role !== 'Tester')
               .sort((a, b) => getRoleLevel(b.role) - getRoleLevel(a.role))
               .map((user) => {
                 const isActive = user.status === 'active';
                 const isMe = currentUser?.id === user.id;
                 const isDeveloper = user.role === 'Developer';
+                const isSuperAdmin = user.role === 'SuperAdmin';
                 const isTester = user.role === 'Tester';
 
                 let rowBg = '';
                 if (!isActive) rowBg = 'bg-red-900/10 border-red-900/20';
                 else if (isDeveloper) rowBg = 'bg-cyan-500/5 border-cyan-500/20';
+                else if (isSuperAdmin) rowBg = 'bg-emerald-500/5 border-emerald-500/20';
                 else if (isTester) rowBg = 'bg-yellow-500/5 border-yellow-500/20';
                 else if (user.role === 'Administrator') rowBg = 'bg-orange-500/5 border-orange-500/20';
                 else if (user.role === 'Program Chair') rowBg = 'bg-purple-500/5 border-purple-500/20';
@@ -502,10 +509,10 @@ export default function MembersPage() {
                 const rowClass = 'flex items-center justify-between p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-colors ' + rowBg;
                 const avatarClass =
                   'relative w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg shrink-0 ' +
-                  (isDeveloper ? 'bg-cyan-500 text-white' : isTester ? 'bg-yellow-500 text-white' : user.role === 'Administrator' ? 'bg-orange-500 text-white' : user.role === 'Program Chair' ? 'bg-purple-500 text-white' : user.role === 'Faculty' ? 'bg-pink-500 text-white' : 'bg-indigo-600 text-white');
+                  (isDeveloper ? 'bg-cyan-500 text-white' : isSuperAdmin ? 'bg-emerald-500 text-white' : isTester ? 'bg-yellow-500 text-white' : user.role === 'Administrator' ? 'bg-orange-500 text-white' : user.role === 'Program Chair' ? 'bg-purple-500 text-white' : user.role === 'Faculty' ? 'bg-pink-500 text-white' : 'bg-indigo-600 text-white');
                 const statusDotClass = 'absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 rounded-full border-2 border-[#111] ' + (isActive ? 'bg-emerald-500' : 'bg-red-500');
                 const usernameClass = 'font-bold text-xs md:text-sm truncate ' + (isActive ? 'text-white' : 'text-gray-400 line-through');
-                const roleClass = 'hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md border font-medium mr-1 md:mr-2 ' + (isDeveloper ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : isTester ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : user.role === 'Administrator' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : user.role === 'Program Chair' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : user.role === 'Faculty' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-white/10 text-gray-300 border-white/5');
+                const roleClass = 'hidden lg:inline-block text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md border font-medium mr-1 md:mr-2 ' + (isDeveloper ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : isSuperAdmin ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : isTester ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : user.role === 'Administrator' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : user.role === 'Program Chair' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : user.role === 'Faculty' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-white/10 text-gray-300 border-white/5');
                 const editBtnClass = 'p-1.5 md:p-2 rounded-lg transition-colors ' + (canManageUser(currentUserRole, user.role) ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-500/10' : 'text-gray-600 cursor-not-allowed opacity-50');
                 const toggleBtnClass = 'p-1.5 md:p-2 rounded-lg transition-colors ' + (!canManageUser(currentUserRole, user.role) ? 'text-gray-600 cursor-not-allowed opacity-50' : isActive ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10');
                 const deleteBtnClass = 'p-1.5 md:p-2 rounded-lg transition-colors ' + (canManageUser(currentUserRole, user.role) ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-600 cursor-not-allowed opacity-50');
@@ -606,7 +613,7 @@ export default function MembersPage() {
                 <h3 className="text-lg font-bold">Generate Preview Account</h3>
                 <button onClick={() => setIsPreviewOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
-              <p className="text-sm text-gray-400 mb-4">Create a temporary demo account and automatically sign in as that role. Visible only to Developers.</p>
+              <p className="text-sm text-gray-400 mb-4">Create a temporary demo account and automatically sign in as that role. Visible to Developers and SuperAdmins.</p>
               <div className="space-y-3">
                 <label className="text-xs font-bold text-gray-400 uppercase">Select Role</label>
                 <div className="relative">
@@ -802,7 +809,7 @@ export default function MembersPage() {
               <div className="p-6 md:p-8">
                 <div className="flex items-center justify-between gap-4 mb-6">
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white ${editingUser.role === 'Developer' ? 'bg-cyan-500 ring-4 ring-cyan-400' : editingUser.role === 'Administrator' ? 'bg-orange-500 ring-4 ring-orange-400' : 'bg-indigo-600 ring-4 ring-indigo-400'}`}>
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white ${editingUser.role === 'Developer' ? 'bg-cyan-500 ring-4 ring-cyan-400' : editingUser.role === 'SuperAdmin' ? 'bg-emerald-500 ring-4 ring-emerald-400' : editingUser.role === 'Administrator' ? 'bg-orange-500 ring-4 ring-orange-400' : 'bg-indigo-600 ring-4 ring-indigo-400'}`}>
                       {editingUser.username?.charAt(0) || "U"}
                     </div>
                     <div className="min-w-0">
