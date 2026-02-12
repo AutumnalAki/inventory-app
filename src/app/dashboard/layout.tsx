@@ -228,8 +228,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
     ...(canViewSuggestions ? [{ icon: Lightbulb, label: "Suggestions", href: "/dashboard/suggestions" }] : []),
     ...(canViewActivityLog ? [{ icon: Activity, label: "Activity Log", href: "/dashboard/activity-log" }] : []),
-    // Developer-only Chatbot (Experimental) link
-    ...(["developer"].includes(normalizedRole) ? [{ icon: Sparkles, label: "Chatbot (Experimental)", href: "/chatbot-experimental" }] : []),
+    // Developer-only Chatbot removed
     { icon: Sparkles, label: "Update Logs", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
@@ -240,8 +239,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
     ...(canViewReservations ? [{ icon: CalendarClock, label: "Reservations", href: "/dashboard/reservation" }] : []),
-    // Developer-only Chatbot (Experimental) link
-    ...(["developer"].includes(normalizedRole) ? [{ icon: Sparkles, label: "Chatbot (Experimental)", href: "/chatbot-experimental" }] : []),
+    // Developer-only Chatbot removed
     { icon: Sparkles, label: "Updates", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
