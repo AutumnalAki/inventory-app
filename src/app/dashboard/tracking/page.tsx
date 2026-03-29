@@ -2,196 +2,210 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
-  Search, Plus, Filter, Trash2, CheckCircle, 
-  Clock, MapPin, User, Calendar, RotateCcw, X, Save, ArrowUpDown, ChevronDown, Lock
+  Search, Filter, Eye, X, CheckCircle, 
+  Clock, MapPin, User, Calendar, ChevronDown, Lock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-// 1. Import the hook
-import { useInventory } from "@/context/InventoryContext";
-import { useRole } from "@/context/RoleContext";
+import { supabase } from "@/lib/supabase";
 
-const LABS = ["All Labs", "Computer Lab", "Physics Lab", "Chem Lab", "ECE Lab", "ME Lab", "EE Lab", "CE Lab", "CSR (Central Storage Room)"];
+interface RequisitionItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  dateOut?: string;
+  dateIn?: string;
+}
 
-// Role to Lab Mapping - maps role names to their lab filter value
-const ROLE_LAB_MAPPING: Record<string, string> = {
-  "ME Lab": "ME Lab",
-  "CE Lab": "CE Lab",
-  "ECE Lab": "ECE Lab",
-  "CPE Lab": "Computer Lab",
-  "CHEM Lab": "Chem Lab",
-  "PHYS Lab": "Physics Lab",
-  "EE Lab": "EE Lab"
-  ,"Central Storage Room": "CSR (Central Storage Room)"
-};
+interface Requisition {
+  id: string;
+  student_name: string;
+  student_number: string;
+  purpose: string;
+  instructor: string;
+  program_section: string;
+  course_code: string;
+  room: string;
+  time_of_use: string;
+  items: RequisitionItem[];
+  signatures?: {
+    requestedBy?: string;
+    endorsedBy?: string;
+    releasedBy?: string;
+    approvedBy?: string;
+  };
+  status: "Reserved" | "Approved" | "Released" | "Completed" | "Cancelled";
+  date_out: string;
+  date_in: string | null;
+  created_at: string;
+}
 
-// Roles with full access to all labs
-const FULL_ACCESS_ROLES = ["Developer", "SuperAdmin", "Administrator", "Program Chair", "Faculty"];
-
-export default function ItemTrackingPage() {
-  // 2. Use Global State
-  const { loans, addLoan, returnLoan, deleteLoan } = useInventory();
-  const { role } = useRole();
-  
-  // Check if user has restricted lab access
-  const isLabRestricted = !FULL_ACCESS_ROLES.includes(role) && ROLE_LAB_MAPPING[role];
-  const userLabFilter = isLabRestricted ? ROLE_LAB_MAPPING[role] : null;
-  
+export default function RequisitionTrackingPage() {
+  const [requisitions, setRequisitions] = useState<Requisition[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedRequisition, setSelectedRequisition] = useState<Requisition | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("All");
-  const [filterLab, setFilterLab] = useState("All Labs");
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("Newest");
   
   // Dropdown states
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-  const [labDropdownOpen, setLabDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  
-  // Refs for dropdown containers
   const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const labDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newLoan, setNewLoan] = useState({
-    studentId: "",
-    section: "",
-    itemName: "",
-    controlId: "",
-    qty: 1,
-    location: "Computer Lab",
-    teacher: "",
-    room: "",
-  });
-  
-  // Modal dropdown state
-  const [modalLocationOpen, setModalLocationOpen] = useState(false);
-  const modalLocationRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns when clicking outside
+  useEffect(() => {
+    fetchRequisitions();
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setStatusDropdownOpen(false);
       }
-      if (labDropdownRef.current && !labDropdownRef.current.contains(event.target as Node)) {
-        setLabDropdownOpen(false);
-      }
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
         setSortDropdownOpen(false);
-      }
-      if (modalLocationRef.current && !modalLocationRef.current.contains(event.target as Node)) {
-        setModalLocationOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Set lab filter based on role restriction
-  useEffect(() => {
-    if (isLabRestricted && userLabFilter) {
-      setFilterLab(userLabFilter);
-    }
-  }, [isLabRestricted, userLabFilter]);
+  const fetchRequisitions = async () => {
+    try {
+      setLoading(true);
+      const { data, error: fetchError } = await supabase
+        .from("requisitions")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  // Set default location for restricted users when opening modal
-  useEffect(() => {
-    if (isLabRestricted && userLabFilter) {
-      setNewLoan(prev => ({ ...prev, location: userLabFilter }));
+      if (fetchError) throw fetchError;
+      setRequisitions(data || []);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error fetching requisitions:", err);
+      setError(err.message || "Failed to load requisitions");
+    } finally {
+      setLoading(false);
     }
-  }, [isLabRestricted, userLabFilter]);
+  };
 
-  const processedLoans = useMemo(() => {
-    let filtered = [...loans];
-    
-    // Apply role-based lab restriction first
-    if (isLabRestricted && userLabFilter) {
-      filtered = filtered.filter(loan => loan.location === userLabFilter);
-    } else if (filterLab !== "All Labs") {
-      filtered = filtered.filter(loan => loan.location === filterLab);
-    }
-    
+  const processedRequisitions = useMemo(() => {
+    let filtered = [...requisitions];
+
     // Apply status filter
     if (filterStatus !== "All") {
-      filtered = filtered.filter(loan => loan.status === filterStatus);
+      filtered = filtered.filter(req => req.status === filterStatus);
     }
-    
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(req =>
+        req.student_number.toLowerCase().includes(query) ||
+        req.student_name.toLowerCase().includes(query) ||
+        req.room.toLowerCase().includes(query)
+      );
+    }
+
     // Apply sorting
-    filtered.sort((a, b) => {
-      if (sortOption === "Newest") return b.id - a.id; 
-      if (sortOption === "Location") return a.location.localeCompare(b.location);
-      if (sortOption === "Status") return a.status.localeCompare(b.status);
-      return 0;
-    });
-    
+    if (sortOption === "Newest") {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortOption === "Room") {
+      filtered.sort((a, b) => a.room.localeCompare(b.room));
+    } else if (sortOption === "Status") {
+      filtered.sort((a, b) => a.status.localeCompare(b.status));
+    }
+
     return filtered;
-  }, [loans, filterStatus, filterLab, sortOption, isLabRestricted, userLabFilter]);
+  }, [requisitions, filterStatus, searchQuery, sortOption]);
 
-  // Stats based on filtered data for restricted users
-  const filteredLoansForStats = useMemo(() => {
-    if (isLabRestricted && userLabFilter) {
-      return loans.filter(l => l.location === userLabFilter);
+  const statusCounts = useMemo(() => {
+    const counts = {
+      Reserved: 0,
+      Approved: 0,
+      Released: 0,
+      Completed: 0,
+      Cancelled: 0
+    };
+    requisitions.forEach(req => {
+      counts[req.status as keyof typeof counts]++;
+    });
+    return counts;
+  }, [requisitions]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Reserved":
+        return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+      case "Approved":
+        return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+      case "Released":
+        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+      case "Completed":
+        return "bg-green-500/20 text-green-300 border-green-500/30";
+      case "Cancelled":
+        return "bg-red-500/20 text-red-300 border-red-500/30";
+      default:
+        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
     }
-    return loans;
-  }, [loans, isLabRestricted, userLabFilter]);
-
-  const activeLoans = filteredLoansForStats.filter(l => l.status === "Borrowed").length;
-  const returnedToday = filteredLoansForStats.filter(l => l.status === "Returned").length;
-
-  const handleReceive = (id: number) => {
-    returnLoan(id); // Global Return
   };
 
-  const handleDelete = (id: number) => {
-    if(confirm("Delete this loan record?")) {
-      deleteLoan(id); // Global Delete
-    }
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
-  const handleAddLoan = (e: React.FormEvent) => {
-    e.preventDefault();
-    addLoan(newLoan); // Global Add Loan (Updates Inventory automatically)
-    setIsModalOpen(false);
-    // Reset with user's lab if restricted
-    const defaultLocation = isLabRestricted && userLabFilter ? userLabFilter : "Computer Lab";
-    setNewLoan({ studentId: "", section: "", itemName: "", controlId: "", qty: 1, location: defaultLocation, teacher: "", room: "" });
+  const getItemsDisplay = (items: RequisitionItem[]) => {
+    const validItems = items.filter((i) => i.name && i.quantity > 0);
+    return validItems.length > 0
+      ? `${validItems.length} item${validItems.length > 1 ? "s" : ""}`
+      : "No items";
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4 md:space-y-6 h-full flex flex-col">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Requisition Tracking</h1>
+          <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor equipment requisition requests and status.</p>
+        </div>
+        <div className="flex items-center justify-center py-12 text-gray-400">
+          <div className="animate-spin mr-3">
+            <Clock size={20} />
+          </div>
+          Loading requisitions...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 md:space-y-6 h-full flex flex-col relative">
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Item Tracking</h1>
-        <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor active loans, student borrowing history, and returns.</p>
-        {isLabRestricted && userLabFilter && (
-          <div className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
-            <Lock size={12} />
-            <span>Viewing loans for {userLabFilter}</span>
-          </div>
-        )}
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Requisition Tracking</h1>
+        <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor equipment requisition requests and status.</p>
       </div>
 
       {/* --- STAT CARDS --- */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4">
-            <div className="bg-amber-500/20 p-2 md:p-3 rounded-lg md:rounded-xl text-amber-400">
-              <Clock size={20} className="md:w-6 md:h-6" />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">
+        {Object.entries(statusCounts).map(([status, count]) => (
+          <div key={status} className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center gap-2 md:gap-3">
+            <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${getStatusColor(status).split(" ")[0]}`}>
+              <CheckCircle size={16} className="md:w-5 md:h-5" />
             </div>
             <div>
-              <div className="text-2xl md:text-3xl font-bold text-white tabular-nums">{activeLoans}</div>
-              <div className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Active Loans</div>
+              <div className="text-xl md:text-2xl font-bold text-white">{count}</div>
+              <div className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">{status}</div>
             </div>
-        </div>
-
-        <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4">
-            <div className="bg-emerald-500/20 p-2 md:p-3 rounded-lg md:rounded-xl text-emerald-400">
-              <CheckCircle size={20} className="md:w-6 md:h-6" />
-            </div>
-            <div>
-              <div className="text-2xl md:text-3xl font-bold text-white tabular-nums">{returnedToday}</div>
-              <div className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Returned</div>
-            </div>
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* --- Controls Bar --- */}
@@ -203,11 +217,11 @@ export default function ItemTrackingPage() {
           {/* Status Filter Dropdown */}
           <div className="relative" ref={statusDropdownRef}>
             <button 
-              onClick={() => { setStatusDropdownOpen(!statusDropdownOpen); setLabDropdownOpen(false); setSortDropdownOpen(false); }}
+              onClick={() => { setStatusDropdownOpen(!statusDropdownOpen); setSortDropdownOpen(false); }}
               className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
             >
               <Filter size={14} className="text-gray-500" />
-              <span className="text-white text-xs font-medium">{filterStatus === "All" ? "All Status" : filterStatus}</span>
+              <span className="text-white text-xs font-medium">{filterStatus}</span>
               <ChevronDown size={14} className={`text-gray-500 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
@@ -217,24 +231,20 @@ export default function ItemTrackingPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }} 
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 mt-2 w-36 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
+                  className="absolute top-full left-0 mt-2 w-40 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
                 >
-                  {[
-                    { value: "All", label: "All Status" },
-                    { value: "Borrowed", label: "Active" },
-                    { value: "Returned", label: "Returned" }
-                  ].map((option) => (
+                  {["All", "Reserved", "Approved", "Released", "Completed", "Cancelled"].map((option) => (
                     <button
-                      key={option.value}
-                      onClick={() => { setFilterStatus(option.value); setStatusDropdownOpen(false); }}
+                      key={option}
+                      onClick={() => { setFilterStatus(option); setStatusDropdownOpen(false); }}
                       className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
-                        filterStatus === option.value 
+                        filterStatus === option 
                           ? 'bg-indigo-500/20 text-indigo-400' 
                           : 'text-gray-300 hover:bg-white/5 hover:text-white'
                       }`}
                     >
-                      {option.label}
-                      {filterStatus === option.value && <CheckCircle size={14} />}
+                      {option}
+                      {filterStatus === option && <CheckCircle size={14} />}
                     </button>
                   ))}
                 </motion.div>
@@ -242,58 +252,13 @@ export default function ItemTrackingPage() {
             </AnimatePresence>
           </div>
 
-          {/* Location Filter Dropdown */}
-          {isLabRestricted ? (
-            <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 opacity-60">
-              <Lock size={14} className="text-gray-500" />
-              <span className="text-white text-xs font-medium">{userLabFilter}</span>
-            </div>
-          ) : (
-            <div className="relative" ref={labDropdownRef}>
-              <button 
-                onClick={() => { setLabDropdownOpen(!labDropdownOpen); setStatusDropdownOpen(false); setSortDropdownOpen(false); }}
-                className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
-              >
-                <MapPin size={14} className="text-indigo-400" />
-                <span className="text-white text-xs font-medium">{filterLab === "All Labs" ? "All Labs" : filterLab.replace(" Lab", "")}</span>
-                <ChevronDown size={14} className={`text-gray-500 transition-transform ${labDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              <AnimatePresence>
-                {labDropdownOpen && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }} 
-                    animate={{ opacity: 1, y: 0, scale: 1 }} 
-                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-full left-0 mt-2 w-40 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
-                  >
-                    {LABS.map((lab) => (
-                      <button
-                        key={lab}
-                        onClick={() => { setFilterLab(lab); setLabDropdownOpen(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
-                          filterLab === lab 
-                            ? 'bg-indigo-500/20 text-indigo-400' 
-                            : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                        }`}
-                      >
-                        {lab === "All Labs" ? "All Labs" : lab.replace(" Lab", "")}
-                        {filterLab === lab && <CheckCircle size={14} />}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
           {/* Sort Option Dropdown */}
           <div className="relative" ref={sortDropdownRef}>
             <button 
-              onClick={() => { setSortDropdownOpen(!sortDropdownOpen); setStatusDropdownOpen(false); setLabDropdownOpen(false); }}
+              onClick={() => { setSortDropdownOpen(!sortDropdownOpen); setStatusDropdownOpen(false); }}
               className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
             >
-              <ArrowUpDown size={14} className="text-gray-500" />
+              <Calendar size={14} className="text-gray-500" />
               <span className="text-white text-xs font-medium">{sortOption}</span>
               <ChevronDown size={14} className={`text-gray-500 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -304,9 +269,9 @@ export default function ItemTrackingPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }} 
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 mt-2 w-32 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
+                  className="absolute top-full left-0 mt-2 w-36 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
                 >
-                  {["Newest", "Location", "Status"].map((option) => (
+                  {["Newest", "Room", "Status"].map((option) => (
                     <button
                       key={option}
                       onClick={() => { setSortOption(option); setSortDropdownOpen(false); }}
@@ -326,353 +291,282 @@ export default function ItemTrackingPage() {
           </div>
         </div>
         
-        {/* Bottom Row: Search & Add Button */}
+        {/* Bottom Row: Search */}
         <div className="flex items-center gap-2">
-          {/* Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
             <input 
-              type="text" 
-              placeholder="Search Student ID..." 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search Student ID, Name, or Room..." 
               className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-600"
             />
           </div>
-
-          {/* Add Button */}
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            data-tour="add-loan-btn"
-            className="flex items-center justify-center gap-1.5 md:gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 md:px-5 py-2 rounded-lg md:rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/20 whitespace-nowrap"
-          >
-            <Plus size={16} />
-            <span className="hidden sm:inline">New Loan</span>
-          </button>
         </div>
       </div>
 
-      {/* --- Main Table - Desktop --- */}
+      {/* --- Main Table --- */}
       <div className="hidden md:flex bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl flex-1 flex-col">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead>
               <tr className="bg-black/40 border-b border-white/10 text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                <th className="p-4 w-[15%]">Student Details</th>
-                <th className="p-4 w-[15%]">Item Details</th>
-                <th className="p-4 w-[12%]">Location/Room</th>
-                <th className="p-4 w-[12%]">Teacher</th>
+                <th className="p-4 w-[15%]">Student Number</th>
+                <th className="p-4 w-[15%]">Items</th>
+                <th className="p-4 w-[12%]">Room</th>
+                <th className="p-4 w-[12%]">Instructor</th>
                 <th className="p-4 w-[12%]">Date Borrowed</th>
-                <th className="p-4 w-[12%]">Date Received</th>
+                <th className="p-4 w-[12%]">Date Returned</th>
                 <th className="p-4 w-[10%]">Status</th>
-                <th className="p-4 text-right w-[10%]">Actions</th>
+                <th className="p-4 text-right w-[6%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-xs">
-              {processedLoans.length > 0 ? (
-                processedLoans.map((loan) => (
-                  <tr key={loan.id} className="group hover:bg-white/[0.07] transition-colors">
+              {processedRequisitions.length > 0 ? (
+                processedRequisitions.map((req) => (
+                  <tr key={req.id} className="group hover:bg-white/[0.07] transition-colors">
                     
-                    {/* Student */}
+                    {/* Student Number */}
                     <td className="p-4">
-                      <div className="font-bold text-emerald-400 text-sm tabular-nums tracking-wide">{loan.studentId}</div>
-                      <div className="text-gray-500 mt-1 font-medium">{loan.section}</div>
+                      <div className="font-bold text-emerald-400 text-sm tabular-nums tracking-wide">{req.student_number}</div>
+                      <div className="text-gray-500 mt-1 font-medium">{req.student_name}</div>
                     </td>
 
-                    {/* Item */}
+                    {/* Items */}
                     <td className="p-4">
-                      <div className="font-bold text-gray-200 text-sm">{loan.itemName}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-gray-400 font-mono border border-white/5">{loan.controlId}</span>
-                        <span className="text-gray-500 font-medium">Qty: {loan.qty}</span>
-                      </div>
+                      <div className="font-bold text-gray-200 text-sm">{getItemsDisplay(req.items)}</div>
                     </td>
 
-                    {/* Location */}
+                    {/* Room */}
                     <td className="p-4">
                       <div className="flex items-center gap-1.5 text-gray-300 font-medium">
                         <MapPin size={12} className="text-indigo-400" />
-                        {loan.location}
+                        {req.room}
                       </div>
-                      <div className="pl-4 mt-0.5 text-gray-500">Room {loan.room}</div>
                     </td>
 
-                    {/* Teacher */}
+                    {/* Instructor */}
                     <td className="p-4">
-                       <div className="flex items-center gap-1.5 text-gray-300">
+                      <div className="flex items-center gap-1.5 text-gray-300 font-medium">
                         <User size={12} className="text-indigo-400" />
-                        {loan.teacher}
+                        {req.instructor}
                       </div>
                     </td>
 
-                    {/* Dates */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-gray-300 tabular-nums">
-                        <Calendar size={12} className="text-gray-500" />
-                        {loan.dateGiven.split("•")[0]}
-                      </div>
-                      <div className="pl-4 text-gray-500 text-[10px] mt-0.5">
-                        {loan.dateGiven.split("•")[1]}
-                      </div>
-                    </td>
+                    {/* Date Borrowed */}
+                    <td className="p-4 text-gray-300 font-medium">{formatDate(req.date_out)}</td>
 
-                    <td className="p-4 text-gray-500 tabular-nums">
-                      {loan.dateReceived === "-" ? "-" : (
-                        <>
-                           <div>{loan.dateReceived.split("•")[0]}</div>
-                           <div className="text-[10px] mt-0.5">{loan.dateReceived.split("•")[1]}</div>
-                        </>
-                      )}
-                    </td>
+                    {/* Date Returned */}
+                    <td className="p-4 text-gray-400">{formatDate(req.date_in)}</td>
 
                     {/* Status */}
                     <td className="p-4">
-                      <StatusBadge status={loan.status} />
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${getStatusColor(req.status)}`}>
+                        {req.status}
+                      </span>
                     </td>
 
                     {/* Actions */}
                     <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {loan.status === "Borrowed" && (
-                          <button 
-                            onClick={() => handleReceive(loan.id)}
-                            className="flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-2 py-1.5 rounded-lg transition-all"
-                            title="Mark as Returned"
-                          >
-                            <RotateCcw size={12} />
-                            <span className="hidden xl:inline">Receive</span>
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleDelete(loan.id)}
-                          className="flex items-center gap-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-2 py-1.5 rounded-lg transition-all"
-                          title="Delete Record"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setSelectedRequisition(req)}
+                        className="inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all shadow-lg shadow-indigo-900/20"
+                      >
+                        <Eye size={12} />
+                        View
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={8} className="p-8 text-center text-gray-500">No records found.</td></tr>
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-gray-400">
+                    No requisitions found
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* --- Mobile Cards View --- */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-3">
-        {processedLoans.length > 0 ? (
-          processedLoans.map((loan) => (
-            <motion.div
-              key={loan.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
-            >
-              {/* Card Header */}
-              <div className="flex items-center justify-between p-3 bg-black/20 border-b border-white/5">
-                <div className="flex items-center gap-2">
-                  <div className="bg-emerald-500/20 p-1.5 rounded text-emerald-400">
-                    <User size={14} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-emerald-400 text-sm tabular-nums">{loan.studentId}</p>
-                    <p className="text-[10px] text-gray-500">{loan.section}</p>
-                  </div>
-                </div>
-                <StatusBadge status={loan.status} />
-              </div>
-
-              {/* Card Body */}
-              <div className="p-3 space-y-2">
-                {/* Item Info */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-bold text-white text-sm truncate">{loan.itemName}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-gray-400 font-mono z-100">{loan.controlId}</span>
-                      <span className="text-[10px] text-gray-500">Qty: {loan.qty}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Location & Teacher */}
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
-                  <div className="flex items-center gap-1.5 text-gray-400">
-                    <MapPin size={10} className="text-indigo-400" />
-                    <span className="truncate">{loan.location}</span>
-                    {loan.room && <span className="text-gray-600">• Rm {loan.room}</span>}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-gray-400">
-                    <User size={10} className="text-gray-500" />
-                    <span className="truncate">{loan.teacher}</span>
-                  </div>
-                </div>
-
-                {/* Dates */}
-                <div className="flex items-center justify-between text-[10px] pt-1 border-t border-white/5">
-                  <div className="text-gray-500">
-                    <Calendar size={10} className="inline mr-1" />
-                    Borrowed: <span className="text-gray-300">{loan.dateGiven.split("•")[0]}</span>
-                  </div>
-                  {loan.dateReceived !== "-" && (
-                    <div className="text-emerald-400/70">
-                      Returned: {loan.dateReceived.split("•")[0]}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Card Actions */}
-              <div className="flex items-center gap-2 p-2 bg-black/20 border-t border-white/5">
-                {loan.status === "Borrowed" && (
-                  <button 
-                    onClick={() => handleReceive(loan.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 py-2 rounded-lg text-xs font-medium transition-all"
-                  >
-                    <RotateCcw size={14} /> Mark Returned
-                  </button>
-                )}
-                <button 
-                  onClick={() => handleDelete(loan.id)}
-                  className={`flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 py-2 rounded-lg text-xs font-medium transition-all ${loan.status === "Borrowed" ? "px-3" : "flex-1"}`}
-                >
-                  <Trash2 size={14} /> {loan.status !== "Borrowed" && "Delete"}
-                </button>
-              </div>
-            </motion.div>
-          ))
-        ) : (
-          <div className="flex-1 flex items-center justify-center py-12">
-            <p className="text-gray-500 text-sm">No records found.</p>
-          </div>
-        )}
-      </div>
-
-      {/* --- ADD LOAN MODAL (Unchanged) --- */}
+      {/* --- Modal for Full Form --- */}
       <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="relative bg-[#111] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden"
+        {selectedRequisition && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
-                <h2 className="text-lg font-bold text-white">New Equipment Loan</h2>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
-                  <X size={20} />
+              {/* Header */}
+              <div className="sticky top-0 bg-gray-900 text-white px-6 py-4 flex justify-between items-center border-b">
+                <h2 className="text-xl font-bold">Requisition Form - {selectedRequisition.id}</h2>
+                <button
+                  onClick={() => setSelectedRequisition(null)}
+                  className="p-1 hover:bg-gray-700 rounded transition-colors"
+                >
+                  <X size={24} />
                 </button>
               </div>
 
-              <form onSubmit={handleAddLoan} className="p-6 space-y-4">
-                {/* Student Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-gray-400 uppercase">Student ID</label>
-                    <input required type="text" placeholder="e.g. 20231010803" value={newLoan.studentId} onChange={(e) => setNewLoan({...newLoan, studentId: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-gray-400 uppercase">Program/Section</label>
-                    <input required type="text" placeholder="e.g. NASC 2031" value={newLoan.section} onChange={(e) => setNewLoan({...newLoan, section: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
-                  </div>
-                </div>
-
-                {/* Item Info */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5 col-span-2">
-                    <label className="text-xs font-medium text-gray-400 uppercase">Item Name</label>
-                    <input required type="text" placeholder="e.g. Weight Holder" value={newLoan.itemName} onChange={(e) => setNewLoan({...newLoan, itemName: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
-                  </div>
-                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-gray-400 uppercase">Control ID</label>
-                    <input required type="text" placeholder="e.g. PHY-004" value={newLoan.controlId} onChange={(e) => setNewLoan({...newLoan, controlId: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
-                  </div>
-                </div>
-
-                {/* Location Info */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-400 uppercase flex items-center gap-1.5">
-                          Location {isLabRestricted && <Lock size={10} className="text-gray-500" />}
-                        </label>
-                        {isLabRestricted ? (
-                          <div className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-400 flex items-center gap-2">
-                            <Lock size={12} />{userLabFilter}
-                          </div>
-                        ) : (
-                          <div className="relative" ref={modalLocationRef}>
-                            <button 
-                              type="button"
-                              onClick={() => setModalLocationOpen(!modalLocationOpen)}
-                              className="w-full flex items-center z-100 justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
-                            >
-                              <span>{newLoan.location}</span>
-                              <ChevronDown size={14} className={`text-gray-500 transition-transform ${modalLocationOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            <AnimatePresence>
-                              {modalLocationOpen && (
-                                <motion.div 
-                                  initial={{ opacity: 0, y: 8, scale: 0.96 }} 
-                                  animate={{ opacity: 1, y: 0, scale: 1 }} 
-                                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-100 overflow-hidden max-h-48 overflow-y-auto no-scrollbar"
-                                >
-                                  {LABS.filter(l => l !== "All Labs").map((lab) => (
-                                    <button
-                                      key={lab}
-                                      type="button"
-                                      onClick={() => { setNewLoan({...newLoan, location: lab}); setModalLocationOpen(false); }}
-                                      className={`w-full text-left z-100 px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
-                                        newLoan.location === lab 
-                                          ? 'bg-indigo-500/20 text-indigo-400' 
-                                          : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                                      }`}
-                                    >
-                                      {lab}
-                                      {newLoan.location === lab && <CheckCircle size={14} />}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
+              {/* Content */}
+              <div className="overflow-y-auto flex-1 p-6">
+                {/* Paper Form */}
+                <div className="bg-white rounded-lg border-4 border-black p-6">
+                  {/* Header */}
+                  <div className="border-b-4 border-black pb-4 mb-4 flex justify-between items-start">
+                    <div className="flex gap-4 flex-1">
+                      <div className="flex flex-col">
+                        <h1 className="text-xl font-bold uppercase tracking-tight text-black">Colegio de Muntinlupa</h1>
+                        <h2 className="text-2xl font-black uppercase text-black">Requisition Form</h2>
+                        <p className="text-xs font-bold uppercase text-black">Equipment, Supplies and Apparatus</p>
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-400 uppercase">Room Number</label>
-                        <input type="text" placeholder="e.g. 613" value={newLoan.room} onChange={(e) => setNewLoan({...newLoan, room: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
+                    {/* Document Code */}
+                    <div className="border-2 border-black text-xs w-48">
+                      <div className="bg-black text-white p-1 font-bold text-center border-b-2 border-black uppercase">Document Code</div>
+                      <div className="grid grid-cols-3 text-xs font-bold text-black">
+                        <div className="border-r-2 border-b-2 border-black p-1 text-center"><span className="text-[9px] text-black">Effective Date</span></div>
+                        <div className="border-r-2 border-b-2 border-black p-1 text-center"><span className="text-[9px] text-black">Revision No.</span><div className="text-black">00</div></div>
+                        <div className="border-b-2 border-black p-1 text-center"><span className="text-[9px] text-black">Revision Date</span></div>
+                      </div>
+                      <div className="border-t-2 border-black p-1 text-center bg-yellow-50 text-xs font-mono font-bold text-black">AUTOGEN-DLI-SUBMIT</div>
                     </div>
-                </div>
-
-                 <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-gray-400 uppercase">Assigned Teacher</label>
-                    <input required type="text" placeholder="e.g. Engr. Lorenzo Diuco" value={newLoan.teacher} onChange={(e) => setNewLoan({...newLoan, teacher: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors" />
                   </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Cancel</button>
-                  <button type="submit" className="flex items-center gap-2 px-6 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all shadow-lg shadow-indigo-900/20">
-                    <Save size={16} />
-                    Confirm Loan
-                  </button>
+                  {/* Form Info */}
+                  <div className="grid grid-cols-2 gap-4 mb-4 border-b-4 border-black pb-4">
+                    <div>
+                      <p className="font-bold text-black text-xs">Name:</p>
+                      <p className="text-black text-sm">{selectedRequisition.student_name}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-black text-xs">Program & Section:</p>
+                      <p className="text-black text-sm">{selectedRequisition.program_section}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-black text-xs">Student No.:</p>
+                      <p className="text-black text-sm">{selectedRequisition.student_number}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-black text-xs">Course/Code:</p>
+                      <p className="text-black text-sm">{selectedRequisition.course_code}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-black text-xs">Purpose:</p>
+                      <p className="text-black text-sm">{selectedRequisition.purpose}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-black text-xs">Room:</p>
+                      <p className="text-black text-sm">{selectedRequisition.room}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-black text-xs">Instructor:</p>
+                      <p className="text-black text-sm">{selectedRequisition.instructor}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-black text-xs">Time of use:</p>
+                      <p className="text-black text-sm">{selectedRequisition.time_of_use || "—"}</p>
+                    </div>
+                  </div>
+
+                  {/* Equipment Table */}
+                  <div className="mb-4 border-b-4 border-black pb-4">
+                    <p className="font-bold text-black text-xs mb-2">EQUIPMENT ITEMS</p>
+                    <table className="w-full text-black border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-gray-200 border-b-2 border-black">
+                          <th className="border-r-2 border-black p-2 text-left">Equipment</th>
+                          <th className="border-r-2 border-black p-2 text-center w-16">Qty</th>
+                          <th className="border-r-2 border-black p-2 text-center w-14">Unit</th>
+                          <th className="border-r-2 border-black p-2 text-center">Date Out</th>
+                          <th className="p-2 text-center">Date In</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedRequisition.items.map((item, idx) => (
+                          <tr key={idx} className="border-b border-black">
+                            <td className="border-r-2 border-black p-2">{item.name || "—"}</td>
+                            <td className="border-r-2 border-black p-2 text-center">{item.quantity || "—"}</td>
+                            <td className="border-r-2 border-black p-2 text-center">{item.unit || "—"}</td>
+                            <td className="border-r-2 border-black p-2 text-center text-[9px]">
+                              {item.dateOut ? new Date(item.dateOut).toLocaleDateString("en-US") : "—"}
+                            </td>
+                            <td className="p-2 text-center text-[9px]">
+                              {item.dateIn ? new Date(item.dateIn).toLocaleDateString("en-US") : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Status & Signatures */}
+                  <div className="border-t-4 border-black pt-4">
+                    <p className="font-bold text-black text-xs mb-2">STATUS</p>
+                    <span className={`inline-block px-3 py-1 rounded text-xs font-bold border mb-4 ${getStatusColor(selectedRequisition.status)}`}>
+                      {selectedRequisition.status}
+                    </span>
+                    
+                    {selectedRequisition.signatures && (
+                      <div className="mt-4">
+                        <p className="font-bold text-black text-xs mb-2">SIGNATURES</p>
+                        <div className="grid grid-cols-4 gap-2 text-xs">
+                          {selectedRequisition.signatures.requestedBy && (
+                            <div>
+                              <p className="font-bold text-black">Requested by:</p>
+                              <p className="text-black">{selectedRequisition.signatures.requestedBy}</p>
+                            </div>
+                          )}
+                          {selectedRequisition.signatures.endorsedBy && (
+                            <div>
+                              <p className="font-bold text-black">Endorsed by:</p>
+                              <p className="text-black">{selectedRequisition.signatures.endorsedBy}</p>
+                            </div>
+                          )}
+                          {selectedRequisition.signatures.releasedBy && (
+                            <div>
+                              <p className="font-bold text-black">Released by:</p>
+                              <p className="text-black">{selectedRequisition.signatures.releasedBy}</p>
+                            </div>
+                          )}
+                          {selectedRequisition.signatures.approvedBy && (
+                            <div>
+                              <p className="font-bold text-black">Approved by:</p>
+                              <p className="text-black">{selectedRequisition.signatures.approvedBy}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </form>
+              </div>
+
+              {/* Footer */}
+              <div className="sticky bottom-0 bg-gray-100 px-6 py-4 border-t flex justify-end gap-3">
+                <button
+                  onClick={() => setSelectedRequisition(null)}
+                  className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold rounded transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
 }
-
 // --- Helper Component ---
 
 function StatusBadge({ status }: { status: string }) {
