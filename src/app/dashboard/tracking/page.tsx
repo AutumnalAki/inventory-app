@@ -46,7 +46,7 @@ interface Requisition {
       revisionDate?: string;
     };
   };
-  status: "Reserved" | "Approved" | "Released" | "Completed" | "Cancelled";
+  status: "Borrowed" | "Reserved" | "Approved" | "Released" | "Completed" | "Cancelled";
   requisition_type?: "borrow" | "reservation" | string;
   date_out: string;
   date_in: string | null;
@@ -160,6 +160,7 @@ export default function RequisitionTrackingPage() {
 
   const statusCounts = useMemo(() => {
     const counts = {
+      Borrowed: 0,
       Reserved: 0,
       Approved: 0,
       Released: 0,
@@ -176,6 +177,8 @@ export default function RequisitionTrackingPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "Borrowed":
+        return "bg-cyan-500/20 text-cyan-300 border-cyan-500/30";
       case "Reserved":
         return "bg-blue-500/20 text-blue-300 border-blue-500/30";
       case "Approved":
@@ -595,7 +598,7 @@ export default function RequisitionTrackingPage() {
                   transition={{ duration: 0.15 }}
                   className="absolute top-full left-0 mt-2 w-40 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-[100] overflow-hidden"
                 >
-                  {["All", "Reserved", "Approved", "Released", "Completed", "Cancelled"].map((option) => (
+                  {["All", "Borrowed", "Reserved", "Approved", "Released", "Completed", "Cancelled"].map((option) => (
                     <button
                       key={option}
                       onClick={() => { setFilterStatus(option); setStatusDropdownOpen(false); }}

@@ -40,7 +40,7 @@ export interface RequisitionForm {
   room: string;
   timeOfUse: string;
   items: RequisitionItem[];
-  status: "Reserved" | "Approved" | "Released" | "Completed" | "Cancelled";
+  status: "Borrowed" | "Reserved" | "Approved" | "Released" | "Completed" | "Cancelled";
   dateOut: string;
   dateIn: string | null;
   createdAt?: string;
@@ -224,10 +224,25 @@ export default function RequisitionFormTestingPage({
     const agg = new Map<string, any>();
     inventoryItems.forEach((item) => {
       const key = item.name.toLowerCase().trim();
-      agg.set(key, { ...item });
+      if (!key) return;
+      const existing = agg.get(key);
+      const itemQty = Number(item.quantity) || 0;
+
+      if (existing) {
+        existing.quantity = (Number(existing.quantity) || 0) + itemQty;
+      } else {
+        agg.set(key, { ...item, quantity: itemQty });
+      }
     });
     return Array.from(agg.values());
   }, [inventoryItems]);
+
+  const getAvailableQuantityForItem = (itemName: string) => {
+    const key = itemName.toLowerCase().trim();
+    if (!key) return 0;
+    const match = availableInventory.find((item) => item.name.toLowerCase().trim() === key);
+    return Number(match?.quantity) || 0;
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -313,6 +328,13 @@ export default function RequisitionFormTestingPage({
     if (field === "quantity") {
       const parsed = parseInt(value as string, 10);
       itemValue = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+
+      const selectedName = String(newItems[index]?.name || "").trim();
+      if (selectedName) {
+        const availableQty = getAvailableQuantityForItem(selectedName);
+        itemValue = Math.min(Number(itemValue), Math.max(availableQty, 0));
+      }
+
       if (Number(itemValue) <= 0) {
         newItems[index].unit = "";
       } else {
@@ -324,6 +346,22 @@ export default function RequisitionFormTestingPage({
       newItems[index] = { name: "", quantity: 0, unit: "", dateOut: "", dateIn: "" };
     } else {
       newItems[index] = { ...newItems[index], [field]: itemValue };
+
+      if (field === "name") {
+        const selectedName = String(itemValue).trim();
+        const availableQty = getAvailableQuantityForItem(selectedName);
+        const currentQty = Number(newItems[index].quantity) || 0;
+
+        if (currentQty > availableQty) {
+          newItems[index].quantity = availableQty;
+        }
+
+        if ((Number(newItems[index].quantity) || 0) <= 0) {
+          newItems[index].unit = "";
+        } else {
+          newItems[index].unit = Number(newItems[index].quantity) === 1 ? "pc" : "pcs";
+        }
+      }
     }
 
     setForm((prev) => ({ ...prev, items: newItems }));
@@ -338,7 +376,8 @@ export default function RequisitionFormTestingPage({
     if (readOnly) return;
     if (!suggestion.isAvailable) return;
     const newItems = [...(form.items || [])];
-    const qty = Number(newItems[index].quantity) || 1;
+    const availableQty = Number(suggestion.quantity) || 0;
+    const qty = Math.min(Math.max(Number(newItems[index].quantity) || 1, 1), availableQty);
     newItems[index] = {
       name: suggestion.name,
       quantity: qty,
@@ -367,6 +406,13 @@ export default function RequisitionFormTestingPage({
     const rawItems = (form.items || []).filter((i) => i.name.trim() !== "" && i.quantity > 0);
     if (rawItems.length === 0) {
       return "Please add at least one equipment item.";
+    }
+
+    for (const item of rawItems) {
+      const availableQty = getAvailableQuantityForItem(item.name);
+      if (item.quantity > availableQty) {
+        return `Quantity for \"${item.name}\" exceeds available stock (${availableQty}).`;
+      }
     }
 
     return null;
@@ -405,8 +451,8 @@ export default function RequisitionFormTestingPage({
         documentCode,
       };
 
-      // New entries start pending approval; tab placement is controlled by requisition_type.
-      const status = "Reserved";
+      // Initial status follows user intent: Borrow tab entries start as Borrowed, reservation entries as Reserved.
+      const status = requisitionType === "borrow" ? "Borrowed" : "Reserved";
       const timestamp = new Date().toISOString();
 
       const { error } = await supabase.from("requisitions").insert([
@@ -687,6 +733,7 @@ export default function RequisitionFormTestingPage({
                     !item.unit &&
                     !item.dateOut &&
                     !item.dateIn;
+                  const maxQuantity = item.name ? getAvailableQuantityForItem(item.name) : undefined;
 
                   return (
                   <tr key={idx} className={`text-[9px] sm:text-xs border-b-2 border-black hover:bg-orange-50/20 text-black ${isPrintableBlankRow ? "print-hide-empty-row" : ""}`}>
@@ -708,7 +755,7 @@ export default function RequisitionFormTestingPage({
                       </AnimatePresence>
                     </td>
                     <td className="border-r-2 border-black p-1 text-center">
-                      <input type="number" min="0" value={Number(item.quantity) > 0 ? item.quantity : ""} onChange={(e) => handleItemChange(idx, "quantity", e.target.value)} readOnly={readOnly} disabled={readOnly} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50" />
+                      <input type="number" min="0" max={typeof maxQuantity === "number" ? Math.max(maxQuantity, 0) : undefined} value={Number(item.quantity) > 0 ? item.quantity : ""} onChange={(e) => handleItemChange(idx, "quantity", e.target.value)} readOnly={readOnly} disabled={readOnly} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50" />
                     </td>
                     <td className="border-r-2 border-black p-1 text-center">
                       {readOnly ? (
