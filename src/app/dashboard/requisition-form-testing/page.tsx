@@ -76,6 +76,8 @@ type RequisitionFormTestingPageProps = {
   hideSubmitButtons?: boolean;
   embedded?: boolean;
   onCancel?: () => void;
+  postSubmitAction?: "dashboard" | "reset";
+  hideDownloadCopyButton?: boolean;
 };
 
 const EMPTY_ITEM: RequisitionItem = { name: "", quantity: 0, unit: "", dateOut: "", dateIn: "" };
@@ -184,6 +186,8 @@ export default function RequisitionFormTestingPage({
   hideSubmitButtons = false,
   embedded = false,
   onCancel,
+  postSubmitAction = "dashboard",
+  hideDownloadCopyButton = false,
 }: RequisitionFormTestingPageProps = {}) {
   const tableRowTarget = 18;
   const router = useRouter();
@@ -560,6 +564,35 @@ export default function RequisitionFormTestingPage({
       console.error("Failed to download requisition copy:", error);
       setErrorMsg("Failed to generate PDF copy.");
     }
+  };
+
+  const resetAfterSubmit = () => {
+    setShowSuccessModal(false);
+    setShowVerificationModal(false);
+    setPendingRequisitionType(null);
+    setLastSubmittedCopy(null);
+    setErrorMsg(null);
+    setActiveSuggestionRow(null);
+    setFilteredSuggestions([]);
+
+    setForm(buildInitialFormState(undefined, tableRowTarget));
+    setSignatures({
+      requestedBy: "",
+      endorsedBy: "",
+      releasedBy: "",
+      approvedBy: "",
+    });
+    setDocumentCode({
+      effectiveDate: "",
+      revisionNo: "00",
+      revisionDate: "",
+    });
+    setSignatureDates({
+      requestedBy: "",
+      endorsedBy: "",
+      releasedBy: "",
+      approvedBy: "",
+    });
   };
 
   const DownloadIcon = Icons.download;
@@ -1023,18 +1056,27 @@ export default function RequisitionFormTestingPage({
               <h3 className="font-bold text-black text-lg mb-2">Requisition Submitted!</h3>
               <p className="text-gray-600 text-sm mb-4">Your form has been saved and is ready for processing.</p>
               <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => {
-                    void handleDownloadCopy();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-stone-700 hover:bg-stone-800 text-white font-bold py-2 rounded-lg transition-colors"
-                >
-                  <DownloadIcon size={16} />
-                  Download Copy
-                </button>
-                <button onClick={() => { setShowSuccessModal(false); router.push("/dashboard"); }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg transition-colors">
-                  Return to Dashboard
-                </button>
+                {!hideDownloadCopyButton && (
+                  <button
+                    onClick={() => {
+                      void handleDownloadCopy();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 bg-stone-700 hover:bg-stone-800 text-white font-bold py-2 rounded-lg transition-colors"
+                  >
+                    <DownloadIcon size={16} />
+                    Download Copy
+                  </button>
+                )}
+
+                {postSubmitAction === "dashboard" ? (
+                  <button onClick={() => { setShowSuccessModal(false); router.push("/dashboard"); }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg transition-colors">
+                    Return to Dashboard
+                  </button>
+                ) : (
+                  <button onClick={resetAfterSubmit} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg transition-colors">
+                    Submit Another Request
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>

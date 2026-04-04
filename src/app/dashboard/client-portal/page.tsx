@@ -1,5 +1,4 @@
-import { notFound } from "next/navigation";
-import RequisitionFormTestingPage from "../requisition-form-testing/page";
+import { notFound, redirect } from "next/navigation";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type ClientPortalPageProps = {
@@ -13,16 +12,30 @@ function normalizeParam(param: string | string[] | undefined): string {
   return param || "";
 }
 
+function toSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default async function ClientPortalPage({ searchParams }: ClientPortalPageProps) {
   const resolvedParams = await searchParams;
   const accessToken = normalizeParam(resolvedParams?.access);
 
   // Use a server-side token so only QR URLs with the correct query parameter can access this page.
   const expectedToken = process.env.CLIENT_PORTAL_QR_TOKEN;
+  const expectedName = process.env.CLIENT_PORTAL_ACCESS_NAME;
 
   if (!expectedToken || !accessToken || accessToken !== expectedToken) {
     notFound();
   }
 
-  return <RequisitionFormTestingPage />;
+  const destinationName = toSlug(expectedName || expectedToken);
+  if (!destinationName) {
+    notFound();
+  }
+
+  redirect(`/client-portal/${destinationName}`);
 }
