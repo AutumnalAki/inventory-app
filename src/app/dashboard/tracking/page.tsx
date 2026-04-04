@@ -321,6 +321,48 @@ export default function RequisitionTrackingPage() {
     }
   };
 
+  const restoreReturnedItemsToInventory = async (req: Requisition) => {
+    const itemRestocks = new Map<string, number>();
+
+    (req.items || []).forEach((item) => {
+      const name = item.name?.trim();
+      const qty = Number(item.quantity) || 0;
+      if (!name || qty <= 0) return;
+      itemRestocks.set(name, (itemRestocks.get(name) || 0) + qty);
+    });
+
+    for (const [itemName, returnedQty] of itemRestocks.entries()) {
+      const { data: inventoryRows, error: fetchError } = await supabase
+        .from("inventory")
+        .select("id, item_name, quantity, low_stock_threshold")
+        .eq("item_name", itemName)
+        .order("quantity", { ascending: false });
+
+      if (fetchError) {
+        throw new Error(`Failed to load inventory for ${itemName}.`);
+      }
+
+      const rows = (inventoryRows || []) as InventoryRow[];
+      if (rows.length === 0) {
+        throw new Error(`Item "${itemName}" was not found in inventory.`);
+      }
+
+      const targetRow = rows[0];
+      const currentQty = Number(targetRow.quantity) || 0;
+      const newQty = currentQty + returnedQty;
+      const newStock = calculateStockStatus(newQty, targetRow.low_stock_threshold);
+
+      const { error: updateError } = await supabase
+        .from("inventory")
+        .update({ quantity: newQty, stock_status: newStock })
+        .eq("id", targetRow.id);
+
+      if (updateError) {
+        throw new Error(`Failed to restock inventory for "${itemName}".`);
+      }
+    }
+  };
+
   const handleApprove = async (req: Requisition) => {
     const nowIso = new Date().toISOString();
     try {
@@ -393,6 +435,9 @@ export default function RequisitionTrackingPage() {
     const nowIso = new Date().toISOString();
     try {
       setRowLoading(req.id, true);
+
+      await restoreReturnedItemsToInventory(req);
+
       const { error: updateError } = await supabase
         .from("requisitions")
         .update({ status: "Completed", date_in: nowIso })
@@ -414,6 +459,7 @@ export default function RequisitionTrackingPage() {
 
     const payload: RequisitionPdfData = {
       id: selectedRequisition.id,
+      logoSrc: "/favicon.ico",
       studentName: selectedRequisition.student_name || "",
       studentNumber: selectedRequisition.student_number || "",
       purpose: selectedRequisition.purpose || "",

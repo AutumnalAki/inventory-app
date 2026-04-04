@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 export type RequisitionPdfItem = {
   name?: string;
@@ -27,6 +27,8 @@ export type RequisitionPdfSignatures = {
 
 export type RequisitionPdfData = {
   id?: string;
+  logoSrc?: string;
+  logoDataUrl?: string;
   studentName?: string;
   studentNumber?: string;
   purpose?: string;
@@ -80,10 +82,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
+    overflow: "hidden",
+    backgroundColor: "#ffffff",
   },
-  logoText: {
-    fontSize: 10,
-    fontWeight: 700,
+  logoImage: {
+    width: 40,
+    height: 40,
+    objectFit: "contain",
   },
   titleWrap: {
     justifyContent: "center",
@@ -334,6 +339,7 @@ const makeTableRows = (items: RequisitionPdfItem[] = [], rowCount = 18) => {
 };
 
 const RequisitionTemplate: React.FC<Props> = ({ requisition }) => {
+  const logoSrc = requisition.logoDataUrl || requisition.logoSrc || "/favicon.ico";
   const signatures = requisition.signatures || {};
   const signatureDates = signatures.signatureDates || {};
   const documentCode = signatures.documentCode || {};
@@ -387,7 +393,7 @@ const RequisitionTemplate: React.FC<Props> = ({ requisition }) => {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.logoCircle}>
-                <Text style={styles.logoText}>CDM</Text>
+                <Image src={logoSrc} style={styles.logoImage} />
               </View>
               <View style={styles.titleWrap}>
                 <Text style={styles.titleSchool}>COLEGIO DE MUNTINLUPA</Text>

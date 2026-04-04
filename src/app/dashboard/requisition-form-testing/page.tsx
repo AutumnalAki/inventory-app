@@ -273,6 +273,10 @@ export default function RequisitionFormTestingPage({
     if (field === "studentName") {
       setSignatures((prev) => ({ ...prev, requestedBy: value }));
     }
+
+    if (field === "instructor") {
+      setSignatures((prev) => ({ ...prev, endorsedBy: value }));
+    }
   };
 
   const handleStudentNumberChange = (value: string) => {
@@ -405,7 +409,7 @@ export default function RequisitionFormTestingPage({
       const status = "Reserved";
       const timestamp = new Date().toISOString();
 
-      const { error, data } = await supabase.from("requisitions").insert([
+      const { error } = await supabase.from("requisitions").insert([
         {
           id,
           student_name: form.studentName,
@@ -424,17 +428,34 @@ export default function RequisitionFormTestingPage({
           created_at: timestamp,
           signatures: signaturesPayload,
         },
-      ]
-      ).select();
+      ]);
 
       if (error) {
-        console.error("Database error:", error);
-        throw new Error(error.message || "Failed to submit requisition. Please ensure the form is complete and try again.");
+        const rawError = error as {
+          message?: string;
+          details?: string;
+          hint?: string;
+          code?: string;
+        };
+
+        const detailedMessage = [
+          rawError.message,
+          rawError.details,
+          rawError.hint,
+        ]
+          .filter(Boolean)
+          .join(" | ");
+
+        throw new Error(
+          detailedMessage ||
+            "Failed to submit requisition. Please ensure the form is complete and try again."
+        );
       }
-      console.log("Requisition saved:", data);
+      console.log("Requisition saved:", id);
 
       setLastSubmittedCopy({
         id,
+        logoSrc: LOGO_URL,
         studentName: form.studentName || "",
         studentNumber: form.studentNumber || "",
         purpose: form.purpose || "",
@@ -461,7 +482,21 @@ export default function RequisitionFormTestingPage({
       setShowSuccessModal(true);
     } catch (err: any) {
       console.error("Submit error:", err);
-      setErrorMsg(err.message || "An unexpected error occurred. Please try again.");
+
+      const isFetchFailure =
+        err instanceof TypeError &&
+        /Failed to fetch/i.test(String(err.message || ""));
+
+      if (isFetchFailure) {
+        const offline = typeof navigator !== "undefined" && !navigator.onLine;
+        setErrorMsg(
+          offline
+            ? "No internet connection. Please reconnect and try again."
+            : "Unable to reach the database service. Please check Supabase URL/ANON key and try again."
+        );
+      } else {
+        setErrorMsg(err?.message || "An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
