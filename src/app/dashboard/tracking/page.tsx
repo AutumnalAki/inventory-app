@@ -582,9 +582,39 @@ export default function RequisitionTrackingPage() {
         
         {/* Top Row: Filters */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full">
+
+          {/* Mobile Status Filter */}
+          <div className="md:hidden">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-white/5 border border-white/10 text-white text-xs rounded-xl px-3 py-2 outline-none"
+            >
+              {["All", "Borrowed", "Reserved", "Approved", "Released", "Completed", "Cancelled"].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Mobile Sort Filter */}
+          <div className="md:hidden">
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="bg-white/5 border border-white/10 text-white text-xs rounded-xl px-3 py-2 outline-none"
+            >
+              {["Newest", "Room", "Status"].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
           
           {/* Status Filter Dropdown */}
-          <div className="relative" ref={statusDropdownRef}>
+          <div className="relative hidden md:block" ref={statusDropdownRef}>
             <button 
               onClick={() => { setStatusDropdownOpen(!statusDropdownOpen); setSortDropdownOpen(false); }}
               className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
@@ -622,7 +652,7 @@ export default function RequisitionTrackingPage() {
           </div>
 
           {/* Sort Option Dropdown */}
-          <div className="relative" ref={sortDropdownRef}>
+          <div className="relative hidden md:block" ref={sortDropdownRef}>
             <button 
               onClick={() => { setSortDropdownOpen(!sortDropdownOpen); setStatusDropdownOpen(false); }}
               className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
