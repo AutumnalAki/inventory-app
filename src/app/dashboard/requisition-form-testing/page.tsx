@@ -5,9 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useInventory } from "@/context/InventoryContext";
 import { supabase } from "@/lib/supabase";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { Icons } from "@/constants/icons";
+import { downloadRequisitionPdf, type RequisitionPdfData } from "@/lib/requisitionPdf";
 
 // === LOGO ===
 const LOGO_URL = "/favicon.ico";
@@ -189,9 +188,11 @@ export default function RequisitionFormTestingPage({
   const tableRowTarget = 18;
   const router = useRouter();
   const { inventory: inventoryItems, refreshData } = useInventory();
-  const formRef = useRef<HTMLDivElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [pendingRequisitionType, setPendingRequisitionType] = useState<"borrow" | "reservation" | null>(null);
+  const [lastSubmittedCopy, setLastSubmittedCopy] = useState<RequisitionPdfData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeSuggestionRow, setActiveSuggestionRow] = useState<number | null>(null);
   const [filteredSuggestions, setFilteredSuggestions] = useState<any[]>([]);
@@ -268,6 +269,10 @@ export default function RequisitionFormTestingPage({
   const handleFieldChange = (field: string, value: string) => {
     if (readOnly) return;
     setForm((prev) => ({ ...prev, [field]: value }));
+
+    if (field === "studentName") {
+      setSignatures((prev) => ({ ...prev, requestedBy: value }));
+    }
   };
 
   const handleStudentNumberChange = (value: string) => {
@@ -341,34 +346,7 @@ export default function RequisitionFormTestingPage({
     setActiveSuggestionRow(null);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownloadPDF = async () => {
-    if (!formRef.current) return;
-    try {
-      const canvas = await html2canvas(formRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`Requisition-${form.studentNumber || "Form"}.pdf`);
-    } catch (error) {
-      setErrorMsg("Failed to generate PDF.");
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent, requisitionType: "borrow" | "reservation") => {
-    e.preventDefault();
-    if (readOnly) return;
-
+  const validateFormBeforeSubmit = (): string | null => {
     const checks = [
       [form.studentName?.trim(), "Student Name"],
       [form.studentNumber?.trim(), "Student Number"],
@@ -378,25 +356,54 @@ export default function RequisitionFormTestingPage({
 
     for (const [value, label] of checks) {
       if (!value) {
-        setErrorMsg(`Please enter the ${label}.`);
-        return;
+        return `Please enter the ${label}.`;
       }
     }
 
     const rawItems = (form.items || []).filter((i) => i.name.trim() !== "" && i.quantity > 0);
     if (rawItems.length === 0) {
-      setErrorMsg("Please add at least one equipment item.");
+      return "Please add at least one equipment item.";
+    }
+
+    return null;
+  };
+
+  const openVerificationModal = (requisitionType: "borrow" | "reservation") => {
+    const validationError = validateFormBeforeSubmit();
+    if (validationError) {
+      setErrorMsg(validationError);
       return;
     }
+
+    setPendingRequisitionType(requisitionType);
+    setShowVerificationModal(true);
+  };
+
+  const handleSubmit = async (requisitionType: "borrow" | "reservation") => {
+    if (readOnly) return;
+
+    const validationError = validateFormBeforeSubmit();
+    if (validationError) {
+      setErrorMsg(validationError);
+      return;
+    }
+
+    const rawItems = (form.items || []).filter((i) => i.name.trim() !== "" && i.quantity > 0);
 
     setIsSubmitting(true);
     try {
       const year = new Date().getFullYear();
       const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
       const id = `REQ-${year}-${random}`;
+      const signaturesPayload = {
+        ...signatures,
+        signatureDates,
+        documentCode,
+      };
 
       // New entries start pending approval; tab placement is controlled by requisition_type.
       const status = "Reserved";
+      const timestamp = new Date().toISOString();
 
       const { error, data } = await supabase.from("requisitions").insert([
         {
@@ -412,10 +419,10 @@ export default function RequisitionFormTestingPage({
           items: rawItems,
           status: status,
           requisition_type: requisitionType,
-          date_out: new Date().toISOString(),
+          date_out: timestamp,
           date_in: null,
-          created_at: new Date().toISOString(),
-          signatures: signatures,
+          created_at: timestamp,
+          signatures: signaturesPayload,
         },
       ]
       ).select();
@@ -425,6 +432,32 @@ export default function RequisitionFormTestingPage({
         throw new Error(error.message || "Failed to submit requisition. Please ensure the form is complete and try again.");
       }
       console.log("Requisition saved:", data);
+
+      setLastSubmittedCopy({
+        id,
+        studentName: form.studentName || "",
+        studentNumber: form.studentNumber || "",
+        purpose: form.purpose || "",
+        instructor: form.instructor || "",
+        programSection: form.programSection || "",
+        courseCode: form.courseCode || "",
+        room: form.room || "",
+        timeOfUse: form.timeOfUse || "",
+        items: rawItems.map((item) => ({
+          name: item.name,
+          quantity: Number(item.quantity) || 0,
+          unit: item.unit,
+        })),
+        signatures: signaturesPayload,
+        status,
+        requisitionType,
+        dateOut: timestamp,
+        dateIn: null,
+        createdAt: timestamp,
+      });
+
+      setShowVerificationModal(false);
+      setPendingRequisitionType(null);
       setShowSuccessModal(true);
     } catch (err: any) {
       console.error("Submit error:", err);
@@ -434,7 +467,20 @@ export default function RequisitionFormTestingPage({
     }
   };
 
-  const PrintIcon = Icons.print;
+  const handleDownloadCopy = async () => {
+    if (!lastSubmittedCopy) {
+      setErrorMsg("No submitted requisition is available for download yet.");
+      return;
+    }
+
+    try {
+      await downloadRequisitionPdf(lastSubmittedCopy, `Requisition-${lastSubmittedCopy.id || "Copy"}.pdf`);
+    } catch (error: any) {
+      console.error("Failed to download requisition copy:", error);
+      setErrorMsg("Failed to generate PDF copy.");
+    }
+  };
+
   const DownloadIcon = Icons.download;
   const CloseIcon = Icons.close;
   const AlertIcon = Icons.alert;
@@ -455,17 +501,7 @@ export default function RequisitionFormTestingPage({
 
       {/* Toolbar */}
       {!hideToolbar && (
-      <div className="max-w-4xl mx-auto mb-4 flex gap-2 justify-between items-center no-print">
-        <div className="flex gap-2">
-          <button onClick={handlePrint} className="flex items-center gap-2 bg-stone-700 hover:bg-stone-800 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
-            <PrintIcon size={16} />
-            Print
-          </button>
-          <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-stone-600 hover:bg-stone-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
-            <DownloadIcon size={16} />
-            PDF
-          </button>
-        </div>
+      <div className="max-w-4xl mx-auto mb-4 flex gap-2 justify-end items-center no-print">
         <button onClick={() => (onCancel ? onCancel() : router.back())} className="flex items-center gap-2 bg-stone-300 hover:bg-stone-400 text-stone-700 font-bold py-2 px-4 rounded-lg text-sm">
           <CloseIcon size={16} />
           Cancel
@@ -476,7 +512,7 @@ export default function RequisitionFormTestingPage({
       {/* Glass Container with Form */}
       <div className={formContainerClass}>
         {/* Form Paper */}
-        <div ref={formRef} className="bg-white rounded-lg shadow-xl requisition-paper" style={formPaperStyle}>
+        <div className="bg-white rounded-lg shadow-xl requisition-paper" style={formPaperStyle}>
           <form className={formLayoutClass}>
           {/* Header */}
           <div className="border-b-4 border-black p-4 sm:p-6 flex justify-between gap-4 items-start">
@@ -620,7 +656,7 @@ export default function RequisitionFormTestingPage({
                   return (
                   <tr key={idx} className={`text-[9px] sm:text-xs border-b-2 border-black hover:bg-orange-50/20 text-black ${isPrintableBlankRow ? "print-hide-empty-row" : ""}`}>
                     <td className="border-r-2 border-black p-1 relative">
-                      <input type="text" value={item.name} onChange={(e) => handleItemChange(idx, "name", e.target.value)} onFocus={() => !readOnly && item.name && showSuggestions(idx, item.name)} readOnly={readOnly} disabled={readOnly} placeholder={idx === 0 ? "Search items..." : ""} className="w-full bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black placeholder:text-gray-400 focus:bg-orange-50 px-1" />
+                      <input type="text" value={item.name} onChange={(e) => handleItemChange(idx, "name", e.target.value)} onFocus={() => !readOnly && showSuggestions(idx, item.name || "")} readOnly={readOnly} disabled={readOnly} placeholder={idx === 0 ? "Search items..." : ""} className="w-full bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black placeholder:text-gray-400 focus:bg-orange-50 px-1" />
                       <AnimatePresence>
                         {!readOnly && activeSuggestionRow === idx && filteredSuggestions.length > 0 && (
                           <motion.div ref={dropdownRef} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-full left-0 right-0 bg-white border-2 border-orange-500 shadow-xl z-50 max-h-40 overflow-y-auto">
@@ -793,7 +829,7 @@ export default function RequisitionFormTestingPage({
       {!(hideSubmitButtons || readOnly) && (
       <div className="max-w-5xl mx-auto mt-4 flex gap-3 no-print">
         <button 
-          onClick={(e) => handleSubmit(e, "reservation")} 
+          onClick={() => openVerificationModal("reservation")}
           disabled={isSubmitting} 
           className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
         >
@@ -810,7 +846,7 @@ export default function RequisitionFormTestingPage({
           )}
         </button>
         <button 
-          onClick={(e) => handleSubmit(e, "borrow")} 
+          onClick={() => openVerificationModal("borrow")}
           disabled={isSubmitting} 
           className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
         >
@@ -832,6 +868,52 @@ export default function RequisitionFormTestingPage({
       {/* Modals */}
       {!readOnly && (
       <>
+      <AnimatePresence>
+        {showVerificationModal && pendingRequisitionType && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 no-print">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white border border-blue-500 rounded-xl p-6 max-w-lg w-full shadow-lg">
+              <h3 className="font-bold text-black text-lg mb-2">Verify Requisition Form</h3>
+              <p className="text-gray-700 text-sm mb-4">
+                Please verify your details before submitting as {pendingRequisitionType === "borrow" ? "Borrow" : "Reservation"}.
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-xs mb-5">
+                <div>
+                  <p className="font-bold text-gray-700">Name</p>
+                  <p className="text-black">{form.studentName || "-"}</p>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-700">Student No.</p>
+                  <p className="text-black">{form.studentNumber || "-"}</p>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-700">Purpose</p>
+                  <p className="text-black">{form.purpose || "-"}</p>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-700">Items</p>
+                  <p className="text-black">{(form.items || []).filter((i) => i.name.trim() !== "" && i.quantity > 0).length}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-end">
+                <button
+                  onClick={() => { setShowVerificationModal(false); setPendingRequisitionType(null); }}
+                  className="bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold py-2 px-4 rounded-lg text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSubmit(pendingRequisitionType)}
+                  disabled={isSubmitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white font-bold py-2 px-4 rounded-lg text-sm"
+                >
+                  {isSubmitting ? "Submitting..." : "Confirm Submit"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {errorMsg && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 no-print">
@@ -858,9 +940,20 @@ export default function RequisitionFormTestingPage({
               <CheckIcon size={48} className="text-emerald-500 mx-auto mb-4" />
               <h3 className="font-bold text-black text-lg mb-2">Requisition Submitted!</h3>
               <p className="text-gray-600 text-sm mb-4">Your form has been saved and is ready for processing.</p>
-              <button onClick={() => { setShowSuccessModal(false); router.push("/dashboard"); }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg transition-colors">
-                Return to Dashboard
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    void handleDownloadCopy();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-stone-700 hover:bg-stone-800 text-white font-bold py-2 rounded-lg transition-colors"
+                >
+                  <DownloadIcon size={16} />
+                  Download Copy
+                </button>
+                <button onClick={() => { setShowSuccessModal(false); router.push("/dashboard"); }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg transition-colors">
+                  Return to Dashboard
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

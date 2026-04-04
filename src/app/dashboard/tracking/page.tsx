@@ -3,13 +3,12 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Search, Filter, Eye, X, CheckCircle,
-  Clock, MapPin, User, Calendar, ChevronDown, XCircle, Trash2, RotateCcw, Printer, Download
+  Clock, MapPin, User, Calendar, ChevronDown, XCircle, Trash2, RotateCcw, Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import RequisitionFormTestingPage from "../requisition-form-testing/page";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import { downloadRequisitionPdf, type RequisitionPdfData } from "@/lib/requisitionPdf";
 
 interface RequisitionItem {
   name: string;
@@ -35,6 +34,17 @@ interface Requisition {
     endorsedBy?: string;
     releasedBy?: string;
     approvedBy?: string;
+    signatureDates?: {
+      requestedBy?: string;
+      endorsedBy?: string;
+      releasedBy?: string;
+      approvedBy?: string;
+    };
+    documentCode?: {
+      effectiveDate?: string;
+      revisionNo?: string;
+      revisionDate?: string;
+    };
   };
   status: "Reserved" | "Approved" | "Released" | "Completed" | "Cancelled";
   requisition_type?: "borrow" | "reservation" | string;
@@ -42,6 +52,13 @@ interface Requisition {
   date_in: string | null;
   created_at: string;
 }
+
+type InventoryRow = {
+  id: number;
+  item_name: string;
+  quantity: number;
+  low_stock_threshold: number | null;
+};
 
 const toDateTimeLocal = (dateString?: string | null) => {
   if (!dateString) return "";
@@ -67,7 +84,6 @@ export default function RequisitionTrackingPage() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
-  const modalFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchRequisitions();
@@ -218,6 +234,17 @@ export default function RequisitionTrackingPage() {
         releasedBy: selectedRequisition.signatures?.releasedBy || "",
         approvedBy: selectedRequisition.signatures?.approvedBy || "",
       },
+      signatureDates: {
+        requestedBy: selectedRequisition.signatures?.signatureDates?.requestedBy || "",
+        endorsedBy: selectedRequisition.signatures?.signatureDates?.endorsedBy || "",
+        releasedBy: selectedRequisition.signatures?.signatureDates?.releasedBy || "",
+        approvedBy: selectedRequisition.signatures?.signatureDates?.approvedBy || "",
+      },
+      documentCode: {
+        effectiveDate: selectedRequisition.signatures?.documentCode?.effectiveDate || "",
+        revisionNo: selectedRequisition.signatures?.documentCode?.revisionNo || "",
+        revisionDate: selectedRequisition.signatures?.documentCode?.revisionDate || "",
+      },
     };
   }, [selectedRequisition]);
 
@@ -230,10 +257,80 @@ export default function RequisitionTrackingPage() {
     setSelectedRequisition((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
   };
 
+  const calculateStockStatus = (quantity: number, lowStockThreshold: number | null) => {
+    const threshold = lowStockThreshold ?? 5;
+    if (quantity <= 0) return "Out of Stock";
+    if (quantity <= threshold) return "Low Stock";
+    return "In Stock";
+  };
+
+  const deductBorrowedItemsFromInventory = async (req: Requisition) => {
+    const itemDeductions = new Map<string, number>();
+
+    (req.items || []).forEach((item) => {
+      const name = item.name?.trim();
+      const qty = Number(item.quantity) || 0;
+      if (!name || qty <= 0) return;
+      itemDeductions.set(name, (itemDeductions.get(name) || 0) + qty);
+    });
+
+    for (const [itemName, neededQty] of itemDeductions.entries()) {
+      const { data: inventoryRows, error: fetchError } = await supabase
+        .from("inventory")
+        .select("id, item_name, quantity, low_stock_threshold")
+        .eq("item_name", itemName)
+        .order("quantity", { ascending: false });
+
+      if (fetchError) {
+        throw new Error(`Failed to load inventory for ${itemName}.`);
+      }
+
+      const rows = (inventoryRows || []) as InventoryRow[];
+      if (rows.length === 0) {
+        throw new Error(`Item \"${itemName}\" was not found in inventory.`);
+      }
+
+      const totalAvailable = rows.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0);
+      if (totalAvailable < neededQty) {
+        throw new Error(`Not enough stock for \"${itemName}\" (needed ${neededQty}, available ${totalAvailable}).`);
+      }
+
+      let remaining = neededQty;
+
+      for (const row of rows) {
+        if (remaining <= 0) break;
+
+        const currentQty = Number(row.quantity) || 0;
+        if (currentQty <= 0) continue;
+
+        const deductQty = Math.min(currentQty, remaining);
+        const newQty = currentQty - deductQty;
+        const newStock = calculateStockStatus(newQty, row.low_stock_threshold);
+
+        const { error: updateError } = await supabase
+          .from("inventory")
+          .update({ quantity: newQty, stock_status: newStock })
+          .eq("id", row.id);
+
+        if (updateError) {
+          throw new Error(`Failed to update inventory for \"${itemName}\".`);
+        }
+
+        remaining -= deductQty;
+      }
+    }
+  };
+
   const handleApprove = async (req: Requisition) => {
     const nowIso = new Date().toISOString();
     try {
       setRowLoading(req.id, true);
+
+      const isBorrowRequest = (req.requisition_type || activeRecordType).toLowerCase() === "borrow";
+      if (isBorrowRequest) {
+        await deductBorrowedItemsFromInventory(req);
+      }
+
       const { error: updateError } = await supabase
         .from("requisitions")
         .update({ status: "Approved", date_out: nowIso })
@@ -313,90 +410,53 @@ export default function RequisitionTrackingPage() {
   };
 
   const handleDownloadViewedPdf = async () => {
-    if (!modalFormRef.current || !selectedRequisition) return;
+    if (!selectedRequisition) return;
+
+    const payload: RequisitionPdfData = {
+      id: selectedRequisition.id,
+      studentName: selectedRequisition.student_name || "",
+      studentNumber: selectedRequisition.student_number || "",
+      purpose: selectedRequisition.purpose || "",
+      instructor: selectedRequisition.instructor || "",
+      programSection: selectedRequisition.program_section || "",
+      courseCode: selectedRequisition.course_code || "",
+      room: selectedRequisition.room || "",
+      timeOfUse: selectedRequisition.time_of_use || "",
+      items: (selectedRequisition.items || []).map((item) => ({
+        name: item.name,
+        quantity: Number(item.quantity) || 0,
+        unit: item.unit,
+      })),
+      signatures: {
+        requestedBy: selectedRequisition.signatures?.requestedBy || "",
+        endorsedBy: selectedRequisition.signatures?.endorsedBy || "",
+        releasedBy: selectedRequisition.signatures?.releasedBy || "",
+        approvedBy: selectedRequisition.signatures?.approvedBy || "",
+        signatureDates: {
+          requestedBy: selectedRequisition.signatures?.signatureDates?.requestedBy || "",
+          endorsedBy: selectedRequisition.signatures?.signatureDates?.endorsedBy || "",
+          releasedBy: selectedRequisition.signatures?.signatureDates?.releasedBy || "",
+          approvedBy: selectedRequisition.signatures?.signatureDates?.approvedBy || "",
+        },
+        documentCode: {
+          effectiveDate: selectedRequisition.signatures?.documentCode?.effectiveDate || "",
+          revisionNo: selectedRequisition.signatures?.documentCode?.revisionNo || "",
+          revisionDate: selectedRequisition.signatures?.documentCode?.revisionDate || "",
+        },
+      },
+      status: selectedRequisition.status,
+      requisitionType: (selectedRequisition.requisition_type || activeRecordType) as string,
+      dateOut: selectedRequisition.date_out,
+      dateIn: selectedRequisition.date_in,
+      createdAt: selectedRequisition.created_at,
+    };
 
     try {
-      const canvas = await html2canvas(modalFormRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`Requisition-${selectedRequisition.id}.pdf`);
-    } catch (err) {
-      console.error("Failed to generate requisition PDF:", err);
+      await downloadRequisitionPdf(payload, `Requisition-${selectedRequisition.id}.pdf`);
+    } catch (error) {
+      console.error("Tracking PDF export failed:", error);
       alert("Failed to generate PDF.");
     }
-  };
-
-  const handlePrintViewedForm = () => {
-    if (!modalFormRef.current || !selectedRequisition) return;
-    const printWindow = window.open("", "_blank", "width=1100,height=800");
-    if (!printWindow) {
-      alert("Unable to open print preview. Please allow pop-ups and try again.");
-      return;
-    }
-
-    const headContent = document.head.innerHTML;
-    const bodyContent = modalFormRef.current.innerHTML;
-
-    printWindow.document.open();
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Requisition ${selectedRequisition.id}</title>
-          ${headContent}
-          <style>
-            body { margin: 0; padding: 0; background: #ffffff; }
-            #print-root { width: 100%; margin: 0; }
-            @page { size: letter portrait; margin: 0; }
-            .no-print { display: none !important; }
-          </style>
-        </head>
-        <body>
-          <div id="print-root">${bodyContent}</div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-
-    const runPrint = () => {
-      try {
-        printWindow.focus();
-        printWindow.print();
-      } finally {
-        printWindow.close();
-      }
-    };
-
-    const images = Array.from(printWindow.document.images || []);
-    if (images.length === 0) {
-      setTimeout(runPrint, 350);
-      return;
-    }
-
-    let settled = 0;
-    const onAssetSettled = () => {
-      settled += 1;
-      if (settled >= images.length) {
-        setTimeout(runPrint, 150);
-      }
-    };
-
-    images.forEach((img) => {
-      if (img.complete) {
-        onAssetSettled();
-      } else {
-        img.onload = onAssetSettled;
-        img.onerror = onAssetSettled;
-      }
-    });
   };
 
   if (loading) {
@@ -719,18 +779,13 @@ export default function RequisitionTrackingPage() {
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handlePrintViewedForm}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/15 transition-colors"
-                  >
-                    <Printer size={14} />
-                    Print
-                  </button>
-                  <button
-                    onClick={handleDownloadViewedPdf}
+                    onClick={() => {
+                      void handleDownloadViewedPdf();
+                    }}
                     className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/15 transition-colors"
                   >
                     <Download size={14} />
-                    PDF
+                    Download PDF
                   </button>
                   <button
                     onClick={() => setSelectedRequisition(null)}
@@ -743,11 +798,13 @@ export default function RequisitionTrackingPage() {
 
               {/* Content */}
               <div className="overflow-y-auto flex-1 p-4">
-                <div ref={modalFormRef}>
+                <div>
                   {selectedFormData && (
                     <RequisitionFormTestingPage
                       initialData={selectedFormData.form}
                       initialSignatures={selectedFormData.signatures}
+                      initialDocumentCode={selectedFormData.documentCode}
+                      initialSignatureDates={selectedFormData.signatureDates}
                       readOnly
                       hideToolbar
                       hideSubmitButtons

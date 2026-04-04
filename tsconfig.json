@@ -24,11 +24,12 @@
   },
   "include": [
     "next-env.d.ts",
+    "**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.mts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-, "../components/DynamicBackground.tsx", "../components/DynamicBackground.tsx"  ],
+    ".next/dev/types/**/*.ts"
+  ],
   "exclude": ["node_modules", "reference_materials"]
 }

@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useInventory } from "@/context/InventoryContext";
 import { supabase } from "@/lib/supabase";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { Icons } from "@/constants/icons";
 
 // === LOGO ===
@@ -179,26 +177,6 @@ export default function RequisitionFormTestingPage() {
     window.print();
   };
 
-  const handleDownloadPDF = async () => {
-    if (!formRef.current) return;
-    try {
-      const canvas = await html2canvas(formRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`Requisition-${form.studentNumber || "Form"}.pdf`);
-    } catch (error) {
-      setErrorMsg("Failed to generate PDF.");
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -260,7 +238,6 @@ export default function RequisitionFormTestingPage() {
   };
 
   const PrintIcon = Icons.print;
-  const DownloadIcon = Icons.download;
   const CloseIcon = Icons.close;
   const AlertIcon = Icons.alert;
   const CheckIcon = Icons.check;
@@ -274,10 +251,6 @@ export default function RequisitionFormTestingPage() {
         <button onClick={handlePrint} className="flex items-center gap-2 bg-stone-700 hover:bg-stone-800 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
           <PrintIcon size={16} />
           Print
-        </button>
-        <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-stone-600 hover:bg-stone-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
-          <DownloadIcon size={16} />
-          PDF
         </button>
         <button onClick={() => router.back()} className="flex items-center gap-2 bg-stone-300 hover:bg-stone-400 text-stone-700 font-bold py-2 px-4 rounded-lg text-sm">
           <CloseIcon size={16} />

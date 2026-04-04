@@ -47,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning> 
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
@@ -69,19 +69,44 @@ export default function RootLayout({
 
 // Service Worker Registration Component
 function ServiceWorkerRegister() {
+  const nodeEnv = process.env.NODE_ENV;
   return (
     <script
       dangerouslySetInnerHTML={{
         __html: `
           if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js')
-                .then(function(registration) {
-                  console.log('ServiceWorker registered:', registration.scope);
-                })
-                .catch(function(err) {
-                  console.log('ServiceWorker registration failed:', err);
-                });
+            window.addEventListener('load', async function() {
+              try {
+                var appEnv = '${nodeEnv}';
+                var isLocalhost =
+                  window.location.hostname === 'localhost' ||
+                  window.location.hostname === '127.0.0.1';
+                var isSecureContext = window.location.protocol === 'https:';
+                var shouldRegisterSW = appEnv === 'production' && isSecureContext;
+
+                if (!shouldRegisterSW || isLocalhost) {
+                  var registrations = await navigator.serviceWorker.getRegistrations();
+                  await Promise.all(registrations.map(function(reg) { return reg.unregister(); }));
+
+                  if ('caches' in window) {
+                    var cacheKeys = await caches.keys();
+                    await Promise.all(
+                      cacheKeys
+                        .filter(function(key) { return key.indexOf('cdm-labtrack') === 0; })
+                        .map(function(key) { return caches.delete(key); })
+                    );
+                  }
+
+                  console.log('ServiceWorker disabled for non-production/non-https context and cache cleared.');
+                  return;
+                }
+
+                var registration = await navigator.serviceWorker.register('/sw.js?v=3');
+                console.log('ServiceWorker registered:', registration.scope);
+                registration.update();
+              } catch (err) {
+                console.log('ServiceWorker registration failed:', err);
+              }
             });
           }
         `,

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cdm-labtrack-v1';
+const CACHE_NAME = 'cdm-labtrack-v2';
 const urlsToCache = [
   '/',
   '/dashboard',
@@ -46,11 +46,41 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
+
+  const requestUrl = new URL(event.request.url);
+
+  // Skip cross-origin requests and Next.js build assets to avoid stale JS/CSS chunks.
+  if (requestUrl.origin !== self.location.origin || requestUrl.pathname.startsWith('/_next/')) {
+    return;
+  }
+
+  // Keep service worker script itself network-driven so updates are picked up quickly.
+  if (requestUrl.pathname === '/sw.js') {
+    return;
+  }
   
   // Skip API calls and Supabase requests (always fetch from network)
-  if (event.request.url.includes('/api/') || 
+  if (event.request.url.includes('/api/') ||
       event.request.url.includes('supabase') ||
       event.request.url.includes('googleapis')) {
+    return;
+  }
+
+  // Use network-first for page navigations so updated app code is served immediately.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/dashboard')))
+    );
     return;
   }
 
