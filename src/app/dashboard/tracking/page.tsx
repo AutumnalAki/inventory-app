@@ -560,7 +560,11 @@ export default function RequisitionTrackingPage() {
 
       {/* --- STAT CARDS --- */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">
-        {Object.entries(statusCounts).map(([status, count]) => (
+        {Object.entries(statusCounts)
+          .filter(([status]) =>
+            activeRecordType === "borrow" ? status !== "Reserved" : status !== "Borrowed"
+          )
+          .map(([status, count]) => (
           <div key={status} className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center gap-2 md:gap-3">
             <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${getStatusColor(status).split(" ")[0]}`}>
               <CheckCircle size={16} className="md:w-5 md:h-5" />
