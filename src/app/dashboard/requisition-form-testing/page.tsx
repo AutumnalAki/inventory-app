@@ -11,9 +11,18 @@ import { Icons } from "@/constants/icons";
 
 // === LOGO ===
 const LOGO_URL = "/favicon.ico";
+const TIME_OF_USE_OPTIONS = [
+  "",
+  "7:00 AM - 9:00 AM",
+  "9:00 AM - 11:00 AM",
+  "11:00 AM - 1:00 PM",
+  "1:00 PM - 3:00 PM",
+  "3:00 PM - 5:00 PM",
+  "5:00 PM - 7:00 PM",
+];
 
 // === TYPES ===
-interface RequisitionItem {
+export interface RequisitionItem {
   name: string;
   quantity: number;
   unit: string;
@@ -21,7 +30,7 @@ interface RequisitionItem {
   dateIn?: string;
 }
 
-interface RequisitionForm {
+export interface RequisitionForm {
   id: string;
   studentName: string;
   studentNumber: string;
@@ -38,13 +47,97 @@ interface RequisitionForm {
   createdAt?: string;
 }
 
+type FormSignatures = {
+  requestedBy: string;
+  endorsedBy: string;
+  releasedBy: string;
+  approvedBy: string;
+};
+
+type FormDocumentCode = {
+  effectiveDate: string;
+  revisionNo: string;
+  revisionDate: string;
+};
+
+type FormSignatureDates = {
+  requestedBy: string;
+  endorsedBy: string;
+  releasedBy: string;
+  approvedBy: string;
+};
+
+type RequisitionFormTestingPageProps = {
+  initialData?: Partial<RequisitionForm>;
+  initialSignatures?: Partial<FormSignatures>;
+  initialDocumentCode?: Partial<FormDocumentCode>;
+  initialSignatureDates?: Partial<FormSignatureDates>;
+  readOnly?: boolean;
+  hideToolbar?: boolean;
+  hideSubmitButtons?: boolean;
+  embedded?: boolean;
+  onCancel?: () => void;
+};
+
+const EMPTY_ITEM: RequisitionItem = { name: "", quantity: 0, unit: "", dateOut: "", dateIn: "" };
+
+const buildInitialFormState = (initialData?: Partial<RequisitionForm>, targetRows = 18): Partial<RequisitionForm> => {
+  const providedItems = (initialData?.items || []).map((item) => ({
+    ...EMPTY_ITEM,
+    ...item,
+    quantity: Number(item.quantity) || 0,
+  }));
+  const paddedItems = [...providedItems];
+  while (paddedItems.length < targetRows) {
+    paddedItems.push({ ...EMPTY_ITEM });
+  }
+
+  return {
+    studentName: "",
+    studentNumber: "",
+    purpose: "",
+    instructor: "",
+    programSection: "",
+    courseCode: "",
+    room: "",
+    timeOfUse: "",
+    ...initialData,
+    items: paddedItems,
+  };
+};
+
+const formatDisplayDate = (value?: string | null): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatDisplayDateTime = (value?: string | null): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 // === HELPER: DetailInput ===
 const DetailInput: React.FC<{
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-}> = ({ label, value, onChange, placeholder }) => (
+  disabled?: boolean;
+}> = ({ label, value, onChange, placeholder, disabled = false }) => (
   <div className="flex items-stretch h-full min-h-[2.25rem] border-b-2 border-black last:border-b-0 bg-white hover:bg-orange-50/30 transition-colors">
     <div className="w-32 shrink-0 flex items-center px-3 font-bold border-r-2 border-black">
       <span className="text-[9px] sm:text-xs leading-tight text-black">{label}</span>
@@ -53,6 +146,8 @@ const DetailInput: React.FC<{
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      readOnly={disabled}
+      disabled={disabled}
       placeholder={placeholder}
       className="flex-1 px-3 py-1 bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black placeholder:text-gray-400 placeholder:italic focus:bg-orange-50/50"
     />
@@ -60,7 +155,7 @@ const DetailInput: React.FC<{
 );
 
 // === HELPER: SignatureBlock ===
-const SignatureBlock: React.FC<{ label: string; title: string; name?: string; signatureName?: string; onSignatureChange?: (v: string) => void }> = ({ label, title, name, signatureName, onSignatureChange }) => (
+const SignatureBlock: React.FC<{ label: string; title: string; name?: string; signatureName?: string; onSignatureChange?: (v: string) => void; disabled?: boolean }> = ({ label, title, name, signatureName, onSignatureChange, disabled = false }) => (
   <div className="border-r-2 border-black last:border-r-0 p-2 text-center border-t-2 flex flex-col">
     <div className="flex-1 border-b-2 border-black mb-1 min-h-[2.5rem]"></div>
     <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-tight text-black">{title}</p>
@@ -71,6 +166,8 @@ const SignatureBlock: React.FC<{ label: string; title: string; name?: string; si
         type="text"
         value={signatureName}
         onChange={(e) => onSignatureChange(e.target.value)}
+        readOnly={disabled}
+        disabled={disabled}
         placeholder="___________"
         className="text-[7px] sm:text-[8px] text-center text-black bg-transparent outline-none w-full mt-1 placeholder:text-gray-400"
       />
@@ -78,7 +175,18 @@ const SignatureBlock: React.FC<{ label: string; title: string; name?: string; si
   </div>
 );
 
-export default function RequisitionFormTestingPage() {
+export default function RequisitionFormTestingPage({
+  initialData,
+  initialSignatures,
+  initialDocumentCode,
+  initialSignatureDates,
+  readOnly = false,
+  hideToolbar = false,
+  hideSubmitButtons = false,
+  embedded = false,
+  onCancel,
+}: RequisitionFormTestingPageProps = {}) {
+  const tableRowTarget = 18;
   const router = useRouter();
   const { inventory: inventoryItems, refreshData } = useInventory();
   const formRef = useRef<HTMLDivElement>(null);
@@ -89,22 +197,26 @@ export default function RequisitionFormTestingPage() {
   const [filteredSuggestions, setFilteredSuggestions] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [form, setForm] = useState<Partial<RequisitionForm>>({
-    studentName: "",
-    studentNumber: "",
-    purpose: "",
-    instructor: "",
-    programSection: "",
-    courseCode: "",
-    room: "",
-    timeOfUse: "",
-    items: Array(18).fill({ name: "", quantity: 0, unit: "", dateOut: "", dateIn: "" }),
-  });
-  const [signatures, setSignatures] = useState({
+  const [form, setForm] = useState<Partial<RequisitionForm>>(() => buildInitialFormState(initialData, tableRowTarget));
+  const [signatures, setSignatures] = useState<FormSignatures>({
     requestedBy: "",
     endorsedBy: "",
     releasedBy: "",
     approvedBy: "",
+    ...initialSignatures,
+  });
+  const [documentCode, setDocumentCode] = useState<FormDocumentCode>({
+    effectiveDate: "",
+    revisionNo: "00",
+    revisionDate: "",
+    ...initialDocumentCode,
+  });
+  const [signatureDates, setSignatureDates] = useState<FormSignatureDates>({
+    requestedBy: "",
+    endorsedBy: "",
+    releasedBy: "",
+    approvedBy: "",
+    ...initialSignatureDates,
   });
 
   const availableInventory = useMemo(() => {
@@ -117,7 +229,33 @@ export default function RequisitionFormTestingPage() {
   }, [inventoryItems]);
 
   useEffect(() => {
-    refreshData();
+    if (initialData) {
+      setForm(buildInitialFormState(initialData, tableRowTarget));
+    }
+  }, [initialData, tableRowTarget]);
+
+  useEffect(() => {
+    if (initialSignatures) {
+      setSignatures((prev) => ({ ...prev, ...initialSignatures }));
+    }
+  }, [initialSignatures]);
+
+  useEffect(() => {
+    if (initialDocumentCode) {
+      setDocumentCode((prev) => ({ ...prev, ...initialDocumentCode }));
+    }
+  }, [initialDocumentCode]);
+
+  useEffect(() => {
+    if (initialSignatureDates) {
+      setSignatureDates((prev) => ({ ...prev, ...initialSignatureDates }));
+    }
+  }, [initialSignatureDates]);
+
+  useEffect(() => {
+    if (!readOnly) {
+      refreshData();
+    }
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setActiveSuggestionRow(null);
@@ -128,7 +266,14 @@ export default function RequisitionFormTestingPage() {
   }, [refreshData]);
 
   const handleFieldChange = (field: string, value: string) => {
+    if (readOnly) return;
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleStudentNumberChange = (value: string) => {
+    if (readOnly) return;
+    const digitsOnly = value.replace(/\D/g, "");
+    setForm((prev) => ({ ...prev, studentNumber: digitsOnly }));
   };
 
   const showSuggestions = (index: number, val: string, items?: any[]) => {
@@ -152,13 +297,18 @@ export default function RequisitionFormTestingPage() {
   };
 
   const handleItemChange = (index: number, field: string, value: string | number) => {
+    if (readOnly) return;
     const newItems = [...(form.items || [])];
     let itemValue: string | number = value;
 
     if (field === "quantity") {
       const parsed = parseInt(value as string, 10);
       itemValue = isNaN(parsed) || parsed < 0 ? 0 : parsed;
-      newItems[index].unit = Number(itemValue) <= 1 ? "pc" : "pcs";
+      if (Number(itemValue) <= 0) {
+        newItems[index].unit = "";
+      } else {
+        newItems[index].unit = Number(itemValue) === 1 ? "pc" : "pcs";
+      }
     }
 
     if (field === "name" && String(value).trim() === "") {
@@ -176,6 +326,7 @@ export default function RequisitionFormTestingPage() {
   };
 
   const selectSuggestion = (index: number, suggestion: any) => {
+    if (readOnly) return;
     if (!suggestion.isAvailable) return;
     const newItems = [...(form.items || [])];
     const qty = Number(newItems[index].quantity) || 1;
@@ -214,17 +365,15 @@ export default function RequisitionFormTestingPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, requisitionType: "borrow" | "reservation") => {
     e.preventDefault();
+    if (readOnly) return;
 
     const checks = [
       [form.studentName?.trim(), "Student Name"],
       [form.studentNumber?.trim(), "Student Number"],
       [form.purpose?.trim(), "Purpose"],
       [form.instructor?.trim(), "Instructor"],
-      [form.programSection?.trim(), "Program & Section"],
-      [form.courseCode?.trim(), "Course Code"],
-      [form.room?.trim(), "Room"],
     ];
 
     for (const [value, label] of checks) {
@@ -246,6 +395,9 @@ export default function RequisitionFormTestingPage() {
       const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
       const id = `REQ-${year}-${random}`;
 
+      // New entries start pending approval; tab placement is controlled by requisition_type.
+      const status = "Reserved";
+
       const { error, data } = await supabase.from("requisitions").insert([
         {
           id,
@@ -258,7 +410,8 @@ export default function RequisitionFormTestingPage() {
           room: form.room,
           time_of_use: form.timeOfUse,
           items: rawItems,
-          status: "Reserved",
+          status: status,
+          requisition_type: requisitionType,
           date_out: new Date().toISOString(),
           date_in: null,
           created_at: new Date().toISOString(),
@@ -287,11 +440,21 @@ export default function RequisitionFormTestingPage() {
   const AlertIcon = Icons.alert;
   const CheckIcon = Icons.check;
 
+  const outerWrapperClass = embedded ? "" : "min-h-screen bg-black/50 py-4 px-3 sm:px-6";
+  const formContainerClass = embedded
+    ? "requisition-container max-w-4xl mx-auto"
+    : "requisition-container max-w-4xl mx-auto backdrop-blur-md bg-black/40 rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/20 no-print";
+  const formPaperStyle = embedded || readOnly ? undefined : { aspectRatio: "8.5/11" as const };
+  const formLayoutClass = embedded || readOnly
+    ? "border-4 border-black flex flex-col overflow-visible"
+    : "border-4 border-black h-full flex flex-col overflow-auto";
+
   return (
-    <div className="min-h-screen bg-black/50 py-4 px-3 sm:px-6">
-      <style>{`@media print { body { background: white; } .no-print { display: none !important; } .bg-black\/50 { background: white !important; } }`}</style>
+    <div className={outerWrapperClass}>
+      <style>{`@media print { body { background: white; margin: 0 !important; } .no-print { display: none !important; } .bg-black\/50 { background: white !important; } .requisition-container { max-width: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; background: white !important; } .requisition-paper { border-radius: 0 !important; box-shadow: none !important; width: 100% !important; margin: 0 !important; } select { appearance: none !important; -webkit-appearance: none !important; -moz-appearance: none !important; background-image: none !important; } .requisition-paper, .requisition-paper form { overflow: visible !important; height: auto !important; max-height: none !important; } .requisition-paper ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; } .submission-agreement { display: none !important; } .print-hide-empty-row { display: none !important; } }`}</style>
 
       {/* Toolbar */}
+      {!hideToolbar && (
       <div className="max-w-4xl mx-auto mb-4 flex gap-2 justify-between items-center no-print">
         <div className="flex gap-2">
           <button onClick={handlePrint} className="flex items-center gap-2 bg-stone-700 hover:bg-stone-800 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
@@ -303,17 +466,18 @@ export default function RequisitionFormTestingPage() {
             PDF
           </button>
         </div>
-        <button onClick={() => router.back()} className="flex items-center gap-2 bg-stone-300 hover:bg-stone-400 text-stone-700 font-bold py-2 px-4 rounded-lg text-sm">
+        <button onClick={() => (onCancel ? onCancel() : router.back())} className="flex items-center gap-2 bg-stone-300 hover:bg-stone-400 text-stone-700 font-bold py-2 px-4 rounded-lg text-sm">
           <CloseIcon size={16} />
           Cancel
         </button>
       </div>
+      )}
 
       {/* Glass Container with Form */}
-      <div className="max-w-4xl mx-auto backdrop-blur-md bg-black/40 rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/20 no-print">
+      <div className={formContainerClass}>
         {/* Form Paper */}
-        <div ref={formRef} className="bg-white rounded-lg shadow-xl" style={{ aspectRatio: '8.5/11' }}>
-          <form onSubmit={handleSubmit} className="border-4 border-black h-full flex flex-col overflow-auto">
+        <div ref={formRef} className="bg-white rounded-lg shadow-xl requisition-paper" style={formPaperStyle}>
+          <form className={formLayoutClass}>
           {/* Header */}
           <div className="border-b-4 border-black p-4 sm:p-6 flex justify-between gap-4 items-start">
             <div className="flex gap-4 flex-1">
@@ -331,9 +495,47 @@ export default function RequisitionFormTestingPage() {
             <div className="border-2 border-black text-[10px] w-56 flex-shrink-0">
               <div className="bg-black text-white p-1 font-bold text-center border-b-2 border-black uppercase">Document Code</div>
               <div className="grid grid-cols-3 text-[9px] font-bold text-black">
-                <div className="border-r-2 border-b-2 border-black p-1 text-center"><span className="text-[8px] text-black">Effective Date</span></div>
-                <div className="border-r-2 border-b-2 border-black p-1 text-center"><span className="text-[8px] text-black">Revision No.</span><div className="text-black">00</div></div>
-                <div className="border-b-2 border-black p-1 text-center"><span className="text-[8px] text-black">Revision Date</span></div>
+                <div className="border-r-2 border-b-2 border-black p-1 text-center">
+                  <span className="text-[8px] text-black block">Effective Date</span>
+                  {readOnly ? (
+                    <div className="w-full mt-1 text-[8px] text-black text-center min-h-[12px]">
+                      {formatDisplayDate(documentCode.effectiveDate)}
+                    </div>
+                  ) : (
+                    <input
+                      type="date"
+                      value={documentCode.effectiveDate}
+                      onChange={(e) => setDocumentCode((prev) => ({ ...prev, effectiveDate: e.target.value }))}
+                      className="w-full mt-1 text-[8px] text-black bg-transparent outline-none text-center"
+                    />
+                  )}
+                </div>
+                <div className="border-r-2 border-b-2 border-black p-1 text-center">
+                  <span className="text-[8px] text-black block">Revision No.</span>
+                  <input
+                    type="text"
+                    value={documentCode.revisionNo}
+                    onChange={(e) => setDocumentCode((prev) => ({ ...prev, revisionNo: e.target.value }))}
+                    readOnly={readOnly}
+                    disabled={readOnly}
+                    className="w-full mt-1 text-[9px] font-bold text-black bg-transparent outline-none text-center"
+                  />
+                </div>
+                <div className="border-b-2 border-black p-1 text-center">
+                  <span className="text-[8px] text-black block">Revision Date</span>
+                  {readOnly ? (
+                    <div className="w-full mt-1 text-[8px] text-black text-center min-h-[12px]">
+                      {formatDisplayDate(documentCode.revisionDate)}
+                    </div>
+                  ) : (
+                    <input
+                      type="date"
+                      value={documentCode.revisionDate}
+                      onChange={(e) => setDocumentCode((prev) => ({ ...prev, revisionDate: e.target.value }))}
+                      className="w-full mt-1 text-[8px] text-black bg-transparent outline-none text-center"
+                    />
+                  )}
+                </div>
               </div>
               <div className="border-t-2 border-black p-1 text-center bg-yellow-50 text-[10px] font-mono font-bold text-black">AUTOGEN-DLI-SUBMIT</div>
             </div>
@@ -342,27 +544,59 @@ export default function RequisitionFormTestingPage() {
           {/* Form Fields */}
           <div className="grid grid-cols-2 border-b-4 border-black">
             <div className="border-r-4 border-black flex flex-col">
-              <DetailInput label="Name:" value={form.studentName || ""} onChange={(v) => handleFieldChange("studentName", v)} placeholder="Surname, Firstname M.I." />
-              <DetailInput label="Student No.:" value={form.studentNumber || ""} onChange={(v) => handleFieldChange("studentNumber", v)} placeholder="Enter student number" />
-              <DetailInput label="Purpose:" value={form.purpose || ""} onChange={(v) => handleFieldChange("purpose", v)} placeholder="Enter purpose" />
-              <DetailInput label="Instructor:" value={form.instructor || ""} onChange={(v) => handleFieldChange("instructor", v)} placeholder="Enter instructor" />
+              <DetailInput label="Name:" value={form.studentName || ""} onChange={(v) => handleFieldChange("studentName", v)} placeholder="Surname, Firstname M.I." disabled={readOnly} />
+              <div className="flex items-stretch h-full min-h-[2.25rem] border-b-2 border-black bg-white hover:bg-orange-50/30 transition-colors">
+                <div className="w-32 shrink-0 flex items-center px-3 font-bold border-r-2 border-black">
+                  <span className="text-[9px] sm:text-xs leading-tight text-black">Student No.:</span>
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={form.studentNumber || ""}
+                  onChange={(e) => handleStudentNumberChange(e.target.value)}
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  placeholder="Enter student number"
+                  className="flex-1 px-3 py-1 bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black placeholder:text-gray-400 placeholder:italic focus:bg-orange-50/50"
+                />
+              </div>
+              <DetailInput label="Purpose:" value={form.purpose || ""} onChange={(v) => handleFieldChange("purpose", v)} placeholder="Enter purpose" disabled={readOnly} />
+              <DetailInput label="Instructor:" value={form.instructor || ""} onChange={(v) => handleFieldChange("instructor", v)} placeholder="Enter instructor" disabled={readOnly} />
             </div>
             <div className="flex flex-col">
-              <DetailInput label="Program & Section:" value={form.programSection || ""} onChange={(v) => handleFieldChange("programSection", v)} placeholder="Enter program/section" />
-              <DetailInput label="Course/Code:" value={form.courseCode || ""} onChange={(v) => handleFieldChange("courseCode", v)} placeholder="Enter course/code" />
-              <DetailInput label="Room:" value={form.room || ""} onChange={(v) => handleFieldChange("room", v)} placeholder="Enter room" />
+              <DetailInput label="Program & Section:" value={form.programSection || ""} onChange={(v) => handleFieldChange("programSection", v)} placeholder="Enter program/section" disabled={readOnly} />
+              <DetailInput label="Course/Code:" value={form.courseCode || ""} onChange={(v) => handleFieldChange("courseCode", v)} placeholder="Enter course/code" disabled={readOnly} />
+              <DetailInput label="Room:" value={form.room || ""} onChange={(v) => handleFieldChange("room", v)} placeholder="Enter room" disabled={readOnly} />
               <div className="flex items-stretch h-full min-h-[2.25rem] border-b-2 border-black bg-white hover:bg-orange-50/30">
                 <div className="w-32 shrink-0 flex items-center px-3 font-bold border-r-2 border-black">
                   <span className="text-[9px] sm:text-xs text-black">Time of use:</span>
                 </div>
-                <input type="text" value={form.timeOfUse || ""} onChange={(e) => handleFieldChange("timeOfUse", e.target.value)} placeholder="Start to End" className="flex-1 px-3 py-1 bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black placeholder:text-gray-400 placeholder:italic focus:bg-orange-50/50" />
+                {readOnly ? (
+                  <div className="flex-1 px-3 py-1 text-[10px] sm:text-xs font-medium text-black min-h-[1.5rem]">
+                    {form.timeOfUse || ""}
+                  </div>
+                ) : (
+                  <select
+                    value={form.timeOfUse || ""}
+                    onChange={(e) => handleFieldChange("timeOfUse", e.target.value)}
+                    className="flex-1 px-3 py-1 bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black focus:bg-orange-50/50"
+                  >
+                    <option value="">Select time slot (optional)</option>
+                    {TIME_OF_USE_OPTIONS.filter((option) => option !== "").map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto w-full border-b-4 border-black">
-            <table className="w-full border-collapse min-w-[600px]">
+          <div className="w-full border-b-4 border-black">
+            <table className="w-full border-collapse">
               <thead>
                 <tr className="text-center text-[9px] sm:text-xs font-bold bg-stone-200 border-b-2 border-black text-black">
                   <th className="border-r-2 border-black py-2 px-1 w-[45%] text-black">Equipment/Supplies/Apparatus</th>
@@ -373,12 +607,22 @@ export default function RequisitionFormTestingPage() {
                 </tr>
               </thead>
               <tbody>
-                {(form.items || []).map((item, idx) => (
-                  <tr key={idx} className="text-[9px] sm:text-xs border-b-2 border-black hover:bg-orange-50/20 text-black">
+                {(form.items || []).map((item, idx) => {
+                  const isPrintableBlankRow =
+                    readOnly &&
+                    idx >= 10 &&
+                    !item.name &&
+                    Number(item.quantity || 0) <= 0 &&
+                    !item.unit &&
+                    !item.dateOut &&
+                    !item.dateIn;
+
+                  return (
+                  <tr key={idx} className={`text-[9px] sm:text-xs border-b-2 border-black hover:bg-orange-50/20 text-black ${isPrintableBlankRow ? "print-hide-empty-row" : ""}`}>
                     <td className="border-r-2 border-black p-1 relative">
-                      <input type="text" value={item.name} onChange={(e) => handleItemChange(idx, "name", e.target.value)} onFocus={() => item.name && showSuggestions(idx, item.name)} placeholder={idx === 0 ? "Search items..." : ""} className="w-full bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black placeholder:text-gray-400 focus:bg-orange-50 px-1" />
+                      <input type="text" value={item.name} onChange={(e) => handleItemChange(idx, "name", e.target.value)} onFocus={() => !readOnly && item.name && showSuggestions(idx, item.name)} readOnly={readOnly} disabled={readOnly} placeholder={idx === 0 ? "Search items..." : ""} className="w-full bg-transparent outline-none text-[10px] sm:text-xs font-medium text-black placeholder:text-gray-400 focus:bg-orange-50 px-1" />
                       <AnimatePresence>
-                        {activeSuggestionRow === idx && filteredSuggestions.length > 0 && (
+                        {!readOnly && activeSuggestionRow === idx && filteredSuggestions.length > 0 && (
                           <motion.div ref={dropdownRef} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-full left-0 right-0 bg-white border-2 border-orange-500 shadow-xl z-50 max-h-40 overflow-y-auto">
                             {filteredSuggestions.slice(0, 5).map((sug, i) => (
                               <button key={i} type="button" onClick={() => selectSuggestion(idx, sug)} className="w-full text-left px-2 py-2 hover:bg-orange-100 border-b border-gray-200 text-[9px]">
@@ -393,24 +637,44 @@ export default function RequisitionFormTestingPage() {
                       </AnimatePresence>
                     </td>
                     <td className="border-r-2 border-black p-1 text-center">
-                      <input type="number" min="0" value={item.quantity || 0} onChange={(e) => handleItemChange(idx, "quantity", e.target.value)} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50" />
+                      <input type="number" min="0" value={Number(item.quantity) > 0 ? item.quantity : ""} onChange={(e) => handleItemChange(idx, "quantity", e.target.value)} readOnly={readOnly} disabled={readOnly} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50" />
                     </td>
                     <td className="border-r-2 border-black p-1 text-center">
-                      <select value={item.unit || "pcs"} onChange={(e) => handleItemChange(idx, "unit", e.target.value)} className="w-full bg-transparent outline-none text-[10px] sm:text-xs text-black focus:bg-orange-50">
-                        <option value="pc">pc</option>
-                        <option value="pcs">pcs</option>
-                        <option value="set">set</option>
-                        <option value="box">box</option>
-                      </select>
+                      {readOnly ? (
+                        <div className="w-full text-center text-[10px] sm:text-xs text-black min-h-[1rem]">
+                          {item.unit || ""}
+                        </div>
+                      ) : (
+                        <select value={item.unit || ""} onChange={(e) => handleItemChange(idx, "unit", e.target.value)} className="w-full bg-transparent outline-none text-[10px] sm:text-xs text-black focus:bg-orange-50">
+                          <option value=""></option>
+                          <option value="pc">pc</option>
+                          <option value="pcs">pcs</option>
+                          <option value="set">set</option>
+                          <option value="box">box</option>
+                        </select>
+                      )}
                     </td>
                     <td className="border-r-2 border-black p-1 text-center">
-                      <input type="datetime-local" value={item.dateOut || ""} onChange={(e) => handleItemChange(idx, "dateOut", e.target.value)} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50 cursor-pointer" />
+                      {readOnly ? (
+                        <div className="w-full text-center text-[10px] sm:text-xs text-black min-h-[1rem]">
+                          {formatDisplayDateTime(item.dateOut)}
+                        </div>
+                      ) : (
+                        <input type="datetime-local" value={item.dateOut || ""} onChange={(e) => handleItemChange(idx, "dateOut", e.target.value)} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50 cursor-pointer" />
+                      )}
                     </td>
                     <td className="p-1 text-center">
-                      <input type="datetime-local" value={item.dateIn || ""} onChange={(e) => handleItemChange(idx, "dateIn", e.target.value)} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50 cursor-pointer" />
+                      {readOnly ? (
+                        <div className="w-full text-center text-[10px] sm:text-xs text-black min-h-[1rem]">
+                          {formatDisplayDateTime(item.dateIn)}
+                        </div>
+                      ) : (
+                        <input type="datetime-local" value={item.dateIn || ""} onChange={(e) => handleItemChange(idx, "dateIn", e.target.value)} className="w-full bg-transparent outline-none text-center text-[10px] sm:text-xs text-black focus:bg-orange-50 cursor-pointer" />
+                      )}
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>
@@ -421,66 +685,153 @@ export default function RequisitionFormTestingPage() {
               label="Requested by:"
               title="Student/Instructor"
               signatureName={signatures.requestedBy}
+              disabled={readOnly}
               onSignatureChange={(v) => setSignatures((prev) => ({ ...prev, requestedBy: v }))}
             />
             <SignatureBlock
               label="Endorsed by:"
               title="Instructor/Adviser"
               signatureName={signatures.endorsedBy}
+              disabled={readOnly}
               onSignatureChange={(v) => setSignatures((prev) => ({ ...prev, endorsedBy: v }))}
             />
             <SignatureBlock
               label="Released by:"
               title="Lab. Technician"
               signatureName={signatures.releasedBy}
+              disabled={readOnly}
               onSignatureChange={(v) => setSignatures((prev) => ({ ...prev, releasedBy: v }))}
             />
             <SignatureBlock
               label="Approved by:"
               title="Lab. Head/Prof. Chair"
               signatureName={signatures.approvedBy}
+              disabled={readOnly}
               onSignatureChange={(v) => setSignatures((prev) => ({ ...prev, approvedBy: v }))}
             />
           </div>
 
           {/* Date Row */}
           <div className="grid grid-cols-4 border-b-4 border-black">
-            <div className="border-r-2 border-black p-2 text-center text-[8px] font-bold text-black">Date: _________</div>
-            <div className="border-r-2 border-black p-2 text-center text-[8px] font-bold text-black">Date: _________</div>
-            <div className="border-r-2 border-black p-2 text-center text-[8px] font-bold text-black">Date: _________</div>
-            <div className="p-2 text-center text-[8px] font-bold text-black">Date: _________</div>
+            <div className="border-r-2 border-black p-2 text-center text-[8px] font-bold text-black">
+              <span>Date:</span>
+              {readOnly ? (
+                <div className="w-full mt-1 text-[8px] text-black text-center min-h-[12px]">
+                  {formatDisplayDate(signatureDates.requestedBy)}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  value={signatureDates.requestedBy}
+                  onChange={(e) => setSignatureDates((prev) => ({ ...prev, requestedBy: e.target.value }))}
+                  className="w-full mt-1 text-[8px] text-black bg-transparent outline-none text-center"
+                />
+              )}
+            </div>
+            <div className="border-r-2 border-black p-2 text-center text-[8px] font-bold text-black">
+              <span>Date:</span>
+              {readOnly ? (
+                <div className="w-full mt-1 text-[8px] text-black text-center min-h-[12px]">
+                  {formatDisplayDate(signatureDates.endorsedBy)}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  value={signatureDates.endorsedBy}
+                  onChange={(e) => setSignatureDates((prev) => ({ ...prev, endorsedBy: e.target.value }))}
+                  className="w-full mt-1 text-[8px] text-black bg-transparent outline-none text-center"
+                />
+              )}
+            </div>
+            <div className="border-r-2 border-black p-2 text-center text-[8px] font-bold text-black">
+              <span>Date:</span>
+              {readOnly ? (
+                <div className="w-full mt-1 text-[8px] text-black text-center min-h-[12px]">
+                  {formatDisplayDate(signatureDates.releasedBy)}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  value={signatureDates.releasedBy}
+                  onChange={(e) => setSignatureDates((prev) => ({ ...prev, releasedBy: e.target.value }))}
+                  className="w-full mt-1 text-[8px] text-black bg-transparent outline-none text-center"
+                />
+              )}
+            </div>
+            <div className="p-2 text-center text-[8px] font-bold text-black">
+              <span>Date:</span>
+              {readOnly ? (
+                <div className="w-full mt-1 text-[8px] text-black text-center min-h-[12px]">
+                  {formatDisplayDate(signatureDates.approvedBy)}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  value={signatureDates.approvedBy}
+                  onChange={(e) => setSignatureDates((prev) => ({ ...prev, approvedBy: e.target.value }))}
+                  className="w-full mt-1 text-[8px] text-black bg-transparent outline-none text-center"
+                />
+              )}
+            </div>
           </div>
 
           {/* Agreement */}
-          <div className="bg-yellow-50 p-4 flex gap-3">
+          {!readOnly && (
+          <div className="bg-yellow-50 p-4 flex gap-3 submission-agreement">
             <AlertIcon size={24} className="text-orange-600 flex-shrink-0" />
             <div>
               <p className="font-bold text-orange-700 text-xs uppercase tracking-tight">Submission Agreement</p>
               <p className="text-[10px] text-black mt-1">By submitting this form, I acknowledge responsibility for the equipment requested. I agree to adhere to laboratory safety protocols and return all items to their original condition.</p>
             </div>
           </div>
+          )}
           </form>
         </div>
       </div>
 
       {/* Submit */}
+      {!(hideSubmitButtons || readOnly) && (
       <div className="max-w-5xl mx-auto mt-4 flex gap-3 no-print">
-        <button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 bg-stone-700 hover:bg-stone-800 disabled:bg-stone-700/50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 text-sm">
+        <button 
+          onClick={(e) => handleSubmit(e, "reservation")} 
+          disabled={isSubmitting} 
+          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+        >
           {isSubmitting ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Submitting...
+              Processing...
             </>
           ) : (
             <>
               <CheckIcon size={18} />
-              Submit & Save Form
+              Reservation
+            </>
+          )}
+        </button>
+        <button 
+          onClick={(e) => handleSubmit(e, "borrow")} 
+          disabled={isSubmitting} 
+          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <CheckIcon size={18} />
+              Borrow
             </>
           )}
         </button>
       </div>
+      )}
 
       {/* Modals */}
+      {!readOnly && (
+      <>
       <AnimatePresence>
         {errorMsg && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 no-print">
@@ -514,6 +865,8 @@ export default function RequisitionFormTestingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>
+      )}
     </div>
   );
 }

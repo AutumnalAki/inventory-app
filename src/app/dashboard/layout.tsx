@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle, Activity, CalendarClock, Bell, Layers
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle, Activity, Bell, Layers
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -272,14 +272,10 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   // Faculty and up can view Activity Log
   const canViewActivityLog = ["developer", "superadmin", "administrator", "program chair", "faculty"].includes(normalizedRole);
 
-  // Faculty + Lab roles can view Reservations
-  const canViewReservations = ["developer", "superadmin", "administrator", "program chair", "faculty", "me lab", "ce lab", "ece lab", "cpe lab", "chem lab", "phys lab", "ee lab"].includes(normalizedRole);
-
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
-    ...(canViewReservations ? [{ icon: CalendarClock, label: "Reservations", href: "/dashboard/reservation" }] : []),
     { icon: Layers, label: "Requisition Form (Testing)", href: "/dashboard/requisition-form-testing", isTesting: true },
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
@@ -296,7 +292,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: LayoutDashboard, label: "Home", href: "/dashboard" },
     { icon: Package, label: "Inventory", href: "/dashboard/inventory" },
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
-    ...(canViewReservations ? [{ icon: CalendarClock, label: "Reservations", href: "/dashboard/reservation" }] : []),
     // Developer-only Chatbot removed
     { icon: Sparkles, label: "Updates", href: "/dashboard/updates", isNew: hasNewUpdates },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },

@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
-  Search, Filter, Eye, X, CheckCircle, 
-  Clock, MapPin, User, Calendar, ChevronDown, Lock
+  Search, Filter, Eye, X, CheckCircle,
+  Clock, MapPin, User, Calendar, ChevronDown, XCircle, Trash2, RotateCcw, Printer, Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import RequisitionFormTestingPage from "../requisition-form-testing/page";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 interface RequisitionItem {
   name: string;
@@ -34,12 +37,22 @@ interface Requisition {
     approvedBy?: string;
   };
   status: "Reserved" | "Approved" | "Released" | "Completed" | "Cancelled";
+  requisition_type?: "borrow" | "reservation" | string;
   date_out: string;
   date_in: string | null;
   created_at: string;
 }
 
+const toDateTimeLocal = (dateString?: string | null) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 export default function RequisitionTrackingPage() {
+  const [activeRecordType, setActiveRecordType] = useState<"borrow" | "reservation">("borrow");
   const [requisitions, setRequisitions] = useState<Requisition[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequisition, setSelectedRequisition] = useState<Requisition | null>(null);
@@ -47,16 +60,22 @@ export default function RequisitionTrackingPage() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("Newest");
+  const [actionLoadingById, setActionLoadingById] = useState<Record<string, boolean>>({});
   
   // Dropdown states
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const modalFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchRequisitions();
   }, []);
+
+  useEffect(() => {
+    setSelectedRequisition(null);
+  }, [activeRecordType]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -91,7 +110,9 @@ export default function RequisitionTrackingPage() {
   };
 
   const processedRequisitions = useMemo(() => {
-    let filtered = [...requisitions];
+    let filtered = requisitions.filter(
+      (req) => (req.requisition_type || "reservation").toLowerCase() === activeRecordType
+    );
 
     // Apply status filter
     if (filterStatus !== "All") {
@@ -104,7 +125,8 @@ export default function RequisitionTrackingPage() {
       filtered = filtered.filter(req =>
         req.student_number.toLowerCase().includes(query) ||
         req.student_name.toLowerCase().includes(query) ||
-        req.room.toLowerCase().includes(query)
+        req.room.toLowerCase().includes(query) ||
+        req.purpose.toLowerCase().includes(query)
       );
     }
 
@@ -118,7 +140,7 @@ export default function RequisitionTrackingPage() {
     }
 
     return filtered;
-  }, [requisitions, filterStatus, searchQuery, sortOption]);
+  }, [requisitions, filterStatus, searchQuery, sortOption, activeRecordType]);
 
   const statusCounts = useMemo(() => {
     const counts = {
@@ -128,11 +150,13 @@ export default function RequisitionTrackingPage() {
       Completed: 0,
       Cancelled: 0
     };
-    requisitions.forEach(req => {
+    requisitions
+      .filter((req) => (req.requisition_type || "reservation").toLowerCase() === activeRecordType)
+      .forEach(req => {
       counts[req.status as keyof typeof counts]++;
     });
     return counts;
-  }, [requisitions]);
+  }, [requisitions, activeRecordType]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -167,18 +191,226 @@ export default function RequisitionTrackingPage() {
       : "No items";
   };
 
+  const selectedFormData = useMemo(() => {
+    if (!selectedRequisition) return null;
+
+    return {
+      form: {
+        studentName: selectedRequisition.student_name || "",
+        studentNumber: selectedRequisition.student_number || "",
+        purpose: selectedRequisition.purpose || "",
+        instructor: selectedRequisition.instructor || "",
+        programSection: selectedRequisition.program_section || "",
+        courseCode: selectedRequisition.course_code || "",
+        room: selectedRequisition.room || "",
+        timeOfUse: selectedRequisition.time_of_use || "",
+        items: (selectedRequisition.items || []).map((item) => ({
+          name: item.name || "",
+          quantity: Number(item.quantity) || 0,
+          unit: item.unit || "",
+          dateOut: toDateTimeLocal(item.dateOut || selectedRequisition.date_out),
+          dateIn: toDateTimeLocal(item.dateIn || selectedRequisition.date_in),
+        })),
+      },
+      signatures: {
+        requestedBy: selectedRequisition.signatures?.requestedBy || "",
+        endorsedBy: selectedRequisition.signatures?.endorsedBy || "",
+        releasedBy: selectedRequisition.signatures?.releasedBy || "",
+        approvedBy: selectedRequisition.signatures?.approvedBy || "",
+      },
+    };
+  }, [selectedRequisition]);
+
+  const setRowLoading = (id: string, loading: boolean) => {
+    setActionLoadingById((prev) => ({ ...prev, [id]: loading }));
+  };
+
+  const updateRequisitionLocally = (id: string, updates: Partial<Requisition>) => {
+    setRequisitions((prev) => prev.map((req) => (req.id === id ? { ...req, ...updates } : req)));
+    setSelectedRequisition((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
+  };
+
+  const handleApprove = async (req: Requisition) => {
+    const nowIso = new Date().toISOString();
+    try {
+      setRowLoading(req.id, true);
+      const { error: updateError } = await supabase
+        .from("requisitions")
+        .update({ status: "Approved", date_out: nowIso })
+        .eq("id", req.id);
+
+      if (updateError) throw updateError;
+
+      updateRequisitionLocally(req.id, { status: "Approved", date_out: nowIso });
+    } catch (err: any) {
+      console.error("Error approving requisition:", err);
+      alert("Failed to approve requisition");
+    } finally {
+      setRowLoading(req.id, false);
+    }
+  };
+
+  const handleDecline = async (req: Requisition) => {
+    try {
+      setRowLoading(req.id, true);
+      const { error: updateError } = await supabase
+        .from("requisitions")
+        .update({ status: "Cancelled" })
+        .eq("id", req.id);
+
+      if (updateError) throw updateError;
+
+      updateRequisitionLocally(req.id, { status: "Cancelled" });
+    } catch (err: any) {
+      console.error("Error declining requisition:", err);
+      alert("Failed to decline requisition");
+    } finally {
+      setRowLoading(req.id, false);
+    }
+  };
+
+  const handleDelete = async (req: Requisition) => {
+    const confirmed = window.confirm("Delete this requisition entry permanently?");
+    if (!confirmed) return;
+
+    try {
+      setRowLoading(req.id, true);
+      const { error: deleteError } = await supabase
+        .from("requisitions")
+        .delete()
+        .eq("id", req.id);
+
+      if (deleteError) throw deleteError;
+
+      setRequisitions((prev) => prev.filter((item) => item.id !== req.id));
+      setSelectedRequisition((prev) => (prev?.id === req.id ? null : prev));
+    } catch (err: any) {
+      console.error("Error deleting requisition:", err);
+      alert("Failed to delete requisition");
+    } finally {
+      setRowLoading(req.id, false);
+    }
+  };
+
+  const handleReturnBorrow = async (req: Requisition) => {
+    const nowIso = new Date().toISOString();
+    try {
+      setRowLoading(req.id, true);
+      const { error: updateError } = await supabase
+        .from("requisitions")
+        .update({ status: "Completed", date_in: nowIso })
+        .eq("id", req.id);
+
+      if (updateError) throw updateError;
+
+      updateRequisitionLocally(req.id, { status: "Completed", date_in: nowIso });
+    } catch (err: any) {
+      console.error("Error returning borrow:", err);
+      alert("Failed to mark borrow as returned");
+    } finally {
+      setRowLoading(req.id, false);
+    }
+  };
+
+  const handleDownloadViewedPdf = async () => {
+    if (!modalFormRef.current || !selectedRequisition) return;
+
+    try {
+      const canvas = await html2canvas(modalFormRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`Requisition-${selectedRequisition.id}.pdf`);
+    } catch (err) {
+      console.error("Failed to generate requisition PDF:", err);
+      alert("Failed to generate PDF.");
+    }
+  };
+
+  const handlePrintViewedForm = () => {
+    if (!modalFormRef.current || !selectedRequisition) return;
+    const printWindow = window.open("", "_blank", "width=1100,height=800");
+    if (!printWindow) {
+      alert("Unable to open print preview. Please allow pop-ups and try again.");
+      return;
+    }
+
+    const headContent = document.head.innerHTML;
+    const bodyContent = modalFormRef.current.innerHTML;
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Requisition ${selectedRequisition.id}</title>
+          ${headContent}
+          <style>
+            body { margin: 0; padding: 0; background: #ffffff; }
+            #print-root { width: 100%; margin: 0; }
+            @page { size: letter portrait; margin: 0; }
+            .no-print { display: none !important; }
+          </style>
+        </head>
+        <body>
+          <div id="print-root">${bodyContent}</div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+
+    const runPrint = () => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } finally {
+        printWindow.close();
+      }
+    };
+
+    const images = Array.from(printWindow.document.images || []);
+    if (images.length === 0) {
+      setTimeout(runPrint, 350);
+      return;
+    }
+
+    let settled = 0;
+    const onAssetSettled = () => {
+      settled += 1;
+      if (settled >= images.length) {
+        setTimeout(runPrint, 150);
+      }
+    };
+
+    images.forEach((img) => {
+      if (img.complete) {
+        onAssetSettled();
+      } else {
+        img.onload = onAssetSettled;
+        img.onerror = onAssetSettled;
+      }
+    });
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 md:space-y-6 h-full flex flex-col">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Requisition Tracking</h1>
-          <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor equipment requisition requests and status.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Tracking</h1>
+          <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor borrow and reservation requisitions in one place.</p>
         </div>
         <div className="flex items-center justify-center py-12 text-gray-400">
           <div className="animate-spin mr-3">
             <Clock size={20} />
           </div>
-          Loading requisitions...
+          Loading tracking records...
         </div>
       </div>
     );
@@ -189,8 +421,32 @@ export default function RequisitionTrackingPage() {
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Requisition Tracking</h1>
-        <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor equipment requisition requests and status.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Tracking</h1>
+        <p className="text-gray-400 mt-1 text-sm md:text-base">Monitor borrow and reservation requisitions in one place.</p>
+      </div>
+
+      {/* Record Type Tabs */}
+      <div className="inline-flex w-fit rounded-xl border border-white/10 bg-white/5 p-1">
+        <button
+          onClick={() => setActiveRecordType("borrow")}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${
+            activeRecordType === "borrow"
+              ? "bg-indigo-600 text-white"
+              : "text-gray-300 hover:bg-white/10"
+          }`}
+        >
+          Borrows
+        </button>
+        <button
+          onClick={() => setActiveRecordType("reservation")}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${
+            activeRecordType === "reservation"
+              ? "bg-indigo-600 text-white"
+              : "text-gray-300 hover:bg-white/10"
+          }`}
+        >
+          Reservations
+        </button>
       </div>
 
       {/* --- STAT CARDS --- */}
@@ -316,16 +572,22 @@ export default function RequisitionTrackingPage() {
                 <th className="p-4 w-[15%]">Items</th>
                 <th className="p-4 w-[12%]">Room</th>
                 <th className="p-4 w-[12%]">Instructor</th>
-                <th className="p-4 w-[12%]">Date Borrowed</th>
-                <th className="p-4 w-[12%]">Date Returned</th>
+                <th className="p-4 w-[12%]">{activeRecordType === "borrow" ? "Date Borrowed" : "Date Reserved"}</th>
+                <th className="p-4 w-[12%]">{activeRecordType === "borrow" ? "Date Returned" : "Date Completed"}</th>
                 <th className="p-4 w-[10%]">Status</th>
-                <th className="p-4 text-right w-[6%]">Actions</th>
+                <th className="p-4 text-right w-[12%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-xs">
               {processedRequisitions.length > 0 ? (
                 processedRequisitions.map((req) => (
                   <tr key={req.id} className="group hover:bg-white/[0.07] transition-colors">
+                    {(() => {
+                      const isRowBusy = Boolean(actionLoadingById[req.id]);
+                      const canApprove = !["Approved", "Completed", "Cancelled"].includes(req.status);
+                      const canDecline = !["Completed", "Cancelled"].includes(req.status);
+                      return (
+                        <>
                     
                     {/* Student Number */}
                     <td className="p-4">
@@ -369,20 +631,64 @@ export default function RequisitionTrackingPage() {
 
                     {/* Actions */}
                     <td className="p-4 text-right">
-                      <button
-                        onClick={() => setSelectedRequisition(req)}
-                        className="inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all shadow-lg shadow-indigo-900/20"
-                      >
-                        <Eye size={12} />
-                        View
-                      </button>
+                      <div className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-black/20 p-1">
+                        <button
+                          onClick={() => handleApprove(req)}
+                          disabled={!canApprove || isRowBusy}
+                          title="Approve"
+                          aria-label="Approve"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <CheckCircle size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleDecline(req)}
+                          disabled={!canDecline || isRowBusy}
+                          title="Decline"
+                          aria-label="Decline"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <XCircle size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(req)}
+                          disabled={isRowBusy}
+                          title="Delete"
+                          aria-label="Delete"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                        {activeRecordType === "borrow" && req.status === "Approved" && (
+                          <button
+                            onClick={() => handleReturnBorrow(req)}
+                            disabled={isRowBusy}
+                            title="Returned"
+                            aria-label="Returned"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 transition-colors hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <RotateCcw size={13} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedRequisition(req)}
+                          title="View"
+                          aria-label="View"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/15 bg-white/5 text-gray-300 transition-colors hover:bg-white/10"
+                        >
+                          <Eye size={13} />
+                        </button>
+                      </div>
                     </td>
+                        </>
+                      );
+                    })()}
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-gray-400">
-                    No requisitions found
+                    No {activeRecordType} requisitions found
                   </td>
                 </tr>
               )}
@@ -404,182 +710,56 @@ export default function RequisitionTrackingPage() {
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-gray-950 border border-white/10 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col backdrop-blur-xl"
             >
               {/* Header */}
-              <div className="sticky top-0 bg-gray-900 text-white px-6 py-4 flex justify-between items-center border-b">
-                <h2 className="text-xl font-bold">Requisition Form - {selectedRequisition.id}</h2>
-                <button
-                  onClick={() => setSelectedRequisition(null)}
-                  className="p-1 hover:bg-gray-700 rounded transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="overflow-y-auto flex-1 p-6">
-                {/* Paper Form */}
-                <div className="bg-white rounded-lg border-4 border-black p-6">
-                  {/* Header */}
-                  <div className="border-b-4 border-black pb-4 mb-4 flex justify-between items-start">
-                    <div className="flex gap-4 flex-1">
-                      <div className="flex flex-col">
-                        <h1 className="text-xl font-bold uppercase tracking-tight text-black">Colegio de Muntinlupa</h1>
-                        <h2 className="text-2xl font-black uppercase text-black">Requisition Form</h2>
-                        <p className="text-xs font-bold uppercase text-black">Equipment, Supplies and Apparatus</p>
-                      </div>
-                    </div>
-                    {/* Document Code */}
-                    <div className="border-2 border-black text-xs w-48">
-                      <div className="bg-black text-white p-1 font-bold text-center border-b-2 border-black uppercase">Document Code</div>
-                      <div className="grid grid-cols-3 text-xs font-bold text-black">
-                        <div className="border-r-2 border-b-2 border-black p-1 text-center"><span className="text-[9px] text-black">Effective Date</span></div>
-                        <div className="border-r-2 border-b-2 border-black p-1 text-center"><span className="text-[9px] text-black">Revision No.</span><div className="text-black">00</div></div>
-                        <div className="border-b-2 border-black p-1 text-center"><span className="text-[9px] text-black">Revision Date</span></div>
-                      </div>
-                      <div className="border-t-2 border-black p-1 text-center bg-yellow-50 text-xs font-mono font-bold text-black">AUTOGEN-DLI-SUBMIT</div>
-                    </div>
-                  </div>
-
-                  {/* Form Info */}
-                  <div className="grid grid-cols-2 gap-4 mb-4 border-b-4 border-black pb-4">
-                    <div>
-                      <p className="font-bold text-black text-xs">Name:</p>
-                      <p className="text-black text-sm">{selectedRequisition.student_name}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-black text-xs">Program & Section:</p>
-                      <p className="text-black text-sm">{selectedRequisition.program_section}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-black text-xs">Student No.:</p>
-                      <p className="text-black text-sm">{selectedRequisition.student_number}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-black text-xs">Course/Code:</p>
-                      <p className="text-black text-sm">{selectedRequisition.course_code}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-black text-xs">Purpose:</p>
-                      <p className="text-black text-sm">{selectedRequisition.purpose}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-black text-xs">Room:</p>
-                      <p className="text-black text-sm">{selectedRequisition.room}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-black text-xs">Instructor:</p>
-                      <p className="text-black text-sm">{selectedRequisition.instructor}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-black text-xs">Time of use:</p>
-                      <p className="text-black text-sm">{selectedRequisition.time_of_use || "—"}</p>
-                    </div>
-                  </div>
-
-                  {/* Equipment Table */}
-                  <div className="mb-4 border-b-4 border-black pb-4">
-                    <p className="font-bold text-black text-xs mb-2">EQUIPMENT ITEMS</p>
-                    <table className="w-full text-black border-collapse text-xs">
-                      <thead>
-                        <tr className="bg-gray-200 border-b-2 border-black">
-                          <th className="border-r-2 border-black p-2 text-left">Equipment</th>
-                          <th className="border-r-2 border-black p-2 text-center w-16">Qty</th>
-                          <th className="border-r-2 border-black p-2 text-center w-14">Unit</th>
-                          <th className="border-r-2 border-black p-2 text-center">Date Out</th>
-                          <th className="p-2 text-center">Date In</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedRequisition.items.map((item, idx) => (
-                          <tr key={idx} className="border-b border-black">
-                            <td className="border-r-2 border-black p-2">{item.name || "—"}</td>
-                            <td className="border-r-2 border-black p-2 text-center">{item.quantity || "—"}</td>
-                            <td className="border-r-2 border-black p-2 text-center">{item.unit || "—"}</td>
-                            <td className="border-r-2 border-black p-2 text-center text-[9px]">
-                              {item.dateOut ? new Date(item.dateOut).toLocaleDateString("en-US") : "—"}
-                            </td>
-                            <td className="p-2 text-center text-[9px]">
-                              {item.dateIn ? new Date(item.dateIn).toLocaleDateString("en-US") : "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Status & Signatures */}
-                  <div className="border-t-4 border-black pt-4">
-                    <p className="font-bold text-black text-xs mb-2">STATUS</p>
-                    <span className={`inline-block px-3 py-1 rounded text-xs font-bold border mb-4 ${getStatusColor(selectedRequisition.status)}`}>
-                      {selectedRequisition.status}
-                    </span>
-                    
-                    {selectedRequisition.signatures && (
-                      <div className="mt-4">
-                        <p className="font-bold text-black text-xs mb-2">SIGNATURES</p>
-                        <div className="grid grid-cols-4 gap-2 text-xs">
-                          {selectedRequisition.signatures.requestedBy && (
-                            <div>
-                              <p className="font-bold text-black">Requested by:</p>
-                              <p className="text-black">{selectedRequisition.signatures.requestedBy}</p>
-                            </div>
-                          )}
-                          {selectedRequisition.signatures.endorsedBy && (
-                            <div>
-                              <p className="font-bold text-black">Endorsed by:</p>
-                              <p className="text-black">{selectedRequisition.signatures.endorsedBy}</p>
-                            </div>
-                          )}
-                          {selectedRequisition.signatures.releasedBy && (
-                            <div>
-                              <p className="font-bold text-black">Released by:</p>
-                              <p className="text-black">{selectedRequisition.signatures.releasedBy}</p>
-                            </div>
-                          )}
-                          {selectedRequisition.signatures.approvedBy && (
-                            <div>
-                              <p className="font-bold text-black">Approved by:</p>
-                              <p className="text-black">{selectedRequisition.signatures.approvedBy}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <div className="sticky top-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 text-white px-6 py-4 flex justify-between items-center border-b border-white/10">
+                <h2 className="text-xl font-bold">
+                  {activeRecordType === "borrow" ? "Borrow" : "Reservation"} Form - {selectedRequisition.id}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrintViewedForm}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/15 transition-colors"
+                  >
+                    <Printer size={14} />
+                    Print
+                  </button>
+                  <button
+                    onClick={handleDownloadViewedPdf}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/15 transition-colors"
+                  >
+                    <Download size={14} />
+                    PDF
+                  </button>
+                  <button
+                    onClick={() => setSelectedRequisition(null)}
+                    className="p-1 hover:bg-white/10 rounded transition-colors text-gray-300 hover:text-white"
+                  >
+                    <X size={24} />
+                  </button>
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="sticky bottom-0 bg-gray-100 px-6 py-4 border-t flex justify-end gap-3">
-                <button
-                  onClick={() => setSelectedRequisition(null)}
-                  className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold rounded transition-colors"
-                >
-                  Close
-                </button>
+              {/* Content */}
+              <div className="overflow-y-auto flex-1 p-4">
+                <div ref={modalFormRef}>
+                  {selectedFormData && (
+                    <RequisitionFormTestingPage
+                      initialData={selectedFormData.form}
+                      initialSignatures={selectedFormData.signatures}
+                      readOnly
+                      hideToolbar
+                      hideSubmitButtons
+                      embedded
+                    />
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  );
-}
-// --- Helper Component ---
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "Borrowed") {
-    return (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-        Borrowed
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-gray-800 text-gray-400 border border-gray-700">
-      Returned
-    </span>
   );
 }
