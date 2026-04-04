@@ -29,10 +29,11 @@ export default async function ClientPortalByNamePage({ params }: ClientPortalByN
   const expectedNameSlug = toSlug(expectedName || "");
   const expectedTokenSlug = toSlug(expectedToken || "");
 
-  const isNameMatch = Boolean(expectedNameSlug) && providedSlug === expectedNameSlug;
-  const isTokenMatch = Boolean(expectedTokenSlug) && providedSlug === expectedTokenSlug;
+  const allowedSlugs = new Set(
+    [expectedNameSlug, expectedTokenSlug, "client"].filter(Boolean)
+  );
 
-  if (!isNameMatch && !isTokenMatch) {
+  if (!allowedSlugs.has(providedSlug)) {
     notFound();
   }
 

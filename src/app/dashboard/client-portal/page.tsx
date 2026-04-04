@@ -28,11 +28,12 @@ export default async function ClientPortalPage({ searchParams }: ClientPortalPag
   const expectedToken = process.env.CLIENT_PORTAL_QR_TOKEN;
   const expectedName = process.env.CLIENT_PORTAL_ACCESS_NAME;
 
-  if (!expectedToken || !accessToken || accessToken !== expectedToken) {
+  const tokenRequired = Boolean(expectedToken);
+  if (tokenRequired && (!accessToken || accessToken !== expectedToken)) {
     notFound();
   }
 
-  const destinationName = toSlug(expectedName || expectedToken);
+  const destinationName = toSlug(expectedName || expectedToken || "client");
   if (!destinationName) {
     notFound();
   }

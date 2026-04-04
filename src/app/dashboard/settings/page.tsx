@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   User, Lock, Palette, Save, Check, Loader2, Mail, Shield, HelpCircle, RotateCcw,
-  ChevronRight, Sparkles, KeyRound, Info, Lightbulb, BookOpen, Zap, Bell
+  ChevronRight, Sparkles, KeyRound, Info, Lightbulb, BookOpen, Zap, Bell, QrCode
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -608,6 +608,28 @@ export default function SettingsPage() {
                       >
                         <RotateCcw size={16} />
                         Replay Tutorial
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Client Portal QR */}
+                <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-6">
+                  <div className="flex flex-col sm:flex-row items-start gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shrink-0 shadow-xl shadow-emerald-500/20">
+                      <QrCode size={24} className="text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-white">Client Portal QR</h3>
+                      <p className="text-gray-400 text-sm mt-1 mb-4">
+                        Open and download the QR code for the public requisition portal.
+                      </p>
+                      <button
+                        onClick={() => router.push('/client-portal/qr')}
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                      >
+                        <QrCode size={16} />
+                        Open QR Page
                       </button>
                     </div>
                   </div>
