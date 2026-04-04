@@ -394,7 +394,11 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
               <Link 
                 key={item.href} 
                 href={item.href}
-                className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all group relative overflow-hidden whitespace-nowrap ${
+                title={isCollapsed ? item.label : undefined}
+                aria-label={item.label}
+                className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all group relative whitespace-nowrap ${
+                  isCollapsed ? "overflow-visible" : "overflow-hidden"
+                } ${
                   isActive 
                     ? "bg-gray-200 dark:bg-white/10 text-black dark:text-white font-semibold" 
                     : isNewItem
@@ -426,6 +430,12 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                   >
                     {item.label}
                   </motion.span>
+                )}
+
+                {isCollapsed && (
+                  <span className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 rounded-md border border-white/10 bg-[#111] px-2 py-1 text-xs font-medium text-white opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100">
+                    {item.label}
+                  </span>
                 )}
               </Link>
             );
