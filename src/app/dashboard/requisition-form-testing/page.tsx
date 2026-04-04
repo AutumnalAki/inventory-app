@@ -999,13 +999,13 @@ export default function RequisitionFormTestingPage({
       <AnimatePresence>
         {errorMsg && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 no-print">
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 max-w-md w-full">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white border-2 border-red-500 rounded-xl p-6 max-w-md w-full shadow-2xl">
               <div className="flex gap-4">
                 <AlertIcon size={24} className="text-red-400 flex-shrink-0" />
                 <div className="flex-1">
-                  <h3 className="font-bold text-black mb-2">Error</h3>
-                  <p className="text-gray-700 text-sm mb-4">{errorMsg}</p>
-                  <button onClick={() => setErrorMsg(null)} className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-700 font-bold py-2 rounded-lg">
+                  <h3 className="font-bold text-red-700 mb-2">Error</h3>
+                  <p className="text-gray-800 text-sm mb-4">{errorMsg}</p>
+                  <button onClick={() => setErrorMsg(null)} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition-colors">
                     Dismiss
                   </button>
                 </div>
