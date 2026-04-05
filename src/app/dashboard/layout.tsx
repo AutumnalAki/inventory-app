@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Package, ClipboardList, FileText, Users, Settings, 
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle, Activity, Bell, Layers
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Sparkles, Lightbulb, ChevronDown, CheckCircle, Activity, Bell, Layers, BarChart3
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -278,6 +278,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     { icon: ClipboardList, label: "Tracking", href: "/dashboard/tracking" },
     { icon: Layers, label: "Requisition Form (Testing)", href: "/dashboard/requisition-form-testing", isTesting: true },
     { icon: FileText, label: "Reports", href: "/dashboard/reports" },
+    { icon: BarChart3, label: "Analysis", href: "/dashboard/analysis" },
     ...(canViewMembers ? [{ icon: Users, label: "Members", href: "/dashboard/members" }] : []),
     ...(canViewSuggestions ? [{ icon: Lightbulb, label: "Suggestions", href: "/dashboard/suggestions" }] : []),
     ...(canViewActivityLog ? [{ icon: Activity, label: "Activity Log", href: "/dashboard/activity-log" }] : []),
