@@ -51,6 +51,8 @@ type IncidentReportDialogProps = {
   mode?: "create" | "edit";
   initialReport?: IncidentReportListItem | null;
   reportOwnerUserId?: string | null;
+  dialogClassName?: string;
+  modeVariant?: "stepper" | "single-page";
 };
 
 const STEP_LABELS: Array<{ step: Step; label: string }> = [
@@ -161,6 +163,8 @@ export default function IncidentReportDialog({
   mode = "create",
   initialReport,
   reportOwnerUserId,
+  dialogClassName,
+  modeVariant = "stepper",
 }: IncidentReportDialogProps) {
   const roleContext = useRole();
   const role = roleContext?.role;
@@ -177,6 +181,7 @@ export default function IncidentReportDialog({
   const [damageNotesInput, setDamageNotesInput] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSinglePageMode = modeVariant === "single-page";
 
   useEffect(() => {
     if (!open) return;
@@ -402,7 +407,17 @@ export default function IncidentReportDialog({
   const submit = async () => {
     setSubmitError(null);
 
-    if (!isStepValid(4)) {
+    if (isSinglePageMode) {
+      const firstInvalidStep = ([1, 2, 3, 4] as Step[]).find((currentStep) => !isStepValid(currentStep));
+      if (firstInvalidStep) {
+        if (firstInvalidStep === 4) {
+          setSubmitError("Add at least one damaged item before submitting.");
+        } else {
+          setSubmitError("Please complete all required fields before submitting.");
+        }
+        return;
+      }
+    } else if (!isStepValid(4)) {
       setSubmitError("Add at least one damaged item before submitting.");
       return;
     }
@@ -452,7 +467,30 @@ export default function IncidentReportDialog({
     onClose();
   };
 
-  const footer = (
+  const footer = isSinglePageMode ? (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-xs text-gray-500">Single-page form</div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+          disabled={isSubmitting}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={submit}
+          className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : null}
+          {mode === "edit" ? "Update Report" : "Submit Report"}
+        </button>
+      </div>
+    </div>
+  ) : (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-xs text-gray-500">
         Step {step} of 4
@@ -509,33 +547,45 @@ export default function IncidentReportDialog({
       open={open}
       onClose={onClose}
       title={mode === "edit" ? "Edit Incident Report" : "Digital Incident Report"}
-      subtitle="Complete all four steps before submission."
+      subtitle={
+        isSinglePageMode
+          ? "Fill out all required sections and submit once."
+          : "Complete all four steps before submission."
+      }
+      className={dialogClassName}
       footer={footer}
     >
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {STEP_LABELS.map((item) => {
-          const active = item.step === step;
-          const complete = item.step < step;
+      {!isSinglePageMode ? (
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {STEP_LABELS.map((item) => {
+            const active = item.step === step;
+            const complete = item.step < step;
 
-          return (
-            <div
-              key={item.step}
-              className={`rounded-lg border px-2 py-2 text-center text-xs font-bold uppercase tracking-wider transition-colors ${
-                active
-                  ? "border-indigo-400/60 bg-indigo-500/20 text-indigo-100"
-                  : complete
-                    ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-100"
-                    : "border-white/10 bg-black/20 text-gray-500"
-              }`}
-            >
-              {item.label}
-            </div>
-          );
-        })}
-      </div>
+            return (
+              <div
+                key={item.step}
+                className={`rounded-lg border px-2 py-2 text-center text-xs font-bold uppercase tracking-wider transition-colors ${
+                  active
+                    ? "border-indigo-400/60 bg-indigo-500/20 text-indigo-100"
+                    : complete
+                      ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-100"
+                      : "border-white/10 bg-black/20 text-gray-500"
+                }`}
+              >
+                {item.label}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
 
-      {step === 1 && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className={isSinglePageMode ? "space-y-4" : ""}>
+      {(isSinglePageMode || step === 1) && (
+        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3" : ""}>
+          {isSinglePageMode ? (
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Personal Information</p>
+          ) : null}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Input
             label="Name"
             value={form.student_name}
@@ -589,10 +639,15 @@ export default function IncidentReportDialog({
             className="md:col-span-2"
           />
         </div>
+        </div>
       )}
 
-      {step === 2 && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {(isSinglePageMode || step === 2) && (
+        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3" : ""}>
+          {isSinglePageMode ? (
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Incident Details</p>
+          ) : null}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Input
             type="date"
             label="Incident Date"
@@ -640,10 +695,15 @@ export default function IncidentReportDialog({
             placeholder="Instructor name"
           />
         </div>
+        </div>
       )}
 
-      {step === 3 && (
-        <div className="space-y-3">
+      {(isSinglePageMode || step === 3) && (
+        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3" : ""}>
+          {isSinglePageMode ? (
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Description</p>
+          ) : null}
+          <div className="space-y-3">
           <TextArea
             label="Detailed Incident Description"
             value={form.incident_description}
@@ -669,10 +729,14 @@ export default function IncidentReportDialog({
             />
           ) : null}
         </div>
+        </div>
       )}
 
-      {step === 4 && (
-        <div className="space-y-4">
+      {(isSinglePageMode || step === 4) && (
+        <div className={isSinglePageMode ? "space-y-4 rounded-xl border border-white/10 bg-black/20 p-3" : "space-y-4"}>
+          {isSinglePageMode ? (
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Damaged Equipment</p>
+          ) : null}
           <div className="rounded-xl border border-white/10 bg-black/20 p-3">
             <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-3">
               <label className="block md:col-span-2">
@@ -835,6 +899,7 @@ export default function IncidentReportDialog({
           </div>
         </div>
       )}
+      </div>
 
       {submitError ? (
         <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">

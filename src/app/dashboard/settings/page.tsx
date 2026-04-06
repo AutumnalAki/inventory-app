@@ -635,6 +635,28 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {/* Incident Report QR */}
+                <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-2xl p-6">
+                  <div className="flex flex-col sm:flex-row items-start gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shrink-0 shadow-xl shadow-orange-500/20">
+                      <QrCode size={24} className="text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-white">Incident Report QR</h3>
+                      <p className="text-gray-400 text-sm mt-1 mb-4">
+                        Open and download the QR code for the public student incident report form.
+                      </p>
+                      <button
+                        onClick={() => router.push('/incident-portal/qr')}
+                        className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                      >
+                        <QrCode size={16} />
+                        Open Incident QR
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Quick Tips */}
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-5 flex items-center gap-2">
