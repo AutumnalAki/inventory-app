@@ -20,8 +20,8 @@ import {
   type IncidentReportListItem,
   type InventoryPickerItem,
   type DamagedItemInput,
-  type IncidentStatus,
 } from "@/lib/actions/inventory";
+import { useRole } from "@/context/RoleContext";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -37,7 +37,7 @@ type IncidentFormState = {
   instructor_name: string;
   incident_description: string;
   injury_details: string;
-  status: IncidentStatus;
+  response_notes: string;
 };
 
 type PendingDamageItem = DamagedItemInput & {
@@ -92,8 +92,21 @@ const EMPTY_FORM: IncidentFormState = {
   instructor_name: "",
   incident_description: "",
   injury_details: "",
-  status: "Pending",
+  response_notes: "",
 };
+
+const RESPONSE_EDITOR_ROLES = new Set([
+  "developer",
+  "superadmin",
+  "administrator",
+  "program chair",
+  "personnel",
+  "lab personnel",
+  "laboratory personnel",
+  "laboratory assistant",
+  "technician",
+  "laboratory head",
+]);
 
 const toDateTimeLocal = (value?: string | null): string => {
   if (!value) return "";
@@ -137,10 +150,7 @@ const buildInitialForm = (report: IncidentReportListItem | null | undefined): In
     instructor_name: report.instructor_name || "",
     incident_description: report.incident_description || "",
     injury_details: report.injury_details || "",
-    status:
-      report.status === "In Review" || report.status === "Resolved"
-        ? report.status
-        : "Pending",
+    response_notes: report.response_notes || "",
   };
 };
 
@@ -152,6 +162,9 @@ export default function IncidentReportDialog({
   initialReport,
   reportOwnerUserId,
 }: IncidentReportDialogProps) {
+  const roleContext = useRole();
+  const role = roleContext?.role;
+  const previewRole = roleContext?.previewRole;
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<IncidentFormState>(EMPTY_FORM);
   const [pendingDamages, setPendingDamages] = useState<PendingDamageItem[]>([]);
@@ -245,6 +258,9 @@ export default function IncidentReportDialog({
   const selectedInventoryItem = selectedInventoryId
     ? inventoryById.get(selectedInventoryId)
     : undefined;
+
+  const effectiveRole = (previewRole || role || "Student").toLowerCase();
+  const canAddResponseNotes = RESPONSE_EDITOR_ROLES.has(effectiveRole);
 
   const incidentDateValue = getDatePart(form.incident_datetime);
   const incidentTimeValue = getTimePart(form.incident_datetime);
@@ -411,9 +427,12 @@ export default function IncidentReportDialog({
       instructor_name: form.instructor_name.trim() || null,
       incident_description: form.incident_description.trim(),
       injury_details: form.injury_details.trim() || null,
-      status: form.status,
       damaged_items,
     };
+
+    if (canAddResponseNotes) {
+      payload.response_notes = form.response_notes.trim() || null;
+    }
 
     setIsSubmitting(true);
 
@@ -620,22 +639,6 @@ export default function IncidentReportDialog({
             onChange={(event) => updateField("instructor_name", event.target.value)}
             placeholder="Instructor name"
           />
-          <SelectInput
-            label="Status"
-            value={form.status}
-            onChange={(event) => updateField("status", event.target.value as IncidentStatus)}
-            className="md:col-span-2"
-          >
-            <option value="Pending" className="bg-black">
-              Pending
-            </option>
-            <option value="In Review" className="bg-black">
-              In Review
-            </option>
-            <option value="Resolved" className="bg-black">
-              Resolved
-            </option>
-          </SelectInput>
         </div>
       )}
 
@@ -656,6 +659,15 @@ export default function IncidentReportDialog({
             rows={4}
             placeholder="Include type of injury and first aid administered, if applicable."
           />
+          {canAddResponseNotes ? (
+            <TextArea
+              label="Response / Resolution Notes (Personnel/Admin)"
+              value={form.response_notes}
+              onChange={(event) => updateField("response_notes", event.target.value)}
+              rows={4}
+              placeholder="Add resolution actions, follow-up, and personnel notes."
+            />
+          ) : null}
         </div>
       )}
 

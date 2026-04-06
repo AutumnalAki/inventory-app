@@ -13,15 +13,18 @@ import {
   AlertTriangle,
   ClipboardPlus,
   FileText,
+  Lock,
   Loader2,
   Pencil,
   Printer,
   RefreshCw,
+  Search,
   Ticket,
   Trash2,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import IncidentReportDialog from "@/components/incident/IncidentReportDialog";
+import { useRole } from "@/context/RoleContext";
 import {
   deleteIncidentReportWithInventorySync,
   getReportsDashboardData,
@@ -45,6 +48,19 @@ type OptimisticAction =
 
 type TabId = "broken" | "reports";
 type PrintMode = "form" | "ticket" | "both";
+
+const STATUS_EDITOR_ROLES = new Set([
+  "developer",
+  "superadmin",
+  "administrator",
+  "program chair",
+  "personnel",
+  "lab personnel",
+  "laboratory personnel",
+  "laboratory assistant",
+  "technician",
+  "laboratory head",
+]);
 
 const REPORT_STATUS_OPTIONS: IncidentStatus[] = ["Pending", "In Review", "Resolved"];
 
@@ -467,11 +483,15 @@ const printReport = (report: IncidentReportListItem, mode: PrintMode): void => {
 };
 
 export default function ReportsPageClient({ embedded = false }: ReportsPageClientProps) {
+  const roleContext = useRole();
+  const role = roleContext?.role;
+  const previewRole = roleContext?.previewRole;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<ReportsDashboardData | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("broken");
   const [statusFilter, setStatusFilter] = useState<ReportStatusFilter>("All");
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<ReportSortOption>("most_recent");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<IncidentReportListItem | null>(null);
@@ -481,6 +501,8 @@ export default function ReportsPageClient({ embedded = false }: ReportsPageClien
   const [isPending, startTransition] = useTransition();
 
   const baseReports = dashboardData?.incident_reports || [];
+  const effectiveRole = String(previewRole || role || "Student").trim().toLowerCase();
+  const canEditStatus = STATUS_EDITOR_ROLES.has(effectiveRole);
 
   const [optimisticReports, mutateReports] = useOptimistic<
     IncidentReportListItem[],
@@ -529,14 +551,36 @@ export default function ReportsPageClient({ embedded = false }: ReportsPageClien
         ? optimisticReports
         : optimisticReports.filter((item) => item.status === statusFilter);
 
-    const sorted = [...byStatus].sort((a, b) => {
+    const query = searchTerm.trim().toLowerCase();
+    const bySearch = !query
+      ? byStatus
+      : byStatus.filter((item) => {
+          const itemsText = (item.damaged_items || [])
+            .map((damaged) => `${damaged.item_name || ""} ${damaged.inventory_item_id}`)
+            .join(" ")
+            .toLowerCase();
+
+          const searchable = [
+            item.student_name || "",
+            item.student_number || "",
+            item.location || "",
+            item.incident_description || "",
+            itemsText,
+          ]
+            .join(" ")
+            .toLowerCase();
+
+          return searchable.includes(query);
+        });
+
+    const sorted = [...bySearch].sort((a, b) => {
       const aMs = parseDateMs(a.incident_datetime || a.created_at);
       const bMs = parseDateMs(b.incident_datetime || b.created_at);
       return sortBy === "oldest" ? aMs - bMs : bMs - aMs;
     });
 
     return sorted;
-  }, [optimisticReports, sortBy, statusFilter]);
+  }, [optimisticReports, searchTerm, sortBy, statusFilter]);
 
   const visibleBrokenItems = useMemo(() => {
     const source = dashboardData?.broken_items || [];
@@ -562,11 +606,16 @@ export default function ReportsPageClient({ embedded = false }: ReportsPageClien
   };
 
   const handleInlineStatusChange = (reportId: string, status: IncidentStatus) => {
+    if (!canEditStatus) {
+      setError("Only authorized Personnel/Admin users can update incident status.");
+      return;
+    }
+
     mutateReports({ type: "status", id: reportId, status });
 
     startTransition(async () => {
       setActiveRowId(reportId);
-      const result = await updateIncidentReportStatus(reportId, status);
+      const result = await updateIncidentReportStatus(reportId, status, effectiveRole);
       if (result.error) {
         setError(result.error);
       }
@@ -692,6 +741,25 @@ export default function ReportsPageClient({ embedded = false }: ReportsPageClien
 
         {activeTab === "reports" ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="block sm:col-span-2">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                Search
+              </span>
+              <div className="relative">
+                <Search
+                  size={14}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search by reported by, student no, location, subject or item"
+                  className="w-full rounded-lg border border-white/10 bg-black/30 py-2 pl-9 pr-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-indigo-500"
+                />
+              </div>
+            </label>
+
             <label className="block">
               <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">
                 Status
@@ -736,6 +804,13 @@ export default function ReportsPageClient({ embedded = false }: ReportsPageClien
           </div>
         ) : null}
       </Sidebar>
+
+      {activeTab === "reports" && !canEditStatus ? (
+        <div className="inline-flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+          <Lock size={13} />
+          Status updates are restricted to authorized Personnel/Admin users.
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-100">
@@ -811,7 +886,7 @@ export default function ReportsPageClient({ embedded = false }: ReportsPageClien
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Student</th>
                   <th className="px-4 py-3">Location</th>
-                  <th className="px-4 py-3">Damaged Items</th>
+                  <th className="px-4 py-3">Subject / Item</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -831,19 +906,34 @@ export default function ReportsPageClient({ embedded = false }: ReportsPageClien
                       </td>
                       <td className="px-4 py-3 text-gray-300">{report.location || "-"}</td>
                       <td className="px-4 py-3 text-xs text-gray-400">
-                        {(report.damaged_items || []).length}
+                        <p className="text-gray-300">{report.incident_description || "-"}</p>
+                        <p className="mt-1 text-gray-500">
+                          {(report.damaged_items || [])
+                            .map((item) => item.item_name || item.inventory_item_id)
+                            .slice(0, 2)
+                            .join(", ") || "No item listed"}
+                          {(report.damaged_items || []).length > 2
+                            ? ` +${(report.damaged_items || []).length - 2} more`
+                            : ""}
+                        </p>
                       </td>
                       <td className="px-4 py-3">
                         <select
                           value={report.status}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            if (!canEditStatus) return;
                             handleInlineStatusChange(
                               report.id,
                               event.target.value as IncidentStatus,
-                            )
+                            );
+                          }}
+                          disabled={busy || !canEditStatus}
+                          title={
+                            canEditStatus
+                              ? ""
+                              : "Only authorized Personnel/Admin users can edit status"
                           }
-                          disabled={busy}
-                          className="rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white outline-none focus:border-indigo-500"
+                          className="rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {REPORT_STATUS_OPTIONS.map((option) => (
                             <option key={option} value={option} className="bg-black">

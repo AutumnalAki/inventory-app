@@ -10,6 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { useInventory, Item } from "@/context/InventoryContext";
 import { usePopup } from "@/context/PopupContext";
 import { useRole } from "@/context/RoleContext";
+import { getReportsDashboardData } from "@/lib/actions/inventory";
 
 // --- EXPORT LIBRARIES ---
 import jsPDF from "jspdf";
@@ -45,6 +46,12 @@ const ROLE_LAB_MAPPING: Record<string, string> = {
 // Roles with full access to all labs
 const FULL_ACCESS_ROLES = ["Developer", "SuperAdmin", "Administrator", "Program Chair", "Faculty"];
 
+type ConditionBreakdown = {
+  available: number;
+  broken: number;
+  forRepairs: number;
+};
+
 function InventoryContent() {
   const { inventory, addItem, updateItem, deleteItem, deleteItems, updateItems } = useInventory();
   const { role } = useRole();
@@ -61,6 +68,7 @@ function InventoryContent() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterCondition, setFilterCondition] = useState("All");
   const [sortOption, setSortOption] = useState("Newest");
+  const [incidentConditionCounts, setIncidentConditionCounts] = useState<Record<number, { broken: number; forRepairs: number }>>({});
   // View selection: default 50 entries. Options: 25,50,75,100,All
   const [viewSelection, setViewSelection] = useState<string>("50");
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,14 +92,22 @@ function InventoryContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [newItem, setNewItem] = useState({
-    name: "", controlId: "", quantity: 0, location: "", supplier: "", stock: "In Stock", condition: "Available", remarks: "", low_stock_threshold: 5
+    name: "",
+    controlId: "",
+    quantity: 0,
+    broken_quantity: 0,
+    for_repairs_quantity: 0,
+    location: "",
+    supplier: "",
+    stock: "In Stock",
+    condition: "Available",
+    remarks: "",
+    low_stock_threshold: 5,
   });
   
   // Modal dropdown states
   const [modalLocationOpen, setModalLocationOpen] = useState(false);
-  const [modalConditionOpen, setModalConditionOpen] = useState(false);
   const modalLocationRef = React.useRef<HTMLDivElement>(null);
-  const modalConditionRef = React.useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -107,9 +123,6 @@ function InventoryContent() {
       }
       if (modalLocationRef.current && !modalLocationRef.current.contains(event.target as Node)) {
         setModalLocationOpen(false);
-      }
-      if (modalConditionRef.current && !modalConditionRef.current.contains(event.target as Node)) {
-        setModalConditionOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -131,6 +144,72 @@ function InventoryContent() {
     if (conditionParam) setFilterCondition(conditionParam);
   }, [searchParams]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadIncidentConditionCounts = async () => {
+      const result = await getReportsDashboardData();
+      if (!active) return;
+
+      if (result.error || !result.data) {
+        setIncidentConditionCounts({});
+        return;
+      }
+
+      const counts: Record<number, { broken: number; forRepairs: number }> = {};
+
+      for (const brokenItem of result.data.broken_items) {
+        if (brokenItem.report_status === "Resolved") {
+          continue;
+        }
+
+        const inventoryId = Number(brokenItem.inventory_item_id);
+        if (!Number.isFinite(inventoryId)) {
+          continue;
+        }
+
+        if (!counts[inventoryId]) {
+          counts[inventoryId] = { broken: 0, forRepairs: 0 };
+        }
+
+        if (brokenItem.report_status === "In Review") {
+          counts[inventoryId].forRepairs += brokenItem.damage_count;
+        } else {
+          counts[inventoryId].broken += brokenItem.damage_count;
+        }
+      }
+
+      setIncidentConditionCounts(counts);
+    };
+
+    void loadIncidentConditionCounts();
+
+    return () => {
+      active = false;
+    };
+  }, [inventory]);
+
+  const getConditionBreakdown = (item: Item): ConditionBreakdown => {
+    const incident = incidentConditionCounts[item.id] || { broken: 0, forRepairs: 0 };
+    const storedBroken = Math.max(
+      0,
+      item.broken_quantity ?? (item.condition === "Broken" ? item.quantity : 0),
+    );
+    const storedForRepairs = Math.max(
+      0,
+      item.for_repairs_quantity ?? (item.condition === "For Repairs" ? item.quantity : 0),
+    );
+
+    const broken = storedBroken + incident.broken;
+    const forRepairs = storedForRepairs + incident.forRepairs;
+
+    return {
+      available: Math.max(0, item.quantity),
+      broken,
+      forRepairs,
+    };
+  };
+
   const processedData = useMemo(() => {
     let data = [...inventory];
     
@@ -150,7 +229,23 @@ function InventoryContent() {
       }
     }
     if (filterCondition !== "All") {
-      data = data.filter(item => item.condition === filterCondition);
+      data = data.filter((item) => {
+        const breakdown = getConditionBreakdown(item);
+
+        if (filterCondition === "Available") {
+          return breakdown.available > 0;
+        }
+
+        if (filterCondition === "Broken") {
+          return breakdown.broken > 0;
+        }
+
+        if (filterCondition === "For Repairs") {
+          return breakdown.forRepairs > 0;
+        }
+
+        return item.condition === filterCondition;
+      });
     }
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
@@ -167,7 +262,15 @@ function InventoryContent() {
       return 0;
     });
     return data;
-  }, [inventory, selectedLab, filterStatus, filterCondition, sortOption, searchTerm]);
+  }, [
+    inventory,
+    selectedLab,
+    filterStatus,
+    filterCondition,
+    sortOption,
+    searchTerm,
+    incidentConditionCounts,
+  ]);
 
   const totalItems = processedData.length;
   const effectiveItemsPerPage = viewSelection === 'All' ? (totalItems || 1) : parseInt(viewSelection || '50', 10);
@@ -189,7 +292,15 @@ function InventoryContent() {
     doc.text("Inventory List", 14, 20);
     
     const tableRows = data.map(item => [
-      item.name, item.controlId, item.quantity, item.location, item.stock, item.condition
+      item.name,
+      item.controlId,
+      item.quantity,
+      item.location,
+      item.stock,
+      (() => {
+        const condition = getConditionBreakdown(item);
+        return `A:${condition.available} | B:${condition.broken} | R:${condition.forRepairs}`;
+      })(),
     ]);
 
     autoTable(doc, {
@@ -209,7 +320,10 @@ function InventoryContent() {
     const ws = XLSX.utils.json_to_sheet(data.map(item => ({
        Name: item.name, ControlID: item.controlId, Qty: item.quantity, 
        Location: item.location, Supplier: item.supplier, Status: item.stock, 
-       Condition: item.condition, Remarks: item.remarks
+       Condition: (() => {
+        const condition = getConditionBreakdown(item);
+        return `A:${condition.available} | B:${condition.broken} | R:${condition.forRepairs}`;
+       })(), Remarks: item.remarks
     })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Inventory");
@@ -224,7 +338,12 @@ function InventoryContent() {
     const headers = ["ID,Name,Control ID,Quantity,Location,Supplier,Stock Status,Condition,Remarks"];
     const rows = data.map(item => [
         item.id, `"${item.name.replace(/"/g, '""')}"`, item.controlId, item.quantity, 
-        `"${item.location}"`, `"${item.supplier}"`, item.stock, item.condition, `"${item.remarks.replace(/"/g, '""')}"`
+        `"${item.location}"`, `"${item.supplier}"`, item.stock,
+        (() => {
+          const condition = getConditionBreakdown(item);
+          return `"A:${condition.available} | B:${condition.broken} | R:${condition.forRepairs}"`;
+        })(),
+        `"${item.remarks.replace(/"/g, '""')}"`
     ].join(","));
     
     const csvContent = [headers, ...rows].join("\n");
@@ -258,15 +377,53 @@ function InventoryContent() {
     setCurrentId(null); 
     // Auto-set location for lab-restricted users
     const defaultLocation = isLabRestricted && userLabDbName ? userLabDbName : "";
-    setNewItem({ name: "", controlId: "", quantity: 0, location: defaultLocation, supplier: "", stock: "In Stock", condition: "Available", remarks: "", low_stock_threshold: 5 }); 
+    setNewItem({
+      name: "",
+      controlId: "",
+      quantity: 0,
+      broken_quantity: 0,
+      for_repairs_quantity: 0,
+      location: defaultLocation,
+      supplier: "",
+      stock: "In Stock",
+      condition: "Available",
+      remarks: "",
+      low_stock_threshold: 5,
+    }); 
     setIsModalOpen(true); 
   };
-  const openEditModal = (item: Item) => { setIsEditing(true); setCurrentId(item.id); setNewItem({ ...item, low_stock_threshold: item.low_stock_threshold ?? 5 } as any); setIsModalOpen(true); };
+  const openEditModal = (item: Item) => {
+    setIsEditing(true);
+    setCurrentId(item.id);
+    setNewItem({
+      ...item,
+      quantity: item.quantity ?? 0,
+      broken_quantity: item.broken_quantity ?? 0,
+      for_repairs_quantity: item.for_repairs_quantity ?? 0,
+      low_stock_threshold: item.low_stock_threshold ?? 5,
+    } as any);
+    setIsModalOpen(true);
+  };
   const handleSaveItem = (e: React.FormEvent) => { 
     e.preventDefault(); 
     const threshold = newItem.low_stock_threshold ?? 5;
-    const calculatedStock = newItem.quantity === 0 ? "Out of Stock" : (newItem.quantity <= threshold ? "Low Stock" : "In Stock"); 
-    const itemToSave = { ...newItem, stock: calculatedStock, low_stock_threshold: threshold }; 
+    const available = Number.isFinite(newItem.quantity) ? Math.max(0, newItem.quantity) : 0;
+    const broken = Number.isFinite(newItem.broken_quantity) ? Math.max(0, newItem.broken_quantity) : 0;
+    const forRepairs = Number.isFinite(newItem.for_repairs_quantity)
+      ? Math.max(0, newItem.for_repairs_quantity)
+      : 0;
+
+    const calculatedStock = available === 0 ? "Out of Stock" : (available <= threshold ? "Low Stock" : "In Stock"); 
+    const calculatedCondition = forRepairs > 0 ? "For Repairs" : (broken > 0 ? "Broken" : "Available");
+    const itemToSave = {
+      ...newItem,
+      quantity: available,
+      broken_quantity: broken,
+      for_repairs_quantity: forRepairs,
+      stock: calculatedStock,
+      condition: calculatedCondition,
+      low_stock_threshold: threshold,
+    }; 
     isEditing && currentId !== null ? updateItem(currentId, itemToSave as any) : addItem(itemToSave as any); 
     setIsModalOpen(false); 
   };
@@ -494,6 +651,7 @@ function InventoryContent() {
               {currentItems.length > 0 ? (
                 currentItems.map((item) => {
                   const isSelected = selectedIds.includes(item.id);
+                  const conditionBreakdown = getConditionBreakdown(item);
                   return (
                     <tr key={item.id} className={`group transition-colors ${isSelected ? "bg-indigo-500/10" : "hover:bg-white/[0.07]"}`}>
                       <td className="p-4 text-center"><button onClick={() => toggleSelect(item.id)} className={`transition-colors ${isSelected ? "text-indigo-400" : "text-gray-600 group-hover:text-gray-400"}`}>{isSelected ? <CheckSquare size={16}/> : <Square size={16}/>}</button></td>
@@ -502,7 +660,13 @@ function InventoryContent() {
                       <td className="p-4 text-center"><div className="inline-flex flex-col items-center justify-center bg-white/5 border border-white/10 w-12 h-10 rounded-lg"><span className={`text-sm font-bold ${item.quantity === 0 ? "text-red-400" : "text-white"}`}>{item.quantity < 10 && item.quantity > 0 ? `0${item.quantity}` : item.quantity}</span></div></td>
                       <td className="p-4"><div className="flex items-center gap-2 text-gray-300"><div className="bg-indigo-500/10 p-1.5 rounded-md text-indigo-400"><MapPin size={12} /></div><span className="text-xs font-medium">{item.location}</span></div></td>
                       <td className="p-4"><StockBadge status={item.stock} /></td>
-                      <td className="p-4"><ConditionBadge status={item.condition} /></td>
+                      <td className="p-4">
+                        <ConditionBreakdownBadge
+                          available={conditionBreakdown.available}
+                          broken={conditionBreakdown.broken}
+                          forRepairs={conditionBreakdown.forRepairs}
+                        />
+                      </td>
                       <td className="p-4"><span className="text-gray-400 text-xs truncate block max-w-[140px]" title={item.remarks}>{item.remarks}</span></td>
                       <td className="p-4 text-right"><div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => openEditModal(item)} className="p-2 hover:bg-white/20 rounded-lg text-gray-400 hover:text-white"><Edit2 size={14} /></button><button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400"><Trash2 size={14} /></button></div></td>
                     </tr>
@@ -534,6 +698,7 @@ function InventoryContent() {
           {currentItems.length > 0 ? (
             currentItems.map((item) => {
               const isSelected = selectedIds.includes(item.id);
+              const conditionBreakdown = getConditionBreakdown(item);
               return (
                 <motion.div
                   key={item.id}
@@ -598,7 +763,11 @@ function InventoryContent() {
                   <div className="px-4 py-3 bg-black/20 border-t border-white/5 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <StockBadge status={item.stock} />
-                      <ConditionBadge status={item.condition} />
+                      <ConditionBreakdownBadge
+                        available={conditionBreakdown.available}
+                        broken={conditionBreakdown.broken}
+                        forRepairs={conditionBreakdown.forRepairs}
+                      />
                     </div>
                     {item.remarks && (
                       <span className="text-[10px] text-gray-500 truncate max-w-[100px]" title={item.remarks}>
@@ -733,16 +902,52 @@ function InventoryContent() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-400 uppercase">Quantity</label>
-                      <input required type="number" min="0" value={newItem.quantity} onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                      <label className="text-xs font-medium text-gray-400 uppercase">Available</label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        value={newItem.quantity}
+                        onChange={(e) => setNewItem({...newItem, quantity: Number(e.target.value)})}
+                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">Broken</label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        value={newItem.broken_quantity}
+                        onChange={(e) => setNewItem({...newItem, broken_quantity: Number(e.target.value)})}
+                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-400 uppercase">For Repairs</label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        value={newItem.for_repairs_quantity}
+                        onChange={(e) => setNewItem({...newItem, for_repairs_quantity: Number(e.target.value)})}
+                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-gray-400 uppercase">Low Stock Threshold</label>
-                      <input required type="number" min="1" value={newItem.low_stock_threshold} onChange={(e) => setNewItem({...newItem, low_stock_threshold: parseInt(e.target.value)})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                      <input
+                        required
+                        type="number"
+                        min="1"
+                        value={newItem.low_stock_threshold}
+                        onChange={(e) => setNewItem({...newItem, low_stock_threshold: Number(e.target.value)})}
+                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                      />
                     </div>
-                    <div className="space-y-1.5 col-span-2">
+                    <div className="space-y-1.5 col-span-2 md:col-span-4">
                       <label className="text-xs font-medium text-gray-400 uppercase flex items-center gap-1.5">Location {isLabRestricted && <Lock size={10} className="text-gray-500" />}</label>
                       {isLabRestricted ? (
                         <div className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-400 flex items-center gap-2"><Lock size={12} />{userLabTab}</div>
@@ -750,7 +955,7 @@ function InventoryContent() {
                         <div className="relative" ref={modalLocationRef}>
                           <button 
                             type="button"
-                            onClick={() => { setModalLocationOpen(!modalLocationOpen); setModalConditionOpen(false); }}
+                            onClick={() => { setModalLocationOpen(!modalLocationOpen); }}
                             className="w-full flex items-center justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
                           >
                             <span className={newItem.location ? "text-white" : "text-gray-500"}>{newItem.location ? LAB_TABS.find(lab => LAB_MAPPING[lab] === newItem.location) || newItem.location : "Select Laboratory"}</span>
@@ -794,43 +999,12 @@ function InventoryContent() {
                       <input type="text" value={newItem.supplier} onChange={(e) => setNewItem({...newItem, supplier: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-400 uppercase">Condition</label>
-                      <div className="relative" ref={modalConditionRef}>
-                        <button 
-                          type="button"
-                          onClick={() => { setModalConditionOpen(!modalConditionOpen); setModalLocationOpen(false); }}
-                          className="w-full flex items-center justify-between bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white hover:border-white/20 transition-colors"
-                        >
-                          <span>{newItem.condition}</span>
-                          <ChevronDown size={14} className={`text-gray-500 transition-transform ${modalConditionOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        <AnimatePresence>
-                          {modalConditionOpen && (
-                            <motion.div 
-                              initial={{ opacity: 0, y: 8, scale: 0.96 }} 
-                              animate={{ opacity: 1, y: 0, scale: 1 }} 
-                              exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                              transition={{ duration: 0.15 }}
-                              className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
-                            >
-                              {["Available", "Broken", "For Repairs"].map((condition) => (
-                                <button
-                                  key={condition}
-                                  type="button"
-                                  onClick={() => { setNewItem({...newItem, condition}); setModalConditionOpen(false); }}
-                                  className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
-                                    newItem.condition === condition 
-                                      ? 'bg-indigo-500/20 text-indigo-400' 
-                                      : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                                  }`}
-                                >
-                                  {condition}
-                                  {newItem.condition === condition && <CheckCircle size={14} />}
-                                </button>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                      <label className="text-xs font-medium text-gray-400 uppercase">Condition Summary</label>
+                      <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-gray-300">
+                        A: {Math.max(0, newItem.quantity)} | B: {Math.max(0, newItem.broken_quantity)} | R: {Math.max(0, newItem.for_repairs_quantity)}
+                        <p className="mt-1 text-[10px] text-gray-500">
+                          Primary condition: {newItem.for_repairs_quantity > 0 ? "For Repairs" : (newItem.broken_quantity > 0 ? "Broken" : "Available")}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -871,7 +1045,26 @@ function StockBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${styles[status]}`}>{icons[status]}{status}</span>;
 }
 
-function ConditionBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = { "Available": "text-gray-400 bg-white/5 border-white/10", "Broken": "text-rose-400 bg-rose-950/30 border-rose-500/20", "For Repairs": "text-amber-400 bg-amber-950/30 border-amber-500/20" };
-  return <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium border ${styles[status]}`}>{status}</span>;
+function ConditionBreakdownBadge({
+  available,
+  broken,
+  forRepairs,
+}: {
+  available: number;
+  broken: number;
+  forRepairs: number;
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+        A: {available}
+      </div>
+      <div className="inline-flex items-center gap-1 rounded-md border border-rose-500/20 bg-rose-950/30 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+        B: {broken}
+      </div>
+      <div className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-950/30 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+        R: {forRepairs}
+      </div>
+    </div>
+  );
 }

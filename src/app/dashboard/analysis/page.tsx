@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useInventory } from "@/context/InventoryContext";
 import { useRole } from "@/context/RoleContext";
+import { getReportsDashboardData } from "@/lib/actions/inventory";
 
 const ROLE_LAB_DB_MAPPING: Record<string, string> = {
   "ME Lab": "Mechanical Engineering Laboratory",
@@ -76,6 +77,7 @@ function StatCard({
 export default function AnalysisPage() {
   const { inventory, loans, reservations } = useInventory();
   const { role } = useRole();
+  const [incidentUnavailableUnits, setIncidentUnavailableUnits] = useState(0);
 
   const isLabRestricted =
     !FULL_ACCESS_ROLES.includes(role) && Boolean(ROLE_LAB_DB_MAPPING[role]);
@@ -102,6 +104,41 @@ export default function AnalysisPage() {
     return reservations;
   }, [reservations, isLabRestricted, userLabDbName]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadIncidentUnavailableUnits = async () => {
+      const result = await getReportsDashboardData();
+      if (!active) return;
+
+      if (result.error || !result.data) {
+        setIncidentUnavailableUnits(0);
+        return;
+      }
+
+      const reportLocationById = new Map(
+        result.data.incident_reports.map((report) => [report.id, report.location || ""]),
+      );
+
+      const unresolvedDamageUnits = result.data.broken_items
+        .filter((item) => item.report_status !== "Resolved")
+        .filter((item) => {
+          if (!isLabRestricted || !userLabDbName) return true;
+          const reportLocation = reportLocationById.get(item.incident_report_id) || "";
+          return reportLocation === userLabDbName;
+        })
+        .reduce((sum, item) => sum + item.damage_count, 0);
+
+      setIncidentUnavailableUnits(unresolvedDamageUnits);
+    };
+
+    void loadIncidentUnavailableUnits();
+
+    return () => {
+      active = false;
+    };
+  }, [isLabRestricted, userLabDbName]);
+
   const totals = useMemo(() => {
     const totalSkus = filteredInventory.length;
     const totalUnits = filteredInventory.reduce((sum, item) => sum + item.quantity, 0);
@@ -127,6 +164,8 @@ export default function AnalysisPage() {
       (reservation) => reservation.status === "pending",
     ).length;
 
+    const unavailableUnits = brokenUnits + repairUnits + incidentUnavailableUnits;
+
     return {
       totalSkus,
       totalUnits,
@@ -134,11 +173,13 @@ export default function AnalysisPage() {
       borrowedUnits,
       brokenUnits,
       repairUnits,
+      incidentUnavailableUnits,
+      unavailableUnits,
       lowStockItems,
       outOfStockItems,
       pendingReservations,
     };
-  }, [filteredInventory, filteredLoans, filteredReservations]);
+  }, [filteredInventory, filteredLoans, filteredReservations, incidentUnavailableUnits]);
 
   const stockSegments = useMemo(() => {
     const segments = [
@@ -261,9 +302,9 @@ export default function AnalysisPage() {
       );
     }
 
-    if (totals.brokenUnits > 0 || totals.repairUnits > 0) {
+    if (totals.unavailableUnits > 0) {
       items.push(
-        `${totals.brokenUnits + totals.repairUnits} units are unavailable (broken/for repair). Schedule maintenance and reassess replacement budget.`,
+        `${totals.unavailableUnits} units are unavailable (broken/for repair + unresolved incident-reported). Schedule maintenance and reassess replacement budget.`,
       );
     }
 
@@ -319,8 +360,8 @@ export default function AnalysisPage() {
         />
         <StatCard
           label="Unavailable"
-          value={totals.brokenUnits + totals.repairUnits}
-          hint="Broken + for repairs"
+          value={totals.unavailableUnits}
+          hint={`Broken + repairs + ${totals.incidentUnavailableUnits} unresolved incident-reported`}
           icon={Wrench}
           tone="bg-amber-500/20 text-amber-100"
         />

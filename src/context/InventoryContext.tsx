@@ -9,6 +9,8 @@ export type Item = {
   name: string;
   controlId: string;
   quantity: number;
+  broken_quantity: number;
+  for_repairs_quantity: number;
   location: string;
   supplier: string;
   stock: "In Stock" | "Low Stock" | "Out of Stock";
@@ -109,6 +111,11 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
 
+  const isMissingColumnError = (error: unknown): boolean => {
+    const message = String((error as { message?: string })?.message || "").toLowerCase();
+    return message.includes("column") && message.includes("does not exist");
+  };
+
   // 1. FETCH DATA FUNCTION
   const fetchData = async () => {
     // A. Inventory
@@ -119,6 +126,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         name: i.item_name, 
         controlId: i.control_id, 
         quantity: i.quantity,
+        broken_quantity: i.broken_quantity ?? 0,
+        for_repairs_quantity: i.for_repairs_quantity ?? 0,
         location: i.location, 
         supplier: i.supplier, 
         stock: i.stock_status,
@@ -245,12 +254,34 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addItem = async (item: Omit<Item, "id">) => {
-    const { error } = await supabase.from('inventory').insert([{
+    const insertPayload = {
       item_name: item.name, control_id: item.controlId, quantity: item.quantity,
+      broken_quantity: item.broken_quantity ?? 0,
+      for_repairs_quantity: item.for_repairs_quantity ?? 0,
       location: item.location, supplier: item.supplier, stock_status: item.stock,
       condition_status: item.condition, remarks: item.remarks, unit: 'pcs',
       low_stock_threshold: item.low_stock_threshold ?? 5
-    }]);
+    };
+
+    let { error } = await supabase.from('inventory').insert([insertPayload]);
+
+    if (error && isMissingColumnError(error)) {
+      const fallbackPayload = {
+        item_name: item.name,
+        control_id: item.controlId,
+        quantity: item.quantity,
+        location: item.location,
+        supplier: item.supplier,
+        stock_status: item.stock,
+        condition_status: item.condition,
+        remarks: item.remarks,
+        unit: 'pcs',
+        low_stock_threshold: item.low_stock_threshold ?? 5,
+      };
+      const retry = await supabase.from('inventory').insert([fallbackPayload]);
+      error = retry.error;
+    }
+
     if (!error) {
       const { data: { session } } = await supabase.auth.getSession();
       await logAction("New Item Added", `New Item Added: ${item.name}`, item.location, session?.user?.id);
@@ -269,6 +300,20 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (updatedItem.quantity !== undefined && updatedItem.quantity !== item?.quantity) {
       payload.quantity = updatedItem.quantity;
       changes.push(`${item?.name ?? "Item"} quantity changed to ${updatedItem.quantity}`);
+    }
+    if (
+      updatedItem.broken_quantity !== undefined &&
+      updatedItem.broken_quantity !== item?.broken_quantity
+    ) {
+      payload.broken_quantity = updatedItem.broken_quantity;
+      changes.push(`${item?.name ?? "Item"} broken quantity changed to ${updatedItem.broken_quantity}`);
+    }
+    if (
+      updatedItem.for_repairs_quantity !== undefined &&
+      updatedItem.for_repairs_quantity !== item?.for_repairs_quantity
+    ) {
+      payload.for_repairs_quantity = updatedItem.for_repairs_quantity;
+      changes.push(`${item?.name ?? "Item"} for repairs quantity changed to ${updatedItem.for_repairs_quantity}`);
     }
     if (updatedItem.stock && updatedItem.stock !== item?.stock) {
       payload.stock_status = updatedItem.stock;
@@ -307,7 +352,16 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { error } = await supabase.from('inventory').update(payload).eq('id', id);
+    let { error } = await supabase.from('inventory').update(payload).eq('id', id);
+
+    if (error && isMissingColumnError(error)) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.broken_quantity;
+      delete fallbackPayload.for_repairs_quantity;
+      const retry = await supabase.from('inventory').update(fallbackPayload).eq('id', id);
+      error = retry.error;
+    }
+
     if (!error) {
       const { data: { session } } = await supabase.auth.getSession();
       if (changes.length === 0) {
@@ -411,9 +465,20 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     if (data.condition) payload.condition_status = data.condition;
     if (data.location) payload.location = data.location;
     if (data.low_stock_threshold !== undefined) payload.low_stock_threshold = data.low_stock_threshold;
+    if (data.broken_quantity !== undefined) payload.broken_quantity = data.broken_quantity;
+    if (data.for_repairs_quantity !== undefined) payload.for_repairs_quantity = data.for_repairs_quantity;
     if (Object.keys(payload).length === 0) return;
 
-    const { error } = await supabase.from('inventory').update(payload).in('id', ids);
+    let { error } = await supabase.from('inventory').update(payload).in('id', ids);
+
+    if (error && isMissingColumnError(error)) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.broken_quantity;
+      delete fallbackPayload.for_repairs_quantity;
+      const retry = await supabase.from('inventory').update(fallbackPayload).in('id', ids);
+      error = retry.error;
+    }
+
     if (!error) {
       const { data: { session } } = await supabase.auth.getSession();
       await logAction("Batch Update", `Updated ${ids.length} items`, "", session?.user?.id);

@@ -40,6 +40,18 @@ let resolvedIncidentReportsTableName: string | null = null;
 let resolvedBrokenItemsTableName: string | null | undefined = undefined;
 
 const INCIDENT_STATUSES = ["Pending", "In Review", "Resolved"] as const;
+const STATUS_EDITOR_ROLES = new Set([
+  "developer",
+  "superadmin",
+  "administrator",
+  "program chair",
+  "personnel",
+  "lab personnel",
+  "laboratory personnel",
+  "laboratory assistant",
+  "technician",
+  "laboratory head",
+]);
 
 export type IncidentStatus = (typeof INCIDENT_STATUSES)[number];
 export type ReportStatusFilter = IncidentStatus | "All";
@@ -70,6 +82,7 @@ export interface IncidentReportCreateInput {
   instructor_name?: string | null;
   incident_description: string;
   injury_details?: string | null;
+  response_notes?: string | null;
   status?: IncidentStatus;
   damaged_items: DamagedItemInput[];
 }
@@ -100,6 +113,7 @@ export interface IncidentReportListItem {
   instructor_name?: string | null;
   incident_description?: string | null;
   injury_details?: string | null;
+  response_notes?: string | null;
   status: string;
   damaged_items: DamagedItemInput[];
   created_at?: string | null;
@@ -622,6 +636,7 @@ const mapReportRow = (row: GenericRow): IncidentReportListItem => {
     instructor_name: toStringValue(row.instructor_name) || null,
     incident_description: toStringValue(row.incident_description) || null,
     injury_details: toStringValue(row.injury_details) || null,
+    response_notes: toStringValue(row.response_notes ?? row.resolution_notes) || null,
     status: normalizeStatus(row.status),
     damaged_items: parseDamagedItemsArray(row.damaged_items),
     created_at: toStringValue(row.created_at) || null,
@@ -937,13 +952,30 @@ export async function createIncidentReportWithInventorySync(
         injury_details: payload.injury_details ?? null,
         status: normalizeStatus(payload.status),
         damaged_items: damagedItems,
+        ...(payload.response_notes !== undefined
+          ? { response_notes: payload.response_notes ?? null }
+          : {}),
       };
 
-      const { data, error } = await client
+      let { data, error } = await client
         .from(incidentReportsTable)
         .insert([insertPayload])
         .select("*")
         .single();
+
+      if (error && isColumnNotFoundError(error) && "response_notes" in insertPayload) {
+        const fallbackPayload = { ...insertPayload } as Record<string, unknown>;
+        delete fallbackPayload.response_notes;
+
+        const retry = await client
+          .from(incidentReportsTable)
+          .insert([fallbackPayload])
+          .select("*")
+          .single();
+
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         throw new Error(error.message);
@@ -1037,12 +1069,35 @@ export async function updateIncidentReportWithInventorySync(
         updated_at: new Date().toISOString(),
       };
 
-      const { data: updated, error: updateError } = await client
+      if (payload.response_notes !== undefined) {
+        updatePayload.response_notes = payload.response_notes ?? null;
+      }
+
+      let { data: updated, error: updateError } = await client
         .from(incidentReportsTable)
         .update(updatePayload)
         .eq("id", reportId)
         .select("*")
         .single();
+
+      if (
+        updateError &&
+        isColumnNotFoundError(updateError) &&
+        Object.prototype.hasOwnProperty.call(updatePayload, "response_notes")
+      ) {
+        const fallbackPayload = { ...updatePayload } as Record<string, unknown>;
+        delete fallbackPayload.response_notes;
+
+        const retry = await client
+          .from(incidentReportsTable)
+          .update(fallbackPayload)
+          .eq("id", reportId)
+          .select("*")
+          .single();
+
+        updated = retry.data;
+        updateError = retry.error;
+      }
 
       if (updateError) {
         throw new Error(updateError.message);
@@ -1138,8 +1193,17 @@ export async function deleteIncidentReportWithInventorySync(
 export async function updateIncidentReportStatus(
   reportId: string,
   status: IncidentStatus,
+  actorRole?: string,
 ): Promise<ReportActionResult<{ id: string; status: IncidentStatus }>> {
   try {
+    const normalizedRole = toStringValue(actorRole).trim().toLowerCase();
+    if (!STATUS_EDITOR_ROLES.has(normalizedRole)) {
+      return {
+        data: null,
+        error: "Only authorized Personnel/Admin users can update incident status.",
+      };
+    }
+
     const client = getSupabaseServerClient();
     const incidentReportsTable = await resolveIncidentReportsTableName(client);
 
