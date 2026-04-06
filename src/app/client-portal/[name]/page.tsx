@@ -1,13 +1,23 @@
 import { notFound } from "next/navigation";
-import RequisitionFormTestingPage from "../../dashboard/requisition-form-testing/page";
+import ClientPortalAdaptiveRequisition from "@/components/requisition/ClientPortalAdaptiveRequisition";
 
 type Params = {
   name?: string;
 };
 
+type SearchParams = Record<string, string | string[] | undefined>;
+
 type ClientPortalPageProps = {
   params?: Promise<Params> | Params;
+  searchParams?: Promise<SearchParams> | SearchParams;
 };
+
+function normalizeParam(param: string | string[] | undefined): string {
+  if (Array.isArray(param)) {
+    return param[0] || "";
+  }
+  return param || "";
+}
 
 function toSlug(value: string): string {
   return value
@@ -17,10 +27,13 @@ function toSlug(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export default async function ClientPortalPage({ params }: ClientPortalPageProps) {
+export default async function ClientPortalPage({ params, searchParams }: ClientPortalPageProps) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+
   const providedName = String(resolvedParams?.name || "");
   const providedSlug = toSlug(decodeURIComponent(providedName));
+  const forceGeneric = normalizeParam(resolvedSearchParams?.view) === "generic";
 
   const expectedName = process.env.CLIENT_PORTAL_ACCESS_NAME;
   const expectedToken = process.env.CLIENT_PORTAL_QR_TOKEN;
@@ -38,10 +51,6 @@ export default async function ClientPortalPage({ params }: ClientPortalPageProps
   }
 
   return (
-    <RequisitionFormTestingPage
-      hideToolbar
-      postSubmitAction="reset"
-      hideDownloadCopyButton
-    />
+    <ClientPortalAdaptiveRequisition forceGeneric={forceGeneric} />
   );
 }
