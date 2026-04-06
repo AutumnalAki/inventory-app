@@ -33,8 +33,8 @@ const TIME_OF_USE_OPTIONS = [
 
 const createEmptyItem = (): GenericItem => ({
   name: "",
-  quantity: 1,
-  unit: "pc",
+  quantity: 0,
+  unit: "",
 });
 
 const toUnit = (quantity: number): string => {
@@ -150,10 +150,19 @@ export default function ClientPortalGenericRequisitionForm({
         const selectedQty = availableQtyByName.get(selectedName.toLowerCase()) ?? 0;
         const nextQuantity = Math.min(Math.max(item.quantity || 1, 1), Math.max(selectedQty, 1));
 
+        if (!selectedName) {
+          return {
+            ...item,
+            name,
+            quantity: 0,
+            unit: "",
+          };
+        }
+
         return {
           ...item,
           name,
-          quantity: selectedName ? nextQuantity : 1,
+          quantity: nextQuantity,
           unit: toUnit(nextQuantity),
         };
       }),
@@ -161,6 +170,20 @@ export default function ClientPortalGenericRequisitionForm({
   };
 
   const setItemQuantity = (index: number, quantityInput: string) => {
+    if (quantityInput.trim() === "") {
+      setItems((previous) =>
+        previous.map((item, itemIndex) => {
+          if (itemIndex !== index) return item;
+          return {
+            ...item,
+            quantity: 0,
+            unit: "",
+          };
+        }),
+      );
+      return;
+    }
+
     const parsed = Number.parseInt(quantityInput, 10);
 
     setItems((previous) =>
@@ -178,7 +201,7 @@ export default function ClientPortalGenericRequisitionForm({
         return {
           ...item,
           quantity: safeQuantity,
-          unit: toUnit(safeQuantity),
+          unit: safeQuantity > 0 ? toUnit(safeQuantity) : "",
         };
       }),
     );
@@ -459,7 +482,7 @@ export default function ClientPortalGenericRequisitionForm({
                   <input
                     type="number"
                     min={1}
-                    value={item.quantity}
+                    value={item.quantity > 0 ? item.quantity : ""}
                     onChange={(event) => setItemQuantity(index, event.target.value)}
                     className="mt-1 w-full rounded-md border border-white/10 bg-black/40 px-2 py-2 text-sm text-white outline-none focus:border-emerald-500"
                   />

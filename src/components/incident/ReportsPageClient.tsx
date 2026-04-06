@@ -96,6 +96,17 @@ const formatPrintDateTime = (value?: string | null): string => {
   });
 };
 
+const formatPrintDate = (value?: string | null): string => {
+  if (!value) return "N/A";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "N/A";
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 const toTicketCode = (report: IncidentReportListItem): string => {
   const normalizedId = String(report.id || "").trim().toUpperCase();
   if (/^IR-\d{4}-\d{5}$/.test(normalizedId)) {
@@ -176,6 +187,7 @@ const drawIncidentFormSection = (
   const docCodeWidth = 58;
 
   const incidentDate = formatPrintDateTime(report.incident_datetime || report.created_at);
+  const incidentDateOnly = formatPrintDate(report.incident_datetime || report.created_at);
   const witness = toText(report.witness_name);
   const description = toText(report.incident_description);
   const injuryDetails = toText(report.injury_details);
@@ -370,7 +382,7 @@ const drawIncidentFormSection = (
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6.2);
-    doc.text(`Date: ${incidentDate}`, colX + 1.5, signY + 27.8);
+    doc.text(`Date: ${incidentDateOnly}`, colX + 1.5, signY + 27.8);
   });
 
   return startY + formHeight;
@@ -383,78 +395,98 @@ const drawTicketSection = (
 ): number => {
   const x = 24;
   const width = 162;
-  const height = 52;
+  const height = 58;
   const code = toTicketCode(report);
   const incidentDate = formatPrintDateTime(report.incident_datetime || report.created_at);
+  const incidentDateOnly = formatPrintDate(report.incident_datetime || report.created_at);
   const itemCount = String((report.damaged_items || []).reduce((sum, item) => sum + item.damage_count, 0));
   const approvedDate =
     report.status === "Resolved"
       ? formatPrintDateTime(report.updated_at || report.incident_datetime || report.created_at)
       : "Pending";
+  const safeSingleLine = (value: string, maxWidth: number): string => {
+    const lines = doc.splitTextToSize(value || "N/A", maxWidth) as string[];
+    return lines[0] || "N/A";
+  };
+  const safeTwoLines = (value: string, maxWidth: number): string[] => {
+    const lines = doc.splitTextToSize(value || "N/A", maxWidth) as string[];
+    return lines.slice(0, 2);
+  };
 
   doc.setDrawColor(0, 0, 0);
   doc.setTextColor(0, 0, 0);
   doc.setLineWidth(0.25);
   doc.rect(x, startY, width, height);
 
+  doc.setFillColor(245, 245, 245);
+  doc.rect(x, startY, width, 12, "F");
+
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(4.8);
-  doc.text("INCIDENT REPORT TICKET", x + width / 2, startY + 5.2, { align: "center" });
-  doc.setFontSize(10);
-  doc.text(code, x + width / 2, startY + 10.2, { align: "center" });
+  doc.setFontSize(5.2);
+  doc.text("INCIDENT REPORT TICKET", x + width / 2, startY + 4.7, { align: "center" });
+  doc.setFontSize(9.8);
+  doc.text(code, x + width / 2, startY + 9.8, { align: "center" });
 
   doc.line(x + 4, startY + 12, x + width - 4, startY + 12);
-  doc.line(x + width / 2, startY + 12, x + width / 2, startY + 22);
+  doc.line(x + width / 2, startY + 12, x + width / 2, startY + 24);
   doc.line(x + 4, startY + 18, x + width - 4, startY + 18);
-  doc.line(x + 4, startY + 22, x + width - 4, startY + 22);
-  doc.line(x + 4, startY + 28, x + width - 4, startY + 28);
-  doc.line(x + 4, startY + 34, x + width - 4, startY + 34);
-  doc.line(x + 4, startY + 40, x + width - 4, startY + 40);
-  doc.line(x + width / 2, startY + 40, x + width / 2, startY + 46);
+  doc.line(x + 4, startY + 24, x + width - 4, startY + 24);
+  doc.line(x + 4, startY + 32, x + width - 4, startY + 32);
+  const metricsTopY = startY + 42;
+  const metricsBottomY = startY + 50;
+  const footerTopY = startY + 53;
+  const footerTextY = startY + 56;
+
+  doc.line(x + 4, metricsTopY, x + width - 4, metricsTopY);
+  doc.line(x + width / 2, metricsTopY, x + width / 2, metricsBottomY);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(4.8);
   doc.text("STUDENT NAME", x + 6, startY + 15.3);
   doc.text("DATE & TIME", x + width / 2 + 2, startY + 15.3);
 
-  doc.setFontSize(5.9);
-  doc.text(toText(report.student_name), x + 6, startY + 20.6);
-  doc.text(incidentDate, x + width / 2 + 2, startY + 20.6);
+  doc.setFontSize(5.7);
+  doc.text(safeSingleLine(toText(report.student_name), width / 2 - 8), x + 6, startY + 21.1);
+  doc.text(safeSingleLine(incidentDate, width / 2 - 8), x + width / 2 + 2, startY + 21.1);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(4.8);
-  doc.text("LOCATION", x + 6, startY + 25.3);
+  doc.text("LOCATION", x + 6, startY + 27.2);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.9);
-  doc.text(toText(report.location), x + 6, startY + 30.4);
+  doc.setFontSize(5.7);
+  doc.text(safeSingleLine(toText(report.location), width - 14), x + 6, startY + 30.9);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(4.8);
-  doc.text("INCIDENT", x + 6, startY + 37.2);
+  doc.text("INCIDENT", x + 6, startY + 35.6);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.9);
+  doc.setFontSize(5.6);
   const incidentSingle = toText(report.incident_description).replace(/\s+/g, " ");
-  const incidentLine = (doc.splitTextToSize(incidentSingle, width - 14) as string[]).slice(0, 1);
-  doc.text(incidentLine, x + 6, startY + 42.4);
+  const incidentLines = safeTwoLines(incidentSingle, width - 14);
+  doc.text(incidentLines, x + 6, startY + 39.1);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(5);
-  doc.text("ITEMS", x + 6, startY + 45.7);
+  doc.text("ITEMS", x + 6, startY + 45.9);
   doc.setTextColor(186, 0, 0);
   doc.setFontSize(7.5);
-  doc.text(itemCount, x + 6, startY + 49.5);
+  doc.text(itemCount, x + 6, startY + 49.6);
 
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(5);
-  doc.text("APPROVED", x + width / 2 + 2, startY + 45.7);
+  doc.text("APPROVED", x + width / 2 + 2, startY + 45.9);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.text(approvedDate, x + width / 2 + 2, startY + 49.4);
+  doc.setFontSize(5.5);
+  doc.text(safeSingleLine(approvedDate, width / 2 - 8), x + width / 2 + 2, startY + 49.6);
+
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(x + 4, footerTopY, x + width - 4, footerTopY);
+  doc.setLineDashPattern([], 0);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(4.5);
-  doc.text("Keep this ticket for records", x + width / 2, startY + height - 2.8, {
+  doc.setFontSize(4.6);
+  doc.text(`Keep this ticket for records - ${incidentDateOnly}`, x + width / 2, footerTextY, {
     align: "center",
   });
 
@@ -473,9 +505,9 @@ const printReport = (report: IncidentReportListItem, mode: PrintMode): void => {
     doc.setLineWidth(0.2);
     doc.setDrawColor(95, 95, 95);
     doc.setLineDashPattern([1.5, 1.5], 0);
-    doc.line(12, 232, 198, 232);
+    doc.line(12, 230, 198, 230);
     doc.setLineDashPattern([], 0);
-    drawTicketSection(doc, report, 240);
+    drawTicketSection(doc, report, 234);
   }
 
   const suffix = mode === "form" ? "Form" : mode === "ticket" ? "Ticket" : "Report-And-Ticket";

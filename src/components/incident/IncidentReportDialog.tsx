@@ -581,7 +581,7 @@ export default function IncidentReportDialog({
 
       <div className={isSinglePageMode ? "space-y-4" : ""}>
       {(isSinglePageMode || step === 1) && (
-        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3" : ""}>
+        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3.5" : ""}>
           {isSinglePageMode ? (
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Personal Information</p>
           ) : null}
@@ -643,7 +643,7 @@ export default function IncidentReportDialog({
       )}
 
       {(isSinglePageMode || step === 2) && (
-        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3" : ""}>
+        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3.5" : ""}>
           {isSinglePageMode ? (
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Incident Details</p>
           ) : null}
@@ -699,7 +699,7 @@ export default function IncidentReportDialog({
       )}
 
       {(isSinglePageMode || step === 3) && (
-        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3" : ""}>
+        <div className={isSinglePageMode ? "rounded-xl border border-white/10 bg-black/20 p-3.5" : ""}>
           {isSinglePageMode ? (
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Description</p>
           ) : null}
@@ -733,11 +733,11 @@ export default function IncidentReportDialog({
       )}
 
       {(isSinglePageMode || step === 4) && (
-        <div className={isSinglePageMode ? "space-y-4 rounded-xl border border-white/10 bg-black/20 p-3" : "space-y-4"}>
+        <div className="space-y-4">
           {isSinglePageMode ? (
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Damaged Equipment</p>
           ) : null}
-          <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <div className={`rounded-xl border border-white/10 p-3 ${isSinglePageMode ? "bg-black/10" : "bg-black/20"}`}>
             <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-3">
               <label className="block md:col-span-2">
                 <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -856,7 +856,7 @@ export default function IncidentReportDialog({
             ) : null}
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-black/20">
+          <div className={`rounded-xl border border-white/10 ${isSinglePageMode ? "bg-black/10" : "bg-black/20"}`}>
             <div className="border-b border-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-400">
               Pending Damage
             </div>

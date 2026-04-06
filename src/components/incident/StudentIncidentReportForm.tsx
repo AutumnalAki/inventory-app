@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ClipboardPlus, Monitor, Smartphone } from "lucide-react";
+import { CheckCircle2, ClipboardPlus, Monitor, Smartphone, Ticket } from "lucide-react";
 import IncidentReportDialog from "@/components/incident/IncidentReportDialog";
 import type { IncidentReportListItem } from "@/lib/actions/inventory";
 
@@ -125,14 +125,29 @@ export default function StudentIncidentReportForm({
       </div>
 
       {latestReport ? (
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-100">
-          <div className="mb-1 inline-flex items-center gap-2 text-sm font-bold">
-            <CheckCircle2 size={16} />
-            Incident report submitted successfully
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/14 to-teal-500/10 p-4 text-emerald-100">
+          <div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border border-emerald-300/30 bg-[#050505]" />
+          <div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border border-emerald-300/30 bg-[#050505]" />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="mb-1 inline-flex items-center gap-2 text-sm font-bold">
+                <CheckCircle2 size={16} />
+                Incident report submitted successfully
+              </div>
+              <p className="text-xs text-emerald-100/90">
+                Submission ticket generated for reference.
+              </p>
+            </div>
+
+            <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/35 bg-black/30 px-3 py-2 text-xs font-semibold text-emerald-100">
+              <Ticket size={14} />
+              Ticket: {latestReport.id}
+            </div>
           </div>
-          <p className="text-xs">
-            Report ID: {latestReport.id}
-            {submittedAt ? ` • Submitted: ${submittedAt}` : ""}
+
+          <p className="mt-3 border-t border-dashed border-emerald-400/35 pt-3 text-xs text-emerald-100/90">
+            {submittedAt ? `Submitted: ${submittedAt}` : "Submitted successfully"}
           </p>
         </div>
       ) : null}
@@ -140,7 +155,7 @@ export default function StudentIncidentReportForm({
       <IncidentReportDialog
         open={open}
         onClose={() => setOpen(false)}
-        dialogClassName="max-h-[92vh]"
+        dialogClassName="max-w-6xl max-h-[92vh]"
         modeVariant={showAllFields ? "single-page" : "stepper"}
         reportOwnerUserId={reportOwnerUserId}
         onSuccess={(report) => {
