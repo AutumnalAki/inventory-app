@@ -392,6 +392,26 @@ export default function RequisitionTrackingPage() {
     }
   };
 
+  const handleRelease = async (req: Requisition) => {
+    try {
+      setRowLoading(req.id, true);
+
+      const { error: updateError } = await supabase
+        .from("requisitions")
+        .update({ status: "Released" })
+        .eq("id", req.id);
+
+      if (updateError) throw updateError;
+
+      updateRequisitionLocally(req.id, { status: "Released" });
+    } catch (err: any) {
+      console.error("Error releasing requisition:", err);
+      alert("Failed to release requisition");
+    } finally {
+      setRowLoading(req.id, false);
+    }
+  };
+
   const handleDecline = async (req: Requisition) => {
     try {
       setRowLoading(req.id, true);
@@ -727,7 +747,8 @@ export default function RequisitionTrackingPage() {
                   <tr key={req.id} className="group hover:bg-white/[0.07] transition-colors">
                     {(() => {
                       const isRowBusy = Boolean(actionLoadingById[req.id]);
-                      const canApprove = !["Approved", "Completed", "Cancelled"].includes(req.status);
+                      const canApprove = !["Approved", "Released", "Completed", "Cancelled"].includes(req.status);
+                      const canRelease = req.status === "Approved";
                       const canDecline = !["Completed", "Cancelled"].includes(req.status);
                       return (
                         <>
@@ -794,6 +815,15 @@ export default function RequisitionTrackingPage() {
                           <XCircle size={13} />
                         </button>
                         <button
+                          onClick={() => handleRelease(req)}
+                          disabled={!canRelease || isRowBusy}
+                          title="Release"
+                          aria-label="Release"
+                          className="inline-flex h-7 items-center justify-center rounded-md border border-purple-500/30 bg-purple-500/10 px-2 text-[10px] font-bold uppercase tracking-wide text-purple-300 transition-colors hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Release
+                        </button>
+                        <button
                           onClick={() => handleDelete(req)}
                           disabled={isRowBusy}
                           title="Delete"
@@ -802,7 +832,7 @@ export default function RequisitionTrackingPage() {
                         >
                           <Trash2 size={13} />
                         </button>
-                        {activeRecordType === "borrow" && req.status === "Approved" && (
+                        {activeRecordType === "borrow" && req.status === "Released" && (
                           <button
                             onClick={() => handleReturnBorrow(req)}
                             disabled={isRowBusy}
